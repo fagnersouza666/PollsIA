@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Não inclua chaves ou tokens no código ou em commits.
+Mantenha os commits objetivos, descrevendo a mudança principal.
+Utilize nomes de funções e variáveis em inglês, conforme o projeto.
+Sempre use no inicio de cada commit: feat, doc, chore, fix...
+Para cada alteração faça o commit
+Use o MCP sempre que for interagir com o github
