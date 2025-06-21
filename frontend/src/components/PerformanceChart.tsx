@@ -1,17 +1,16 @@
 'use client'
 
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '../utils/api'
 
 export function PerformanceChart() {
-  const { publicKey } = useWallet()
+  const mockPublicKey = "demo-wallet-key"
 
   const { data: performance, isLoading } = useQuery({
-    queryKey: ['performance', publicKey?.toString()],
-    queryFn: () => api.getPerformance(publicKey!.toString()),
-    enabled: !!publicKey,
+    queryKey: ['performance', mockPublicKey],
+    queryFn: () => api.getPerformance(mockPublicKey),
+    enabled: true,
   })
 
   if (isLoading) {
@@ -32,29 +31,29 @@ export function PerformanceChart() {
         <div className="flex space-x-4 text-sm">
           <div className="text-center">
             <p className="text-gray-500">Total Return</p>
-            <p className="font-semibold text-green-600">{performance?.totalReturn}%</p>
+            <p className="font-semibold text-green-600">{(performance as any)?.totalReturn}%</p>
           </div>
           <div className="text-center">
             <p className="text-gray-500">Alpha</p>
-            <p className="font-semibold text-primary-600">{performance?.alpha}%</p>
+            <p className="font-semibold text-primary-600">{(performance as any)?.alpha}%</p>
           </div>
           <div className="text-center">
             <p className="text-gray-500">Max Drawdown</p>
-            <p className="font-semibold text-red-600">{performance?.maxDrawdown}%</p>
+            <p className="font-semibold text-red-600">{(performance as any)?.maxDrawdown}%</p>
           </div>
         </div>
       </div>
 
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={performance?.history || []}>
+          <LineChart data={(performance as any)?.history || []}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="date" 
+            <XAxis
+              dataKey="date"
               tickFormatter={(value) => new Date(value).toLocaleDateString()}
               className="text-xs"
             />
-            <YAxis 
+            <YAxis
               tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
               className="text-xs"
             />
@@ -84,11 +83,11 @@ export function PerformanceChart() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <p className="text-gray-500">Sharpe Ratio</p>
-            <p className="font-semibold">{performance?.sharpeRatio}</p>
+            <p className="font-semibold">{(performance as any)?.sharpeRatio}</p>
           </div>
           <div>
             <p className="text-gray-500">Timeframe</p>
-            <p className="font-semibold">{performance?.timeframe}</p>
+            <p className="font-semibold">{(performance as any)?.timeframe}</p>
           </div>
           <div>
             <p className="text-gray-500">Best Day</p>

@@ -1,7 +1,5 @@
 'use client'
 
-import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { useQuery } from '@tanstack/react-query'
 import { TrendingUp, Wallet, Activity, Target } from 'lucide-react'
 import { PortfolioOverview } from './PortfolioOverview'
@@ -10,18 +8,19 @@ import { PerformanceChart } from './PerformanceChart'
 import { api } from '../utils/api'
 
 export function Dashboard() {
-  const { publicKey } = useWallet()
+  // Mock data para demonstração
+  const mockPublicKey = "demo-wallet-key"
 
   const { data: portfolio, isLoading: portfolioLoading } = useQuery({
-    queryKey: ['portfolio', publicKey?.toString()],
-    queryFn: () => api.getPortfolio(publicKey!.toString()),
-    enabled: !!publicKey,
+    queryKey: ['portfolio', mockPublicKey],
+    queryFn: () => api.getPortfolio(mockPublicKey),
+    enabled: true,
   })
 
   const { data: performance, isLoading: performanceLoading } = useQuery({
-    queryKey: ['performance', publicKey?.toString()],
-    queryFn: () => api.getPerformance(publicKey!.toString()),
-    enabled: !!publicKey,
+    queryKey: ['performance', mockPublicKey],
+    queryFn: () => api.getPerformance(mockPublicKey),
+    enabled: true,
   })
 
   return (
@@ -34,7 +33,7 @@ export function Dashboard() {
               <TrendingUp className="h-8 w-8 text-primary-600" />
               <span className="ml-2 text-xl font-bold">Solana Pool Optimizer</span>
             </div>
-            <WalletMultiButton />
+            <button className="btn-primary">Conectar Carteira</button>
           </div>
         </div>
       </header>
@@ -45,25 +44,25 @@ export function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Total Portfolio Value"
-            value={`$${portfolio?.totalValue?.toLocaleString() || '0'}`}
+            value={`$${(portfolio as any)?.totalValue?.toLocaleString() || '0'}`}
             icon={<Wallet className="h-5 w-5" />}
             loading={portfolioLoading}
           />
           <StatsCard
             title="Total Return"
-            value={`${performance?.totalReturn?.toFixed(1) || '0'}%`}
+            value={`${(performance as any)?.totalReturn?.toFixed(1) || '0'}%`}
             icon={<TrendingUp className="h-5 w-5" />}
             loading={performanceLoading}
           />
           <StatsCard
             title="Active Positions"
-            value={portfolio?.positions?.length?.toString() || '0'}
+            value={(portfolio as any)?.positions?.length?.toString() || '0'}
             icon={<Activity className="h-5 w-5" />}
             loading={portfolioLoading}
           />
           <StatsCard
             title="Sharpe Ratio"
-            value={performance?.sharpeRatio?.toFixed(2) || '0'}
+            value={(performance as any)?.sharpeRatio?.toFixed(2) || '0'}
             icon={<Target className="h-5 w-5" />}
             loading={performanceLoading}
           />

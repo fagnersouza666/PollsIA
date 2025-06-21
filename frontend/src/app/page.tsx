@@ -1,12 +1,11 @@
 'use client'
 
-import { useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { Dashboard } from '../components/Dashboard'
 import { LandingPage } from '../components/LandingPage'
 
 export default function Home() {
-  const { connected } = useWallet()
+  // Temporariamente sempre mostrar a landing page
+  const connected = false
 
   return (
     <main className="min-h-screen">

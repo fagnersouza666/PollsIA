@@ -25,11 +25,14 @@ services:
       - redis_data:/data
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: node:20
+    working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    command: bash -c "npm install && npm run dev"
     ports:
       - "3001:3001"
+    volumes:
+      - ./backend:/app
     environment:
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/pollsia
       - REDIS_URL=redis://redis:6379
@@ -45,15 +48,17 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:20
+    working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    command: bash -c "npm install && npm run dev"
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:3001/api
       - NEXT_PUBLIC_SOLANA_NETWORK=mainnet-beta
-      - NODE_ENV=production
     depends_on:
       - backend
     restart: unless-stopped

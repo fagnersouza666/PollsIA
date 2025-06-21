@@ -1,6 +1,5 @@
 'use client'
 
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { TrendingUp, Shield, Zap, BarChart3 } from 'lucide-react'
 
 export function LandingPage() {
@@ -13,7 +12,7 @@ export function LandingPage() {
           <span className="ml-2 text-lg font-bold">Solana Pool Optimizer</span>
         </div>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-          <WalletMultiButton />
+          <button className="btn-primary">Conectar Carteira</button>
         </nav>
       </header>
 
@@ -28,12 +27,12 @@ export function LandingPage() {
               on Solana
             </h1>
             <p className="mx-auto max-w-[700px] text-gray-600 md:text-xl">
-              Automated pool optimization with AI-powered strategies. 
-              Let our algorithms find the best yield farming opportunities 
+              Automated pool optimization with AI-powered strategies.
+              Let our algorithms find the best yield farming opportunities
               while you sleep.
             </p>
             <div className="space-x-4">
-              <WalletMultiButton className="btn-primary" />
+              <button className="btn-primary">Conectar Carteira</button>
             </div>
           </div>
         </div>

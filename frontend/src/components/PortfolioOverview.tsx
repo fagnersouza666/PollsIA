@@ -1,17 +1,16 @@
 'use client'
 
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useQuery } from '@tanstack/react-query'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { api } from '../utils/api'
 
 export function PortfolioOverview() {
-  const { publicKey } = useWallet()
+  const mockPublicKey = "demo-wallet-key"
 
   const { data: portfolio, isLoading } = useQuery({
-    queryKey: ['portfolio', publicKey?.toString()],
-    queryFn: () => api.getPortfolio(publicKey!.toString()),
-    enabled: !!publicKey,
+    queryKey: ['portfolio', mockPublicKey],
+    queryFn: () => api.getPortfolio(mockPublicKey),
+    enabled: true,
   })
 
   if (isLoading) {
@@ -30,11 +29,11 @@ export function PortfolioOverview() {
   return (
     <div className="card">
       <h3 className="text-lg font-semibold mb-4">Portfolio Overview</h3>
-      
+
       {/* Token Balances */}
       <div className="space-y-3 mb-6">
         <h4 className="text-sm font-medium text-gray-600">Token Balances</h4>
-        {portfolio?.tokens?.map((token, index) => (
+        {(portfolio as any)?.tokens?.map((token: any, index: number) => (
           <div key={index} className="flex justify-between items-center py-2">
             <div className="flex items-center">
               <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
@@ -57,7 +56,7 @@ export function PortfolioOverview() {
       {/* Active Positions */}
       <div className="space-y-3">
         <h4 className="text-sm font-medium text-gray-600">Active Positions</h4>
-        {portfolio?.positions?.map((position, index) => (
+        {(portfolio as any)?.positions?.map((position: any, index: number) => (
           <div key={index} className="border rounded-lg p-3">
             <div className="flex justify-between items-start mb-2">
               <div>
