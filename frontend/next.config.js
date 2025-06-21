@@ -1,17 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Removed obsolete experimental.appDir - it's default in Next.js 14
-  output: 'standalone', // For Docker optimization
-  transpilePackages: ['@solana/wallet-adapter-base'],
+  transpilePackages: ['@solana/wallet-adapter-base', '@solana/wallet-adapter-react', '@solana/wallet-adapter-react-ui'],
   webpack: (config) => {
     config.resolve.fallback = {
       fs: false,
       net: false,
       tls: false,
-      crypto: false,
+      crypto: require.resolve('crypto-browserify'),
+      stream: require.resolve('stream-browserify'),
+      buffer: require.resolve('buffer'),
     };
+    
+    config.plugins.push(
+      new config.constructor.ProvidePlugin({
+        Buffer: ['buffer', 'Buffer'],
+        process: 'process/browser',
+      })
+    );
+    
     return config;
   },
+  experimental: {
+    esmExternals: 'loose'
+  }
 }
 
 module.exports = nextConfig

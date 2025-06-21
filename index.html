@@ -192,22 +192,54 @@
 
         async function loadPools() {
             try {
+                // Show loading state
+                document.getElementById('poolsContainer').innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Carregando pools do Raydium...</p>
+                    </div>
+                `;
+
+                console.log('Carregando pools...');
+                
                 // Load pools
                 const poolsResponse = await fetch('http://localhost:3001/api/pools/discover');
+                console.log('Pools response status:', poolsResponse.status);
+                
+                if (!poolsResponse.ok) {
+                    throw new Error(`HTTP ${poolsResponse.status}: ${poolsResponse.statusText}`);
+                }
+                
                 const poolsData = await poolsResponse.json();
+                console.log('Pools data:', poolsData);
                 pools = poolsData.data || [];
 
                 // Load rankings
-                const rankingsResponse = await fetch('http://localhost:3001/api/pools/rankings');
-                const rankingsData = await rankingsResponse.json();
-                rankings = rankingsData.data || [];
+                try {
+                    const rankingsResponse = await fetch('http://localhost:3001/api/pools/rankings');
+                    if (rankingsResponse.ok) {
+                        const rankingsData = await rankingsResponse.json();
+                        rankings = rankingsData.data || [];
+                    }
+                } catch (rankingError) {
+                    console.warn('Não foi possível carregar rankings:', rankingError);
+                    rankings = [];
+                }
 
                 displayPools(pools);
                 updateStats(pools);
+                
+                console.log(`Carregados ${pools.length} pools com sucesso`);
+                
             } catch (error) {
                 console.error('Error loading pools:', error);
-                document.getElementById('poolsContainer').innerHTML = 
-                    '<div class="text-center py-8"><p class="text-red-600">Erro ao carregar pools. Certifique-se de que o backend está rodando na porta 3001.</p></div>';
+                document.getElementById('poolsContainer').innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-red-600">Erro ao carregar pools: ${error.message}</p>
+                        <p class="text-sm text-gray-500 mt-2">Certifique-se de que o backend está rodando na porta 3001</p>
+                        <button onclick="loadPools()" class="mt-4 btn-primary">Tentar novamente</button>
+                    </div>
+                `;
             }
         }
 
