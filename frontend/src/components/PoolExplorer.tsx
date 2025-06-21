@@ -43,13 +43,13 @@ export function PoolExplorer() {
   return (
     <div className="card">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Pool Explorer</h3>
+        <h3 className="text-lg font-semibold">Explorador de Pools</h3>
         <div className="flex space-x-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search pools..."
+              placeholder="Buscar pools..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -60,9 +60,9 @@ export function PoolExplorer() {
             value={filterBy}
             onChange={(e) => setFilterBy(e.target.value)}
           >
-            <option value="all">All Pools</option>
-            <option value="high-apy">High APY</option>
-            <option value="high-tvl">High TVL</option>
+            <option value="all">Todos os Pools</option>
+            <option value="high-apy">Alto APY</option>
+            <option value="high-tvl">Alto TVL</option>
           </select>
         </div>
       </div>
@@ -120,7 +120,7 @@ function PoolCard({ pool, ranking, rank }: {
           </div>
           {ranking && (
             <div className="text-xs text-gray-500">
-              Score: {ranking.score.toFixed(1)}
+              Pontuação: {ranking.score.toFixed(1)}
             </div>
           )}
         </div>
@@ -132,11 +132,11 @@ function PoolCard({ pool, ranking, rank }: {
           <p className="font-medium">${(pool.tvl / 1000000).toFixed(1)}M</p>
         </div>
         <div>
-          <p className="text-gray-500">24h Volume</p>
+          <p className="text-gray-500">Volume 24h</p>
           <p className="font-medium">${(pool.volume24h / 1000).toFixed(0)}K</p>
         </div>
         <div>
-          <p className="text-gray-500">Risk Score</p>
+          <p className="text-gray-500">Pontuação de Risco</p>
           <p className="font-medium">
             <span className={`px-2 py-1 rounded text-xs ${
               ranking?.riskScore <= 5 ? 'bg-green-100 text-green-800' :

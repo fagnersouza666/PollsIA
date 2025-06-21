@@ -21,19 +21,19 @@ export function Dashboard() {
         <div className="text-center max-w-md mx-auto p-8">
           <Wallet className="h-16 w-16 text-blue-500 mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-gray-900 mb-2">PollsIA</h2>
-          <h3 className="text-xl font-semibold text-gray-700 mb-4">Solana Pool Optimizer</h3>
+          <h3 className="text-xl font-semibold text-gray-700 mb-4">Otimizador de Pools Solana</h3>
           <p className="text-gray-600 mb-6">
-            Automated liquidity pool management with real-time data from Raydium and Solana blockchain.
+            Gestão automatizada de pools de liquidez com dados em tempo real do Raydium e blockchain Solana.
           </p>
           <button 
             onClick={handleConnectWallet}
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center"
           >
             <Wallet className="h-5 w-5 mr-2" />
-            Connect Wallet (Demo)
+            Conectar Carteira (Demo)
           </button>
           <p className="text-sm text-gray-500 mt-4">
-            * Demo mode - showing real pool data from Solana
+            * Modo demo - mostrando dados reais de pools da Solana
           </p>
         </div>
       </div>
@@ -58,7 +58,7 @@ export function Dashboard() {
                 onClick={() => setIsConnected(false)}
                 className="text-gray-500 hover:text-gray-700 text-sm"
               >
-                Disconnect
+                Desconectar
               </button>
             </div>
           </div>
@@ -70,28 +70,28 @@ export function Dashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
-            title="Total Portfolio Value"
+            title="Valor Total do Portfólio"
             value="$0.00"
             icon={Wallet}
             change="+0%"
             changeType="positive"
           />
           <StatsCard
-            title="Active Positions"
+            title="Posições Ativas"
             value="0"
             icon={Activity}
             change="+0"
             changeType="neutral"
           />
           <StatsCard
-            title="Best Pool APY"
-            value="Loading..."
+            title="Melhor APY de Pool"
+            value="Carregando..."
             icon={TrendingUp}
             change=""
             changeType="positive"
           />
           <StatsCard
-            title="Total Returns"
+            title="Retornos Totais"
             value="$0.00"
             icon={Target}
             change="+0%"
