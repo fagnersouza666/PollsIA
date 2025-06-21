@@ -8,8 +8,8 @@ export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
   const analyticsService = new AnalyticsService();
 
   fastify.get<{
-    Params: { publicKey: string };
-    Querystring: typeof performanceQuerySchema._output;
+    Params: any;
+    Querystring: any;
     Reply: ApiResponse<PerformanceData>;
   }>('/performance/:publicKey', {
     schema: {
@@ -20,7 +20,12 @@ export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
           publicKey: { type: 'string', minLength: 32, maxLength: 50 }
         }
       },
-      querystring: performanceQuerySchema,
+      querystring: {
+        type: 'object',
+        properties: {
+          timeframe: { type: 'string', enum: ['7d', '30d', '90d', '1y'] }
+        }
+      },
       response: {
         200: {
           type: 'object',
@@ -34,15 +39,16 @@ export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const { publicKey } = request.params;
-      const performance = await analyticsService.getPerformance(publicKey, request.query.timeframe);
+      const params = { publicKey: request.params.publicKey };
+      const query = performanceQuerySchema.parse(request.query);
+      const performance = await analyticsService.getPerformance(params.publicKey, query.timeframe);
       return {
         success: true,
         data: performance,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      fastify.log.error(`Performance analytics error for ${request.params.publicKey}:`, error);
+      fastify.log.error('Performance analytics error:', error);
       return reply.status(500).send({
         success: false,
         error: 'Failed to get performance data',
@@ -85,11 +91,16 @@ export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.get<{
-    Querystring: typeof opportunitiesQuerySchema._output;
+    Querystring: any;
     Reply: ApiResponse<Opportunity[]>;
   }>('/opportunities', {
     schema: {
-      querystring: opportunitiesQuerySchema,
+      querystring: {
+        type: 'object',
+        properties: {
+          riskLevel: { type: 'string', enum: ['conservative', 'moderate', 'aggressive'] }
+        }
+      },
       response: {
         200: {
           type: 'object',
@@ -103,7 +114,8 @@ export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const opportunities = await analyticsService.getOpportunities(request.query?.riskLevel);
+      const query = opportunitiesQuerySchema.parse(request.query);
+      const opportunities = await analyticsService.getOpportunities(query.riskLevel);
       return {
         success: true,
         data: opportunities,

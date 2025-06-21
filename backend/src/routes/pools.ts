@@ -7,11 +7,20 @@ export const poolRoutes: FastifyPluginAsync = async (fastify) => {
   const poolService = new PoolService();
 
   fastify.get<{
-    Querystring: typeof poolDiscoveryQuerySchema._output;
+    Querystring: any;
     Reply: ApiResponse<Pool[]>;
   }>('/discover', {
     schema: {
-      querystring: poolDiscoveryQuerySchema,
+      querystring: {
+        type: 'object',
+        properties: {
+          protocol: { type: 'string', enum: ['raydium', 'orca', 'all'] },
+          minTvl: { type: 'string' },
+          maxRisk: { type: 'string', enum: ['low', 'medium', 'high'] },
+          sortBy: { type: 'string', enum: ['apy', 'tvl', 'volume'] },
+          limit: { type: 'string' }
+        }
+      },
       response: {
         200: {
           type: 'object',
@@ -25,7 +34,9 @@ export const poolRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const pools = await poolService.discoverPools(request.query);
+      // Parse and validate query parameters
+      const query = poolDiscoveryQuerySchema.parse(request.query);
+      const pools = await poolService.discoverPools(query);
       return { 
         success: true, 
         data: pools,
@@ -75,13 +86,25 @@ export const poolRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.get<{
-    Params: typeof poolIdSchema._output;
-    Querystring: typeof poolAnalysisQuerySchema._output;
+    Params: any;
+    Querystring: any;
     Reply: ApiResponse<PoolAnalysis>;
   }>('/:poolId/analysis', {
     schema: {
-      params: poolIdSchema,
-      querystring: poolAnalysisQuerySchema,
+      params: {
+        type: 'object',
+        properties: {
+          poolId: { type: 'string' }
+        },
+        required: ['poolId']
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          timeframe: { type: 'string', enum: ['1h', '24h', '7d', '30d'] },
+          includeHistory: { type: 'boolean' }
+        }
+      },
       response: {
         200: {
           type: 'object',
@@ -95,15 +118,16 @@ export const poolRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const { poolId } = request.params;
-      const analysis = await poolService.analyzePool(poolId, request.query);
+      const params = poolIdSchema.parse(request.params);
+      const query = poolAnalysisQuerySchema.parse(request.query);
+      const analysis = await poolService.analyzePool(params.poolId, query);
       return { 
         success: true, 
         data: analysis,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      fastify.log.error(`Pool analysis error for ${request.params.poolId}:`, error);
+      fastify.log.error('Pool analysis error:', error);
       return reply.status(500).send({ 
         success: false, 
         error: 'Failed to analyze pool',

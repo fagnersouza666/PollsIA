@@ -6,22 +6,38 @@ import { PortfolioOverview } from './PortfolioOverview'
 import { PoolExplorer } from './PoolExplorer'
 import { PerformanceChart } from './PerformanceChart'
 import { api } from '../utils/api'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export function Dashboard() {
-  // Mock data para demonstração
-  const mockPublicKey = "demo-wallet-key"
+  const { publicKey, connected } = useWallet()
+  
+  // Only fetch data if wallet is connected
+  const walletAddress = connected && publicKey ? publicKey.toBase58() : null
 
   const { data: portfolio, isLoading: portfolioLoading } = useQuery({
-    queryKey: ['portfolio', mockPublicKey],
-    queryFn: () => api.getPortfolio(mockPublicKey),
-    enabled: true,
+    queryKey: ['portfolio', walletAddress],
+    queryFn: () => api.getPortfolio(walletAddress!),
+    enabled: !!walletAddress,
   })
 
   const { data: performance, isLoading: performanceLoading } = useQuery({
-    queryKey: ['performance', mockPublicKey],
-    queryFn: () => api.getPerformance(mockPublicKey),
-    enabled: true,
+    queryKey: ['performance', walletAddress],
+    queryFn: () => api.getPerformance(walletAddress!),
+    enabled: !!walletAddress,
   })
+
+  if (!connected) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Wallet className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Connect Your Wallet</h2>
+          <p className="text-gray-600 mb-6">Please connect your Solana wallet to view your portfolio and start optimizing your liquidity positions.</p>
+          <button className="btn-primary">Connect Wallet</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -33,7 +49,12 @@ export function Dashboard() {
               <TrendingUp className="h-8 w-8 text-primary-600" />
               <span className="ml-2 text-xl font-bold">Solana Pool Optimizer</span>
             </div>
-            <button className="btn-primary">Conectar Carteira</button>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                {walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}
+              </span>
+              <button className="btn-secondary">Disconnect</button>
+            </div>
           </div>
         </div>
       </header>

@@ -3,14 +3,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '../utils/api'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export function PerformanceChart() {
-  const mockPublicKey = "demo-wallet-key"
+  const { publicKey, connected } = useWallet()
+  const walletAddress = connected && publicKey ? publicKey.toBase58() : null
 
   const { data: performance, isLoading } = useQuery({
-    queryKey: ['performance', mockPublicKey],
-    queryFn: () => api.getPerformance(mockPublicKey),
-    enabled: true,
+    queryKey: ['performance', walletAddress],
+    queryFn: () => api.getPerformance(walletAddress!),
+    enabled: !!walletAddress,
   })
 
   if (isLoading) {

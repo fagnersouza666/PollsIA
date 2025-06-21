@@ -8,11 +8,18 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
   const walletService = new WalletService();
 
   fastify.post<{
-    Body: typeof walletConnectSchema._output;
+    Body: any;
     Reply: ApiResponse<WalletConnection>;
   }>('/connect', {
     schema: {
-      body: walletConnectSchema,
+      body: {
+        type: 'object',
+        properties: {
+          publicKey: { type: 'string' },
+          signature: { type: 'string' }
+        },
+        required: ['publicKey', 'signature']
+      },
       response: {
         200: {
           type: 'object',
@@ -26,7 +33,8 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const { publicKey, signature } = request.body;
+      const body = walletConnectSchema.parse(request.body);
+      const { publicKey, signature } = body;
       const result = await walletService.connectWallet(publicKey, signature);
       return {
         success: true,
@@ -34,7 +42,7 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      fastify.log.error(`Wallet connection error for ${request.body.publicKey}:`, error);
+      fastify.log.error('Wallet connection error:', error);
       return reply.status(400).send({
         success: false,
         error: 'Failed to connect wallet',
@@ -44,11 +52,17 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.get<{
-    Params: typeof publicKeyParamSchema._output;
+    Params: any;
     Reply: ApiResponse<Portfolio>;
   }>('/portfolio/:publicKey', {
     schema: {
-      params: publicKeyParamSchema,
+      params: {
+        type: 'object',
+        properties: {
+          publicKey: { type: 'string' }
+        },
+        required: ['publicKey']
+      },
       response: {
         200: {
           type: 'object',
@@ -62,7 +76,8 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const { publicKey } = request.params;
+      const params = publicKeyParamSchema.parse(request.params);
+      const { publicKey } = params;
       const portfolio = await walletService.getPortfolio(publicKey);
       return {
         success: true,
@@ -70,7 +85,7 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      fastify.log.error(`Portfolio error for ${request.params.publicKey}:`, error);
+      fastify.log.error('Portfolio error:', error);
       return reply.status(500).send({
         success: false,
         error: 'Failed to get portfolio',
@@ -80,11 +95,17 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.get<{
-    Params: typeof publicKeyParamSchema._output;
+    Params: any;
     Reply: ApiResponse<Position[]>;
   }>('/positions/:publicKey', {
     schema: {
-      params: publicKeyParamSchema,
+      params: {
+        type: 'object',
+        properties: {
+          publicKey: { type: 'string' }
+        },
+        required: ['publicKey']
+      },
       response: {
         200: {
           type: 'object',
@@ -98,7 +119,8 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const { publicKey } = request.params;
+      const params = publicKeyParamSchema.parse(request.params);
+      const { publicKey } = params;
       const positions = await walletService.getPositions(publicKey);
       return {
         success: true,
@@ -106,7 +128,7 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      fastify.log.error(`Positions error for ${request.params.publicKey}:`, error);
+      fastify.log.error('Positions error:', error);
       return reply.status(500).send({
         success: false,
         error: 'Failed to get positions',

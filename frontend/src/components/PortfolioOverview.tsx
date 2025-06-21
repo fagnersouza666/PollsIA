@@ -3,14 +3,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { api } from '../utils/api'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export function PortfolioOverview() {
-  const mockPublicKey = "demo-wallet-key"
+  const { publicKey, connected } = useWallet()
+  const walletAddress = connected && publicKey ? publicKey.toBase58() : null
 
   const { data: portfolio, isLoading } = useQuery({
-    queryKey: ['portfolio', mockPublicKey],
-    queryFn: () => api.getPortfolio(mockPublicKey),
-    enabled: true,
+    queryKey: ['portfolio', walletAddress],
+    queryFn: () => api.getPortfolio(walletAddress!),
+    enabled: !!walletAddress,
   })
 
   if (isLoading) {
