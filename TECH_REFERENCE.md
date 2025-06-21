@@ -764,6 +764,7 @@ export interface ApiResponse<T> {
   data?: T
   error?: string
   timestamp: number
+  count?: number
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
@@ -777,8 +778,123 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 
 export interface PoolRebalanceRequest {
   poolId: string
+  ammId: string
   strategy: 'conservative' | 'moderate' | 'aggressive'
   maxSlippage: number
+  userWallet: string
+}
+
+export interface WalletConnectionRequest {
+  publicKey: string
+  signature?: string
+}
+
+export interface PoolDiscoveryRequest {
+  minTvl?: number
+  minApr?: number
+  tokens?: string[]
+  limit?: number
+  sortBy?: 'tvl' | 'apr' | 'volume'
+}
+```
+
+### Integração com Raydium
+
+```typescript
+// Cliente Raydium para buscar pools
+export class RaydiumClient {
+  private baseUrl = 'https://api.raydium.io/v2'
+
+  async getPools(): Promise<RaydiumPool[]> {
+    const response = await fetch(`${this.baseUrl}/sdk/liquidity/mainnet.json`)
+    const data = await response.json()
+    
+    return data.official.map((pool: any) => ({
+      id: pool.id,
+      ammId: pool.ammId,
+      baseMint: pool.baseMint,
+      quoteMint: pool.quoteMint,
+      name: `${pool.baseSymbol}/${pool.quoteSymbol}`,
+      tokenA: pool.baseSymbol,
+      tokenB: pool.quoteSymbol,
+      liquidity: pool.liquidity || 0,
+      volume24h: pool.volume24h || 0,
+      apr24h: pool.apr24h || 0,
+      tvl: pool.tvl || 0,
+      apy: pool.apy || 0,
+      protocol: 'Raydium'
+    }))
+  }
+
+  async getPoolInfo(ammId: string): Promise<RaydiumPool | null> {
+    const pools = await this.getPools()
+    return pools.find(pool => pool.ammId === ammId) || null
+  }
+}
+```
+
+### Integração com Phantom Wallet
+
+```typescript
+// Tipos para Phantom Wallet
+declare global {
+  interface Window {
+    solana?: {
+      isPhantom?: boolean
+      isConnected: boolean
+      publicKey: any
+      connect(): Promise<{ publicKey: any }>
+      disconnect(): Promise<void>
+      signTransaction(transaction: any): Promise<any>
+      signAllTransactions(transactions: any[]): Promise<any[]>
+      on(event: string, callback: Function): void
+      off(event: string, callback: Function): void
+    }
+  }
+}
+
+// Service para gerenciar conexão com Phantom
+export class PhantomWalletService {
+  async isPhantomInstalled(): Promise<boolean> {
+    return !!(window.solana?.isPhantom)
+  }
+
+  async connect(): Promise<string> {
+    if (!window.solana?.isPhantom) {
+      throw new Error('Phantom wallet não detectado')
+    }
+
+    const response = await window.solana.connect()
+    return response.publicKey.toString()
+  }
+
+  async disconnect(): Promise<void> {
+    if (window.solana?.disconnect) {
+      await window.solana.disconnect()
+    }
+  }
+
+  async signTransaction(transaction: any): Promise<any> {
+    if (!window.solana?.signTransaction) {
+      throw new Error('Wallet não suporta assinatura de transações')
+    }
+
+    return await window.solana.signTransaction(transaction)
+  }
+
+  onAccountChanged(callback: (publicKey: string | null) => void): void {
+    window.solana?.on('accountChanged', callback)
+  }
+
+  onConnect(callback: (publicKey: string) => void): void {
+    window.solana?.on('connect', (publicKey: any) => {
+      callback(publicKey.toString())
+    })
+  }
+
+  onDisconnect(callback: () => void): void {
+    window.solana?.on('disconnect', callback)
+  }
 }
 ```
 
