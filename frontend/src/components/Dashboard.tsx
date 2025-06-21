@@ -15,47 +15,47 @@ export function Dashboard() {
   const handleConnectWallet = async () => {
     try {
       setLoading(true)
-      
+
       console.log('🔍 Verificando Phantom...')
       console.log('window exists:', typeof window !== 'undefined')
       console.log('window.solana exists:', !!(typeof window !== 'undefined' && window.solana))
       console.log('window.solana.isPhantom:', typeof window !== 'undefined' && window.solana?.isPhantom)
-      
+
       if (typeof window === 'undefined') {
         alert('Ambiente não suportado')
         return
       }
-      
+
       if (!window.solana) {
         console.log('❌ window.solana é undefined')
         alert('Phantom wallet não detectado.\n\n1. Instale o Phantom: https://phantom.app\n2. Recarregue a página\n3. Tente novamente')
         return
       }
-      
+
       if (!window.solana.isPhantom) {
         console.log('❌ window.solana.isPhantom é false')
         alert('Extensão Phantom não detectada.\n\nVerifique se a extensão está ativada no navegador.')
         return
       }
-      
+
       console.log('✅ Phantom detectado, tentando conectar...')
-      
+
       const response = await window.solana.connect()
       console.log('✅ Conectado com sucesso!', response)
-      
+
       const publicKey = response.publicKey.toString()
       console.log('📍 Endereço:', publicKey)
-      
+
       setWalletAddress(publicKey)
       setIsConnected(true)
-      
+
       // Carregar dados reais da carteira
       console.log('🔄 Carregando dados da carteira...')
       await loadWalletData(publicKey)
-      
+
     } catch (error: any) {
       console.error('❌ Erro ao conectar carteira:', error)
-      
+
       if (error.code === 4001) {
         alert('Conexão cancelada pelo usuário.')
       } else if (error.message?.includes('User rejected')) {
@@ -73,10 +73,10 @@ export function Dashboard() {
       // Carregar dados do portfólio
       const portfolioData = await api.getPortfolio(publicKey)
       setPortfolio(portfolioData)
-      
+
       // Carregar posições
       const positionsData = await api.getPositions(publicKey)
-      setPositions(positionsData)
+      setPositions(Array.isArray(positionsData) ? positionsData : [])
     } catch (error) {
       console.error('Erro ao carregar dados da carteira:', error)
     }
@@ -92,7 +92,7 @@ export function Dashboard() {
           <p className="text-gray-600 mb-6">
             Gestão automatizada de pools de liquidez com dados em tempo real do Raydium e blockchain Solana.
           </p>
-          <button 
+          <button
             onClick={handleConnectWallet}
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center"
           >
@@ -121,7 +121,7 @@ export function Dashboard() {
               <span className="text-sm text-gray-600">
                 Carteira: {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
               </span>
-              <button 
+              <button
                 onClick={() => {
                   if (window.solana && window.solana.isPhantom) {
                     window.solana.disconnect()
@@ -181,8 +181,8 @@ export function Dashboard() {
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h3 className="text-lg font-semibold mb-4">About PollsIA</h3>
           <p className="text-gray-600">
-            PollsIA is an automated liquidity pool management system for Solana. 
-            It analyzes real-time data from Raydium and other DEXs to find the best 
+            PollsIA is an automated liquidity pool management system for Solana.
+            It analyzes real-time data from Raydium and other DEXs to find the best
             opportunities for liquidity provision and yield optimization.
           </p>
         </div>
@@ -192,13 +192,13 @@ export function Dashboard() {
 }
 
 // Stats Card Component
-function StatsCard({ 
-  title, 
-  value, 
-  icon: Icon, 
-  change, 
-  changeType 
-}: { 
+function StatsCard({
+  title,
+  value,
+  icon: Icon,
+  change,
+  changeType
+}: {
   title: string
   value: string
   icon: any
@@ -218,10 +218,9 @@ function StatsCard({
         <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
         <p className="text-2xl font-bold text-gray-900">{value}</p>
         {change && (
-          <p className={`text-sm mt-1 ${
-            changeType === 'positive' ? 'text-green-600' :
+          <p className={`text-sm mt-1 ${changeType === 'positive' ? 'text-green-600' :
             changeType === 'negative' ? 'text-red-600' : 'text-gray-600'
-          }`}>
+            }`}>
             {change}
           </p>
         )}
