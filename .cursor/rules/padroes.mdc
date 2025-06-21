@@ -3,4 +3,4 @@ description:
 globs: 
 alwaysApply: false
 ---
-Sempre siga os padrões do projeto especificado no arquivo TECH_REFERENCE.md
+Sempre siga os padrões e tecnologias do projeto especificado no arquivo TECH_REFERENCE.md
