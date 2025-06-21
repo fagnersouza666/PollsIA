@@ -15,15 +15,36 @@ Textos sempre em português
 
 ---
 
-## 1. Solana (@solana/web3.js & @solana/kit)
+## 1. Solana (@solana/kit - Padrões Modernos)
 
 ### Configuração de Conexão RPC
 
 ```typescript
 // Usando @solana/kit (versão moderna)
-import { createSolanaRpc } from "@solana/kit";
+import { createSolanaRpc, createSolanaRpcSubscriptions } from "@solana/kit";
 
 const rpc = createSolanaRpc("https://api.mainnet-beta.solana.com");
+const rpcSubscriptions = createSolanaRpcSubscriptions("wss://api.mainnet-beta.solana.com");
+```
+
+### Criação de Keypair
+
+```typescript
+// Método moderno para gerar keypair
+import { generateKeyPairSigner } from "@solana/kit";
+
+const keypair = await generateKeyPairSigner();
+console.log("public key:", keypair.address);
+```
+
+### Carregamento de Keypair de Arquivo
+
+```typescript
+// Carregar keypair existente de arquivo JSON
+import { createKeyPairSignerFromBytes } from "@solana/kit";
+import walletSecret from './wallet.json';
+
+const keypairSigner = await createKeyPairSignerFromBytes(new Uint8Array(walletSecret));
 ```
 
 ### Transferência de SOL
@@ -33,7 +54,6 @@ import {
   address, 
   createKeyPairSignerFromBytes, 
   createTransactionMessage, 
-  getTransferSolInstruction,
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
@@ -42,6 +62,7 @@ import {
   sendAndConfirmTransactionFactory,
   lamports
 } from "@solana/kit";
+import { getTransferSolInstruction } from "@solana-program/system";
 
 const transferSol = async () => {
   const keypairSigner = await createKeyPairSignerFromBytes(new Uint8Array(wallet));
@@ -61,6 +82,8 @@ const transferSol = async () => {
   );
 
   const signedTransaction = await signTransactionMessageWithSigners(transaction);
+  const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
+  
   await sendAndConfirmTransaction(signedTransaction, {
     commitment: 'processed',
     skipPreflight: true
@@ -68,16 +91,151 @@ const transferSol = async () => {
 };
 ```
 
+### Operações com Tokens
+
+```typescript
+// Mint tokens usando @solana-program/token
+import { 
+  TOKEN_PROGRAM_ADDRESS, 
+  findAssociatedTokenPda, 
+  getMintToInstruction 
+} from "@solana-program/token";
+
+const mintTokens = async () => {
+  const mint = address('ERrUbrQcDf6EzChT8gTonvsKTiRrTG9YVhMDJhruHcjP');
+  
+  const [ata] = await findAssociatedTokenPda({
+    mint: mint,
+    owner: payer.address,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS,
+  });
+
+  const instructions = [
+    getMintToInstruction({
+      mint: mint,
+      token: ata,
+      amount: BigInt(1_000_000_000),
+      mintAuthority: payer.address
+    })
+  ];
+
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+  const transaction = pipe(
+    createTransactionMessage({ version: 0 }),
+    (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+    (tx) => appendTransactionMessageInstructions(instructions, tx)
+  );
+
+  const signedTransaction = await signTransactionMessageWithSigners(transaction);
+  await sendAndConfirmTransaction(signedTransaction, {
+    commitment: 'processed',
+    skipPreflight: true
+  });
+};
+```
+
+### Address Lookup Tables (ALT)
+
+```typescript
+// Criar ALT
+import { 
+  findAddressLookupTablePda,
+  getCreateLookupTableInstructionAsync 
+} from "@solana-program/address-lookup-table";
+
+const createAlt = async (authority: KeyPairSigner) => {
+  const recentSlot = await rpc.getSlot({ commitment: "finalized" }).send();
+
+  const [alt] = await findAddressLookupTablePda({
+    authority: authority.address,
+    recentSlot
+  });
+
+  const createAltIx = await getCreateLookupTableInstructionAsync({
+    authority,
+    recentSlot
+  });
+
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+  const tx = pipe(
+    createTransactionMessage({ version: 0 }),
+    (tx) => setTransactionMessageFeePayerSigner(authority, tx),
+    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+    (tx) => appendTransactionMessageInstruction(createAltIx, tx),
+  );
+
+  const signedTransaction = await signTransactionMessageWithSigners(tx);
+  await sendAndConfirmTransaction(signedTransaction, {
+    commitment: 'confirmed',
+    skipPreflight: false
+  });
+  
+  return alt;
+};
+```
+
+### Buscar Informações da Blockchain
+
+```typescript
+// Obter saldo
+const balance = await rpc.getBalance(address("...")).send();
+
+// Obter slot atual
+const slot = await rpc.getSlot().send();
+
+// Obter taxa mínima de rent exemption
+const rent = await rpc.getMinimumBalanceForRentExemption(BigInt(0)).send();
+
+// Obter detalhes de transação
+const transaction = await rpc.getTransaction(signature).send();
+```
+
 ### Transações e Validação
 
 ```typescript
-// Obter detalhes de transação
-const transaction = await rpc.getTransaction(signature).send();
-
 // Deserializar transação versionada
 import { VersionedTransaction } from '@solana/kit';
-const serializedTx = Buffer.from(base64Tx, 'base64');
-const versionedTx = VersionedTransaction.deserialize(serializedTx);
+
+const deserializeTransaction = (base64Tx: string) => {
+  const serializedTx = Buffer.from(base64Tx, 'base64');
+  const versionedTx = VersionedTransaction.deserialize(serializedTx);
+  
+  console.log('Signatures:', versionedTx.signatures);
+  console.log('Version:', versionedTx.version);
+  
+  return versionedTx;
+};
+```
+
+### Metadados de Token (Metaplex)
+
+```typescript
+// Criar metadata usando Metaplex Umi
+import { createSignerFromKeypair, generateSigner, signerIdentity } from "@metaplex-foundation/umi";
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { create } from '@metaplex-foundation/mpl-core';
+
+const umi = createUmi("https://api.devnet.solana.com", "confirmed");
+const keypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(walletSecret));
+const signer = createSignerFromKeypair(umi, keypair);
+
+umi.use(signerIdentity(signer));
+
+const tokenAddress = generateSigner(umi);
+
+const createTokenMetadata = async () => {
+  const tx = await create(umi, {
+    name: 'Test Token',
+    uri: 'https://example.com/token.json',
+    asset: tokenAddress,
+    owner: signer.publicKey,
+  }).sendAndConfirm(umi);
+  
+  console.log(`Transaction: ${tx.signature}`);
+};
 ```
 
 ---
