@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@solana/wallet-adapter-base', '@solana/wallet-adapter-react', '@solana/wallet-adapter-react-ui'],
-  webpack: (config) => {
+  webpack: (config, { webpack }) => {
     config.resolve.fallback = {
       fs: false,
       net: false,
@@ -10,14 +10,14 @@ const nextConfig = {
       stream: require.resolve('stream-browserify'),
       buffer: require.resolve('buffer'),
     };
-    
+
     config.plugins.push(
-      new config.constructor.ProvidePlugin({
+      new webpack.ProvidePlugin({
         Buffer: ['buffer', 'Buffer'],
         process: 'process/browser',
       })
     );
-    
+
     return config;
   },
   experimental: {
