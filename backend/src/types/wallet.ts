@@ -1,3 +1,18 @@
+// Tipos para integração com Solana usando padrões modernos
+export interface SolanaWallet {
+  address: string;
+  signer: unknown; // Será tipado corretamente após instalação das dependências
+  balance: number;
+  tokenAccounts: TokenAccount[];
+}
+
+export interface TokenAccount {
+  mint: string;
+  balance: bigint;
+  decimals: number;
+  owner: string;
+}
+
 export interface WalletConnection {
   publicKey: string;
   connected: boolean;
@@ -24,7 +39,13 @@ export interface Portfolio {
   solBalance: number;
   tokenAccounts: number;
   change24h: number;
-  performance: any[];
+  performance: PerformanceData[];
+}
+
+export interface PerformanceData {
+  date: string;
+  value: number;
+  change: number;
 }
 
 export interface Position {

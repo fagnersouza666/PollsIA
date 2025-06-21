@@ -1,86 +1,86 @@
-import { Connection, PublicKey } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { createSolanaRpc } from '@solana/rpc';
+import { address } from '@solana/keys';
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { config } from '../config/env';
 import { Portfolio, Position } from '../types/wallet';
 import axios from 'axios';
-
 
 interface TokenPrice {
   [mint: string]: number;
 }
 
 export class WalletService {
-  private connection: Connection;
+  private rpc: ReturnType<typeof createSolanaRpc>;
   private tokenPrices: TokenPrice = {};
 
   constructor() {
-    this.connection = new Connection(config.SOLANA_RPC_URL);
+    this.rpc = createSolanaRpc(config.SOLANA_RPC_URL);
   }
 
   async connectWallet(publicKey: string, _signature: string) {
     try {
-      const pubkey = new PublicKey(publicKey);
-      
-      // Verify the wallet exists on Solana
-      const accountInfo = await this.connection.getAccountInfo(pubkey);
-      if (!accountInfo) {
-        throw new Error('Wallet not found on Solana network');
+      const pubkeyAddress = address(publicKey);
+
+      // Verificar se a carteira existe na rede Solana
+      const accountInfo = await this.rpc.getAccountInfo(pubkeyAddress).send();
+      if (!accountInfo.value) {
+        throw new Error('Carteira não encontrada na rede Solana');
       }
-      
-      // Get actual balance
+
+      // Obter saldo real
       const balance = await this.getBalance(publicKey);
-      
+
       return {
         publicKey,
         connected: true,
         balance
       };
     } catch (error) {
-      console.error('Error connecting wallet:', error);
-      throw new Error('Failed to connect wallet');
+      console.error('Erro ao conectar carteira:', error);
+      throw new Error('Falha ao conectar carteira');
     }
   }
 
   async getPortfolio(publicKey: string): Promise<Portfolio> {
     try {
-      console.log('Getting portfolio for:', publicKey);
-      
-      // Validate public key first
-      const pubkey = new PublicKey(publicKey);
-      
-      // Get SOL balance
-      const balanceInfo = await this.connection.getBalance(pubkey);
-      const solBalance = balanceInfo / 1000000000; // Convert lamports to SOL
-      console.log('SOL balance:', solBalance);
-      
-      // Get SOL price
-      let solPrice = 100; // Default fallback
+      console.log('Obtendo portfólio para:', publicKey);
+
+      // Validar chave pública primeiro
+      const pubkeyAddress = address(publicKey);
+
+      // Obter saldo SOL
+      const balanceResponse = await this.rpc.getBalance(pubkeyAddress).send();
+      const solBalance = Number(balanceResponse.value) / 1000000000; // Converter lamports para SOL
+      console.log('Saldo SOL:', solBalance);
+
+      // Obter preço do SOL
+      let solPrice = 100; // Fallback padrão
       try {
         const priceResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
         solPrice = priceResponse.data.solana?.usd || 100;
-        console.log('SOL price:', solPrice);
+        console.log('Preço SOL:', solPrice);
       } catch (priceError) {
-        console.warn('Failed to fetch SOL price, using fallback');
+        console.warn('Falha ao buscar preço do SOL, usando fallback');
       }
-      
+
       const totalValue = solBalance * solPrice;
-      
-      // Get token accounts count
+
+      // Obter contagem de contas de token
       let tokenAccountsCount = 0;
       try {
-        const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-          pubkey,
-          { programId: TOKEN_PROGRAM_ID }
-        );
+        const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
+          pubkeyAddress,
+          { programId: TOKEN_PROGRAM_ADDRESS }
+        ).send();
         tokenAccountsCount = tokenAccounts.value.length;
-        console.log('Token accounts found:', tokenAccountsCount);
+        console.log('Contas de token encontradas:', tokenAccountsCount);
       } catch (tokenError) {
-        console.warn('Failed to fetch token accounts:', tokenError);
+        console.warn('Falha ao buscar contas de token:', tokenError);
       }
-      
-      // Simulated 24h change
+
+      // Mudança simulada de 24h
       const change24h = (Math.random() - 0.5) * 10; // -5% to +5%
-      
+
       const portfolio: Portfolio = {
         totalValue: Number(totalValue.toFixed(2)) || 0,
         solBalance: Number(solBalance.toFixed(6)) || 0,
@@ -88,14 +88,14 @@ export class WalletService {
         change24h: Number(change24h.toFixed(2)) || 0,
         performance: []
       };
-      
-      console.log('Portfolio result:', portfolio);
+
+      console.log('Resultado do portfólio:', portfolio);
       return portfolio;
-      
+
     } catch (error) {
-      console.error('Error getting portfolio:', error);
-      
-      // Return safe defaults
+      console.error('Erro ao obter portfólio:', error);
+
+      // Retornar padrões seguros
       const defaultPortfolio: Portfolio = {
         totalValue: 0,
         solBalance: 0,
@@ -103,7 +103,7 @@ export class WalletService {
         change24h: 0,
         performance: []
       };
-      
+
       return defaultPortfolio;
     }
   }
@@ -113,54 +113,48 @@ export class WalletService {
       const positions = await this.getLPPositions(publicKey);
       return positions || [];
     } catch (error) {
-      console.error('Error getting positions:', error);
+      console.error('Erro ao obter posições:', error);
       return [];
     }
   }
 
   private async getLPPositions(publicKey: string) {
     try {
-      // This is a simplified implementation
-      // In reality, you'd need to check specific LP token programs like Raydium's
-      // and parse the LP token accounts to get position details
-      
-      const pubkey = new PublicKey(publicKey);
-      const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-        pubkey,
-        { programId: TOKEN_PROGRAM_ID }
-      );
+      // Esta é uma implementação simplificada
+      // Na realidade, você precisaria verificar programas específicos de LP token como do Raydium
+      // e analisar as contas de LP token para obter detalhes da posição
+
+      const pubkeyAddress = address(publicKey);
+      const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
+        pubkeyAddress,
+        { programId: TOKEN_PROGRAM_ADDRESS }
+      ).send();
 
       const positions: Position[] = [];
-      
-      // Look for LP tokens (this is a simplified check)
+
+      // Procurar por LP tokens (esta é uma verificação simplificada)
       for (const account of tokenAccounts.value) {
-        const tokenData = account.account.data.parsed.info;
-        const mint = tokenData.mint;
-        const balance = tokenData.tokenAmount.uiAmount || 0;
-        
-        // Check if this could be an LP token (simplified heuristic)
-        if (balance > 0 && this.couldBeLPToken(mint)) {
-          // This would need real LP position data from the protocol
-          // For now, return empty array
-        }
+        // Aqui você decodificaria os dados da conta para extrair informações do token
+        // Por enquanto, retornamos array vazio
+        console.log('Processando conta:', account.pubkey);
       }
 
       return positions;
     } catch (error) {
-      console.error('Error getting LP positions:', error);
+      console.error('Erro ao obter posições LP:', error);
       return [];
     }
   }
 
   private couldBeLPToken(_mint: string): boolean {
-    // Simple heuristic - LP tokens often have specific patterns
-    // This would need to be replaced with actual LP token registry
-    return false; // Simplified for now
+    // Heurística simples - LP tokens frequentemente têm padrões específicos
+    // Isso precisaria ser substituído por um registro real de LP tokens
+    return false; // Simplificado por enquanto
   }
 
   private async updateTokenPrices() {
     try {
-      // Get token prices from CoinGecko or Jupiter API
+      // Obter preços de tokens do CoinGecko ou Jupiter API
       const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
         params: {
           ids: 'solana,usd-coin,raydium',
@@ -175,12 +169,12 @@ export class WalletService {
         '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': response.data.raydium?.usd || 0, // RAY
       };
     } catch (error) {
-      console.error('Error fetching token prices:', error);
-      // Use fallback prices
+      console.error('Erro ao buscar preços de tokens:', error);
+      // Usar preços de fallback
       this.tokenPrices = {
-        'sol': 100, // Fallback SOL price
+        'sol': 100, // Preço fallback do SOL
         'So11111111111111111111111111111111111111112': 100,
-        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 1, // USDC stable
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 1, // USDC estável
         '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': 1, // RAY fallback
       };
     }
@@ -193,13 +187,13 @@ export class WalletService {
       'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
       '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': 'RAY',
     };
-    
+
     return tokenMap[mint] || mint.substring(0, 6) + '...';
   }
 
   private async getBalance(publicKey: string) {
-    const pubkey = new PublicKey(publicKey);
-    const balance = await this.connection.getBalance(pubkey);
-    return balance / 1e9; // Convert lamports to SOL
+    const pubkeyAddress = address(publicKey);
+    const balanceResponse = await this.rpc.getBalance(pubkeyAddress).send();
+    return Number(balanceResponse.value) / 1e9; // Converter lamports para SOL
   }
 }

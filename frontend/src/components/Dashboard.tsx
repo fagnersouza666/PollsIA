@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, Wallet, Activity, Target } from 'lucide-react'
 import { PoolExplorer } from './PoolExplorer'
 import { api } from '../utils/api'
+import { phantomWallet } from '../utils/phantom-wallet'
 
 export function Dashboard() {
   const [walletAddress, setWalletAddress] = useState('')
@@ -12,39 +13,67 @@ export function Dashboard() {
   const [positions, setPositions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    // Verificar se já está conectado
+    const checkConnection = async () => {
+      try {
+        if (await phantomWallet.isPhantomInstalled()) {
+          const publicKey = phantomWallet.getPublicKey()
+          if (publicKey && phantomWallet.isConnected()) {
+            setWalletAddress(publicKey)
+            setIsConnected(true)
+            await loadWalletData(publicKey)
+          }
+        }
+      } catch (error) {
+        console.log('Erro ao verificar conexão:', error)
+      }
+    }
+
+    checkConnection()
+
+    // Configurar listeners
+    phantomWallet.onConnect((publicKey: string) => {
+      setWalletAddress(publicKey)
+      setIsConnected(true)
+      loadWalletData(publicKey)
+    })
+
+    phantomWallet.onDisconnect(() => {
+      setIsConnected(false)
+      setWalletAddress('')
+      setPortfolio(null)
+      setPositions([])
+    })
+
+    phantomWallet.onAccountChanged((publicKey: string | null) => {
+      if (publicKey) {
+        setWalletAddress(publicKey)
+        loadWalletData(publicKey)
+      } else {
+        setIsConnected(false)
+        setWalletAddress('')
+        setPortfolio(null)
+        setPositions([])
+      }
+    })
+  }, [])
+
   const handleConnectWallet = async () => {
     try {
       setLoading(true)
 
       console.log('🔍 Verificando Phantom...')
-      console.log('window exists:', typeof window !== 'undefined')
-      console.log('window.solana exists:', !!(typeof window !== 'undefined' && window.solana))
-      console.log('window.solana.isPhantom:', typeof window !== 'undefined' && window.solana?.isPhantom)
 
-      if (typeof window === 'undefined') {
-        alert('Ambiente não suportado')
-        return
-      }
-
-      if (!window.solana) {
-        console.log('❌ window.solana é undefined')
+      if (!(await phantomWallet.isPhantomInstalled())) {
         alert('Phantom wallet não detectado.\n\n1. Instale o Phantom: https://phantom.app\n2. Recarregue a página\n3. Tente novamente')
-        return
-      }
-
-      if (!window.solana.isPhantom) {
-        console.log('❌ window.solana.isPhantom é false')
-        alert('Extensão Phantom não detectada.\n\nVerifique se a extensão está ativada no navegador.')
         return
       }
 
       console.log('✅ Phantom detectado, tentando conectar...')
 
-      const response = await window.solana.connect()
-      console.log('✅ Conectado com sucesso!', response)
-
-      const publicKey = response.publicKey.toString()
-      console.log('📍 Endereço:', publicKey)
+      const publicKey = await phantomWallet.connect()
+      console.log('✅ Conectado com sucesso!', publicKey)
 
       setWalletAddress(publicKey)
       setIsConnected(true)
@@ -65,6 +94,18 @@ export function Dashboard() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDisconnectWallet = async () => {
+    try {
+      await phantomWallet.disconnect()
+      setIsConnected(false)
+      setWalletAddress('')
+      setPortfolio(null)
+      setPositions([])
+    } catch (error) {
+      console.error('Erro ao desconectar:', error)
     }
   }
 
@@ -94,10 +135,11 @@ export function Dashboard() {
           </p>
           <button
             onClick={handleConnectWallet}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center"
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center"
           >
             <Wallet className="h-5 w-5 mr-2" />
-            Conectar Carteira
+            {loading ? 'Conectando...' : 'Conectar Carteira'}
           </button>
           <p className="text-sm text-gray-500 mt-4">
             * Dados em tempo real dos pools de liquidez da Solana
@@ -122,13 +164,7 @@ export function Dashboard() {
                 Carteira: {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
               </span>
               <button
-                onClick={() => {
-                  if (window.solana && window.solana.isPhantom) {
-                    window.solana.disconnect()
-                  }
-                  setIsConnected(false)
-                  setWalletAddress('')
-                }}
+                onClick={handleDisconnectWallet}
                 className="text-gray-500 hover:text-gray-700 text-sm"
               >
                 Desconectar
@@ -153,7 +189,7 @@ export function Dashboard() {
             title="Posições Ativas"
             value={loading ? "..." : positions.length.toString()}
             icon={Activity}
-            change={`+${positions.length}`}
+            change={`${positions.length} posições`}
             changeType="neutral"
           />
           <StatsCard
@@ -179,11 +215,11 @@ export function Dashboard() {
 
         {/* Additional Info */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">About PollsIA</h3>
+          <h3 className="text-lg font-semibold mb-4">Sobre o PollsIA</h3>
           <p className="text-gray-600">
-            PollsIA is an automated liquidity pool management system for Solana.
-            It analyzes real-time data from Raydium and other DEXs to find the best
-            opportunities for liquidity provision and yield optimization.
+            PollsIA é um sistema automatizado de gestão de pools de liquidez para Solana.
+            Analisa dados em tempo real do Raydium e outras DEXs para encontrar as melhores
+            oportunidades de provisão de liquidez e otimização de rendimento.
           </p>
         </div>
       </main>

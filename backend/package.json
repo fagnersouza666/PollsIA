@@ -13,25 +13,34 @@
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
-    "@solana/web3.js": "^1.87.6",
-    "@solana/spl-token": "^0.4.1",
+    "@prisma/client": "^5.8.1",
+    "@solana-program/address-lookup-table": "^0.4.0",
+    "@solana-program/compute-budget": "^0.4.0",
+    "@solana-program/system": "^0.4.0",
+    "@solana-program/token": "^0.4.0",
+    "@solana/accounts": "^2.0.0-preview.4",
+    "@solana/keys": "^2.0.0-preview.4",
+    "@solana/rpc": "^2.0.0-preview.4",
+    "@solana/rpc-subscriptions": "^2.0.0-preview.4",
+    "@solana/transaction-messages": "^2.0.0-preview.4",
+    "@solana/transactions": "^2.0.0-preview.4",
+    "@solana/web3.js": "^2.0.0-preview.4",
+    "axios": "^1.6.5",
+    "bullmq": "^5.1.9",
+    "dotenv": "^16.3.1",
     "fastify": "^4.25.2",
     "prisma": "^5.8.1",
-    "@prisma/client": "^5.8.1",
     "redis": "^4.6.12",
-    "bullmq": "^5.1.9",
-    "axios": "^1.6.5",
-    "zod": "^3.22.4",
-    "dotenv": "^16.3.1"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20.11.5",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3",
-    "jest": "^29.7.0",
     "@types/jest": "^29.5.11",
-    "eslint": "^8.56.0",
+    "@types/node": "^20.11.5",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0"
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }

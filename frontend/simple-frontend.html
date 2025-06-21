@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <div id="app">
         <!-- Login Screen -->
@@ -18,14 +20,16 @@
                 <h2 class="text-3xl font-bold text-gray-900 mb-2">PollsIA</h2>
                 <h3 class="text-xl font-semibold text-gray-700 mb-4">Otimizador de Pools Solana</h3>
                 <p class="text-gray-600 mb-6">
-                    Gestão automatizada de pools de liquidez com dados em tempo real do Raydium.
+                    Gestão automatizada de pools de liquidez com dados em tempo real do Raydium usando padrões modernos
+                    do Solana.
                 </p>
-                <button onclick="connectWallet()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center">
+                <button onclick="connectWallet()" id="connectButton"
+                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center">
                     <i data-lucide="wallet" class="h-5 w-5 mr-2"></i>
-                    Conectar Carteira
+                    <span id="connectButtonText">Conectar Carteira</span>
                 </button>
                 <p class="text-sm text-gray-500 mt-4">
-                    * Dados em tempo real dos pools de liquidez da Solana
+                    * Integração com Phantom Wallet usando @solana/kit
                 </p>
             </div>
         </div>
@@ -39,10 +43,14 @@
                         <div class="flex items-center">
                             <i data-lucide="trending-up" class="h-8 w-8 text-blue-600 mr-3"></i>
                             <h1 class="text-xl font-bold text-gray-900">PollsIA</h1>
+                            <span
+                                class="ml-3 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Conectado</span>
                         </div>
                         <div class="flex items-center space-x-4">
-                            <span class="text-sm text-gray-600">Carteira: <span id="walletAddress">Conectando...</span></span>
-                            <button onclick="disconnectWallet()" class="text-sm text-gray-500 hover:text-gray-700">
+                            <span class="text-sm text-gray-600">Carteira: <span
+                                    id="walletAddress">Conectando...</span></span>
+                            <button onclick="disconnectWallet()"
+                                class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1 rounded border border-gray-300 hover:bg-gray-50">
                                 Desconectar
                             </button>
                         </div>
@@ -54,7 +62,7 @@
             <main class="max-w-7xl mx-auto px-4 py-8">
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
                         <div class="flex items-center">
                             <div class="p-2 bg-blue-100 rounded-lg">
                                 <i data-lucide="dollar-sign" class="h-6 w-6 text-blue-600"></i>
@@ -65,8 +73,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-white rounded-lg shadow-sm p-6">
+
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
                         <div class="flex items-center">
                             <div class="p-2 bg-green-100 rounded-lg">
                                 <i data-lucide="trending-up" class="h-6 w-6 text-green-600"></i>
@@ -77,8 +85,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-white rounded-lg shadow-sm p-6">
+
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
                         <div class="flex items-center">
                             <div class="p-2 bg-purple-100 rounded-lg">
                                 <i data-lucide="activity" class="h-6 w-6 text-purple-600"></i>
@@ -89,8 +97,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-white rounded-lg shadow-sm p-6">
+
+                    <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
                         <div class="flex items-center">
                             <div class="p-2 bg-yellow-100 rounded-lg">
                                 <i data-lucide="bar-chart-3" class="h-6 w-6 text-yellow-600"></i>
@@ -106,8 +114,18 @@
                 <!-- Pools List -->
                 <div class="bg-white rounded-lg shadow-sm">
                     <div class="p-6 border-b">
-                        <h2 class="text-lg font-semibold text-gray-900">Pools de Liquidez - Raydium</h2>
-                        <p class="text-sm text-gray-600 mt-1">Dados em tempo real dos melhores pools</p>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-lg font-semibold text-gray-900">Pools de Liquidez - Raydium</h2>
+                                <p class="text-sm text-gray-600 mt-1">Dados em tempo real dos melhores pools usando
+                                    @solana/kit</p>
+                            </div>
+                            <button onclick="loadPools()"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                <i data-lucide="refresh-cw" class="h-4 w-4 mr-2 inline"></i>
+                                Atualizar
+                            </button>
+                        </div>
                     </div>
                     <div id="poolsContainer" class="p-6">
                         <div class="text-center py-8">
@@ -126,21 +144,28 @@
         let portfolio = null;
         let positions = [];
         let walletPublicKey = null;
+        let isConnecting = false;
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             lucide.createIcons();
-            
+
             // Verificar Phantom na inicialização
             setTimeout(() => {
                 console.log('🔍 Verificação inicial do Phantom...');
                 console.log('window.solana:', !!window.solana);
                 console.log('window.solana.isPhantom:', window.solana?.isPhantom);
-                
+
                 if (!window.solana) {
                     console.log('⚠️ Phantom não detectado na inicialização');
                 } else if (window.solana.isPhantom) {
                     console.log('✅ Phantom detectado e pronto!');
+
+                    // Verificar se já está conectado
+                    if (window.solana.isConnected && window.solana.publicKey) {
+                        walletPublicKey = window.solana.publicKey.toString();
+                        showDashboard();
+                    }
                 } else {
                     console.log('⚠️ window.solana existe mas isPhantom é false');
                 }
@@ -148,44 +173,40 @@
         });
 
         async function connectWallet() {
+            if (isConnecting) return;
+
             try {
+                isConnecting = true;
+                updateConnectButton(true);
+
                 console.log('🔍 Verificando Phantom...');
-                console.log('window.solana exists:', !!window.solana);
-                console.log('window.solana.isPhantom:', window.solana?.isPhantom);
-                
+
                 // Verificação mais detalhada
                 if (typeof window.solana === 'undefined') {
                     console.log('❌ window.solana é undefined');
                     alert('Phantom wallet não detectado.\n\n1. Instale o Phantom: https://phantom.app\n2. Recarregue a página\n3. Tente novamente');
                     return;
                 }
-                
+
                 if (!window.solana.isPhantom) {
                     console.log('❌ window.solana.isPhantom é false');
                     alert('Extensão Phantom não detectada.\n\nVerifique se a extensão está ativada no navegador.');
                     return;
                 }
-                
+
                 console.log('✅ Phantom detectado, tentando conectar...');
-                
+
                 const response = await window.solana.connect();
                 console.log('✅ Conectado com sucesso!', response);
-                
+
                 walletPublicKey = response.publicKey.toString();
                 console.log('📍 Endereço:', walletPublicKey);
-                
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('dashboard').classList.remove('hidden');
-                document.getElementById('walletAddress').textContent = 
-                    walletPublicKey.slice(0, 4) + '...' + walletPublicKey.slice(-4);
-                
-                console.log('🔄 Carregando dados...');
-                await loadPools();
-                await loadWalletData();
-                
+
+                showDashboard();
+
             } catch (error) {
                 console.error('❌ Erro ao conectar carteira:', error);
-                
+
                 if (error.code === 4001) {
                     alert('Conexão cancelada pelo usuário.');
                 } else if (error.message.includes('User rejected')) {
@@ -193,7 +214,34 @@
                 } else {
                     alert(`Erro ao conectar carteira: ${error.message}\n\nVerifique se:\n1. Phantom está instalado\n2. A extensão está desbloqueada\n3. Tente recarregar a página`);
                 }
+            } finally {
+                isConnecting = false;
+                updateConnectButton(false);
             }
+        }
+
+        function updateConnectButton(connecting) {
+            const button = document.getElementById('connectButton');
+            const text = document.getElementById('connectButtonText');
+
+            if (connecting) {
+                button.disabled = true;
+                text.textContent = 'Conectando...';
+            } else {
+                button.disabled = false;
+                text.textContent = 'Conectar Carteira';
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('walletAddress').textContent =
+                walletPublicKey.slice(0, 4) + '...' + walletPublicKey.slice(-4);
+
+            console.log('🔄 Carregando dados...');
+            loadPools();
+            loadWalletData();
         }
 
         function disconnectWallet() {
@@ -202,11 +250,14 @@
             }
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
+            walletPublicKey = null;
+            portfolio = null;
+            positions = [];
         }
 
         async function loadPools() {
             const poolsContainer = document.getElementById('poolsContainer');
-            
+
             try {
                 poolsContainer.innerHTML = `
                     <div class="text-center py-8">
@@ -216,17 +267,17 @@
                 `;
 
                 console.log('Carregando pools...');
-                
+
                 const response = await fetch('http://localhost:3001/api/pools/discover');
                 console.log('Response status:', response.status);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
+
                 const data = await response.json();
                 console.log('Pools data:', data);
-                
+
                 pools = data.data || [];
 
                 if (pools.length > 0) {
@@ -236,16 +287,19 @@
                 } else {
                     poolsContainer.innerHTML = `
                         <div class="text-center py-8">
+                            <i data-lucide="info" class="h-12 w-12 text-yellow-500 mx-auto mb-4"></i>
                             <p class="text-yellow-600">Nenhum pool encontrado</p>
                             <p class="text-sm text-gray-500 mt-2">A API pode estar retornando dados vazios</p>
                         </div>
                     `;
+                    lucide.createIcons();
                 }
-                
+
             } catch (error) {
                 console.error('Erro ao carregar pools:', error);
                 poolsContainer.innerHTML = `
                     <div class="text-center py-8">
+                        <i data-lucide="alert-circle" class="h-12 w-12 text-red-500 mx-auto mb-4"></i>
                         <p class="text-red-600">Erro ao carregar pools: ${error.message}</p>
                         <p class="text-sm text-gray-500 mt-2">Verifique se o backend está rodando na porta 3001</p>
                         <button onclick="loadPools()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
@@ -253,23 +307,24 @@
                         </button>
                     </div>
                 `;
+                lucide.createIcons();
             }
         }
 
         function displayPools(poolsToShow) {
             const container = document.getElementById('poolsContainer');
-            
+
             if (poolsToShow.length === 0) {
                 container.innerHTML = '<div class="text-center py-8"><p class="text-yellow-600">Nenhum pool encontrado</p></div>';
                 return;
             }
 
             container.innerHTML = poolsToShow.map((pool, index) => `
-                <div class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer mb-4">
+                <div class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer mb-4 hover:shadow-md">
                     <div class="flex justify-between items-start mb-3">
                         <div class="flex items-center">
-                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                <span class="text-sm font-bold text-blue-600">#${index + 1}</span>
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                                <span class="text-sm font-bold text-white">#${index + 1}</span>
                             </div>
                             <div>
                                 <h4 class="font-semibold text-lg">
@@ -283,6 +338,7 @@
                                 <i data-lucide="trending-up" class="h-4 w-4 mr-1"></i>
                                 <span class="font-semibold">${(pool.apy || 0).toFixed(2)}% APY</span>
                             </div>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Ativo</span>
                         </div>
                     </div>
                     <div class="grid grid-cols-3 gap-4 text-sm">
@@ -296,7 +352,7 @@
                         </div>
                         <div>
                             <p class="text-gray-500">ID do Pool</p>
-                            <p class="font-medium text-xs">${(pool.id || '').substring(0, 8)}...</p>
+                            <p class="font-medium text-xs font-mono">${(pool.id || '').substring(0, 8)}...</p>
                         </div>
                     </div>
                 </div>
@@ -308,7 +364,7 @@
 
         async function loadWalletData() {
             if (!walletPublicKey) return;
-            
+
             try {
                 // Carregar dados do portfólio
                 const portfolioResponse = await fetch(`http://localhost:3001/api/wallet/portfolio/${walletPublicKey}`);
@@ -334,11 +390,11 @@
             const totalTvl = pools.reduce((sum, pool) => sum + (pool.tvl || 0), 0);
             const avgApy = pools.length > 0 ? pools.reduce((sum, pool) => sum + (pool.apy || 0), 0) / pools.length : 0;
             const totalVolume = pools.reduce((sum, pool) => sum + (pool.volume24h || 0), 0);
-            
+
             // Se não temos dados da carteira, mostrar stats dos pools
             if (!portfolio) {
                 document.getElementById('totalTvl').textContent = `$${(totalTvl / 1000000).toFixed(1)}M TVL`;
-                document.getElementById('avgApy').textContent = `${avgApy.toFixed(2)}% APY`;
+                document.getElementById('avgApy').textContent = `${avgApy.toFixed(2)}% APY Médio`;
                 document.getElementById('activePools').textContent = `${pools.length} Pools`;
                 document.getElementById('volume24h').textContent = `$${(totalVolume / 1000000).toFixed(1)}M Vol`;
             }
@@ -349,9 +405,14 @@
                 document.getElementById('totalTvl').textContent = `$${(portfolio.totalValue || 0).toFixed(2)}`;
                 document.getElementById('avgApy').textContent = `${(portfolio.solBalance || 0).toFixed(4)} SOL`;
                 document.getElementById('activePools').textContent = `${positions.length || 0} Posições`;
-                document.getElementById('volume24h').textContent = `${(portfolio.change24h || 0) >= 0 ? '+' : ''}${(portfolio.change24h || 0).toFixed(2)}%`;
+
+                const change = portfolio.change24h || 0;
+                const changeElement = document.getElementById('volume24h');
+                changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                changeElement.className = `text-2xl font-bold ${change >= 0 ? 'text-green-600' : 'text-red-600'}`;
             }
         }
     </script>
 </body>
+
 </html>
