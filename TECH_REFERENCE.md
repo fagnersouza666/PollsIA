@@ -9,9 +9,10 @@ Textos sempre em português
 **Sistema:** Microserviços desacoplados
 - **Backend:** Node.js/TypeScript + Fastify + PostgreSQL + Redis
 - **Frontend:** Next.js 14 + TailwindCSS + Solana Wallet Adapter
-- **Blockchain:** Integração com Solana via @solana/web3.js
+- **Blockchain:** Integração com Solana via @solana/kit (padrões modernos)
 - **Deploy:** Docker + Kubernetes
 - **Real-time:** WebSockets para atualizações em tempo real
+- **APIs:** Raydium DEX, CoinGecko, Phantom Wallet
 
 ---
 
@@ -236,6 +237,49 @@ const createTokenMetadata = async () => {
   
   console.log(`Transaction: ${tx.signature}`);
 };
+```
+
+### Instalação de Dependências Modernas
+
+```bash
+# Pacote principal com todos os módulos
+npm install @solana/kit
+
+# Ou instalar módulos específicos
+npm install @solana/rpc
+npm install @solana/rpc-subscriptions
+npm install @solana/accounts
+npm install @solana/keys
+npm install @solana/transactions
+npm install @solana/transaction-messages
+
+# Programas Solana (nova nomenclatura)
+npm install @solana-program/system
+npm install @solana-program/token
+npm install @solana-program/address-lookup-table
+npm install @solana-program/compute-budget
+
+# Metaplex para NFTs e metadata
+npm install @metaplex-foundation/umi
+npm install @metaplex-foundation/umi-bundle-defaults
+npm install @metaplex-foundation/mpl-core
+npm install @metaplex-foundation/mpl-token-metadata
+```
+
+### Migração de @solana/web3.js para @solana/kit
+
+```typescript
+// ANTIGO (@solana/web3.js)
+import { Connection, Keypair, SystemProgram, Transaction } from '@solana/web3.js';
+
+const connection = new Connection('https://api.mainnet-beta.solana.com');
+const keypair = Keypair.generate();
+
+// NOVO (@solana/kit)
+import { createSolanaRpc, generateKeyPairSigner } from '@solana/kit';
+
+const rpc = createSolanaRpc('https://api.mainnet-beta.solana.com');
+const keypair = await generateKeyPairSigner();
 ```
 
 ---
