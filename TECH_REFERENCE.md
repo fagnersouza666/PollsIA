@@ -2,6 +2,8 @@
 
 Este arquivo contém padrões e snippets de código para o projeto PollsIA, organizados por tecnologia para garantir consistência e qualidade no desenvolvimento.
 
+Textos sempre em português
+
 ## Arquitetura do Projeto
 
 **Sistema:** Microserviços desacoplados

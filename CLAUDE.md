@@ -9,6 +9,8 @@ PollsIA - Automatizar a gestão e otimização de pools de liquidez na rede Sola
 ## Padrões do PROJETO
 Seguir os padrões do documento TECH_REFERENCE.md
 
+Todos textos sempre em Português
+
 
 ## Comandos de Desenvolvimento
 
