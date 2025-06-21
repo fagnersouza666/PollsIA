@@ -1,267 +1,230 @@
 # PollsIA - Otimizador de Pools Solana
 
-Plataforma automatizada de otimização de rendimento DeFi para o ecossistema Solana.
+Sistema automatizado de gestão e otimização de pools de liquidez na blockchain Solana, maximizando retornos através de rebalanceamento inteligente e gestão automatizada de posições com dados em tempo real do Raydium DEX.
 
-## Funcionalidades
+## ✨ Características Principais
 
-- **Descoberta Automática de Pools**: Escaneia as melhores oportunidades de yield farming no Raydium e outras DEXs
-- **Gestão de Portfólio**: Acompanhamento e análise de portfólio em tempo real
-- **Gestão de Risco**: Avaliação avançada de risco e rebalanceamento automatizado
-- **Analytics de Performance**: Acompanhamento abrangente de performance com gráficos e métricas
-- **Responsivo Mobile**: Funciona perfeitamente em desktop e dispositivos móveis
+- **🚀 Padrões Modernos Solana**: Integração com Solana 2.0 usando `@solana/rpc`, `@solana/keys` e `@solana-program/token`
+- **🔗 Phantom Wallet**: Conexão nativa com carteira Phantom usando APIs modernas
+- **📊 Dados em Tempo Real**: Integração direta com Raydium DEX API (695k+ pools)
+- **🤖 Gestão Automatizada**: Algoritmos de otimização de liquidez em desenvolvimento
+- **🌐 Interface Multilíngue**: Todos os textos em português brasileiro
+- **⚡ Performance**: WebSockets para atualizações em tempo real
 
-## Stack Tecnológica
+## 🛠️ Stack Tecnológico
 
 ### Backend
-- **Runtime**: Node.js com TypeScript
-- **Framework**: Fastify
+- **Runtime**: Node.js 18+ com TypeScript
+- **Framework**: Fastify (alta performance)
+- **Blockchain**: Solana 2.0 (`@solana/rpc`, `@solana/keys`)
 - **Banco de Dados**: PostgreSQL + Redis
-- **Blockchain**: @solana/web3.js
-- **Filas**: BullMQ
+- **Jobs**: BullMQ para processamento em background
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **UI**: TailwindCSS + Radix UI
-- **Estado**: Zustand + React Query
-- **Wallet**: Solana Wallet Adapter
-- **Gráficos**: Recharts
+- **Framework**: Next.js 14 com App Router
+- **UI**: TailwindCSS + Lucide Icons + Radix UI
+- **Estado**: Zustand + TanStack Query
+- **Carteira**: Phantom Wallet Adapter + APIs nativas
 
-## Começando
+### Blockchain & APIs
+- **Solana RPC**: Endpoints mainnet-beta oficiais
+- **Raydium DEX**: API v2 para dados de pools
+- **CoinGecko**: Preços de tokens em tempo real
+- **Jupiter**: Agregador de swaps (planejado)
+
+## 📦 Instalação
 
 ### Pré-requisitos
+- Node.js 18+ (recomendado 20+)
+- npm ou yarn
+- PostgreSQL 14+
+- Redis 6+
 
-- Node.js 18+ 
-- Docker & Docker Compose
-- PostgreSQL
-- Redis
-
-### Instalação
-
-1. Clone o repositório:
+### Backend (Porta 3001)
 ```bash
-git clone <url-do-repositorio>
-cd PollsIA
-```
-
-2. Copie as variáveis de ambiente:
-```bash
+cd backend
+npm install
 cp .env.example .env
+# Configure as variáveis de ambiente
+npm run dev        # Desenvolvimento com hot reload
+npm run build      # Build para produção
+npm run lint       # Verificar código
+npm run typecheck  # Verificar tipos TypeScript
 ```
 
-3. Inicie os serviços com Docker:
-```bash
-docker-compose up -d
-```
-
-4. Instale as dependências:
-```bash
-# Backend
-cd backend
-npm install
-
-# Frontend  
-cd ../frontend
-npm install
-```
-
-5. Inicie os servidores de desenvolvimento:
-```bash
-# Backend (Terminal 1)
-cd backend
-npm run dev
-
-# Frontend (Terminal 2)
-cd frontend
-npm run dev
-```
-
-### Configuração Manual (sem Docker)
-
-1. Inicie os serviços PostgreSQL e Redis localmente
-
-2. Instale as dependências do backend:
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-3. Instale as dependências do frontend:
+### Frontend (Porta 3000)
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev        # Servidor de desenvolvimento
+npm run build      # Build otimizado
+npm run lint       # Next.js lint
+npm run typecheck  # Verificar tipos
 ```
 
-## Estrutura do Projeto
-
-```
-├── backend/                 # Servidor API Node.js
-│   ├── src/
-│   │   ├── controllers/    # Manipuladores de rotas
-│   │   ├── services/       # Lógica de negócio
-│   │   ├── models/         # Modelos de dados
-│   │   ├── routes/         # Rotas da API
-│   │   ├── middleware/     # Middleware customizado
-│   │   ├── types/          # Tipos TypeScript
-│   │   ├── utils/          # Funções utilitárias
-│   │   └── config/         # Configuração
-│   ├── tests/              # Testes do backend
-│   └── docs/               # Documentação da API
-├── frontend/               # App React Next.js
-│   ├── src/
-│   │   ├── app/            # Diretório app do Next.js
-│   │   ├── components/     # Componentes React
-│   │   ├── hooks/          # Hooks customizados
-│   │   ├── store/          # Gerenciamento de estado
-│   │   ├── utils/          # Funções utilitárias
-│   │   ├── types/          # Tipos TypeScript
-│   │   └── styles/         # Estilos CSS
-│   ├── public/             # Assets estáticos
-│   └── tests/              # Testes do frontend
-├── shared/                 # Código compartilhado
-│   ├── types/              # Tipos TypeScript compartilhados
-│   └── utils/              # Utilitários compartilhados
-├── docs/                   # Documentação
-├── scripts/                # Scripts de deployment
-└── docker-compose.yml      # Serviços Docker
-```
-
-## Endpoints da API
-
-### Pools
-- `GET /api/pools/discover` - Descobrir pools disponíveis
-- `GET /api/pools/rankings` - Obter rankings de pools
-- `GET /api/pools/:id/analysis` - Obter análise detalhada do pool
-
-### Wallet
-- `POST /api/wallet/connect` - Conectar carteira
-- `GET /api/wallet/portfolio/:publicKey` - Obter visão geral do portfólio
-- `GET /api/wallet/positions/:publicKey` - Obter posições ativas
-
-### Analytics
-- `GET /api/analytics/performance/:publicKey` - Obter métricas de performance
-- `GET /api/analytics/market-overview` - Obter visão geral do mercado
-- `GET /api/analytics/opportunities` - Obter oportunidades de yield
-
-## Desenvolvimento
-
-### Comandos do Backend
+### Docker (Recomendado)
 ```bash
-npm run dev        # Iniciar servidor de desenvolvimento
-npm run build      # Build para produção
-npm run start      # Iniciar servidor de produção
-npm run test       # Executar testes
-npm run lint       # Executar linter
-npm run typecheck  # Verificação de tipos
+docker-compose up -d  # Subir todos os serviços
+docker-compose logs   # Ver logs dos containers
+docker-compose down   # Parar serviços
 ```
 
-### Comandos do Frontend
+## 🚀 Uso Rápido
+
+### Testes de Conectividade
 ```bash
-npm run dev        # Iniciar servidor de desenvolvimento
-npm run build      # Build para produção
-npm run start      # Iniciar servidor de produção
-npm run lint       # Executar linter
-npm run typecheck  # Verificação de tipos
+# Teste de carteira Phantom (debug completo)
+open test-wallet.html
+
+# Interface simples funcional
+open simple-frontend.html
+
+# Interface completa
+open index.html
 ```
 
-## Deploy
-
-A aplicação está containerizada e pode ser deployada usando Docker:
-
+### Desenvolvimento
 ```bash
-docker-compose -f docker-compose.prod.yml up -d
+# Terminal 1 - Backend
+cd backend && npm run dev
+
+# Terminal 2 - Frontend  
+cd frontend && npm run dev
+
+# Terminal 3 - Logs em tempo real
+docker-compose logs -f
 ```
 
-## Variáveis de Ambiente
+## 📡 APIs Implementadas
 
-### Backend
+### Endpoints Backend
+- `GET /api/pools/discover` - Descobrir pools do Raydium
+- `GET /api/pools/rankings` - Rankings por performance
+- `GET /api/wallet/portfolio/:publicKey` - Dados do portfólio
+- `GET /api/wallet/positions/:publicKey` - Posições ativas
+- `POST /api/wallet/connect` - Conectar carteira Phantom
+
+### Integrações Externas
+- **Raydium API**: `https://api.raydium.io/v2/sdk/liquidity/mainnet.json`
+- **CoinGecko**: Preços USD em tempo real
+- **Solana RPC**: `https://api.mainnet-beta.solana.com`
+
+## 🔧 Configuração
+
+### Variáveis de Ambiente (.env)
 ```bash
+# Solana
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+SOLANA_NETWORK=mainnet-beta
+
+# Banco de Dados
+DATABASE_URL=postgresql://user:password@localhost:5432/pollsia
+REDIS_URL=redis://localhost:6379
+
+# APIs Externas
+COINGECKO_API_KEY=your_key_here
+RAYDIUM_API_URL=https://api.raydium.io/v2
+
+# Aplicação
 PORT=3001
 NODE_ENV=development
-DATABASE_URL=postgresql://username:password@localhost:5432/pollsia
-REDIS_URL=redis://localhost:6379
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-FRONTEND_URL=http://localhost:3000
-JWT_SECRET=change-this-to-a-secure-32-character-secret-in-production
 ```
 
-### Frontend
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-NEXT_PUBLIC_SOLANA_NETWORK=mainnet-beta
-```
+## 📊 Status Atual
 
-## Arquitetura
+### ✅ Implementado
+- [x] Conexão com Phantom Wallet (debug completo)
+- [x] Integração real com Raydium DEX (695k+ pools)
+- [x] Backend funcional com dados em tempo real
+- [x] Interface traduzida para português
+- [x] Padrões modernos Solana 2.0
+- [x] WalletService com RPC moderno
+- [x] PhantomWalletService nativo
 
-**Sistema:** Microserviços desacoplados
-- **Backend:** Node.js/TypeScript + Fastify + PostgreSQL + Redis
-- **Frontend:** Next.js 14 + TailwindCSS + Solana Wallet Adapter
-- **Blockchain:** Integração com Solana via @solana/web3.js
-- **Deploy:** Docker + Kubernetes
-- **Real-time:** WebSockets para atualizações em tempo real
-
-## Recursos de Segurança
-
-- ✅ Validação de entrada com Zod
-- ✅ Tratamento de erros centralizado
-- ✅ Verificação de assinatura de carteira
-- ✅ Variáveis de ambiente para dados sensíveis
-- ✅ CORS configurado adequadamente
-- ✅ Rate limiting (planejado)
-
-## Roadmap
-
-### Fase 1 - MVP ✅
-- [x] Setup básico do projeto
-- [x] API REST básica
-- [x] Interface de usuário fundamental
-- [x] Integração com carteira Solana
-- [x] Descoberta básica de pools
-
-### Fase 2 - Core Features 🚧
-- [ ] Integração real com Raydium API
-- [ ] Sistema de rebalanceamento automatizado
-- [ ] Analytics avançadas de performance
-- [ ] Gestão de risco implementada
-- [ ] WebSockets para atualizações em tempo real
-
-### Fase 3 - Advanced Features 📋
-- [ ] Machine Learning para recomendações
-- [ ] Suporte a múltiplas DEXs
-- [ ] Estratégias de yield farming avançadas
-- [ ] Dashboard de analytics aprimorado
+### 🔄 Em Desenvolvimento
+- [ ] Sistema de rebalanceamento automático
+- [ ] Algoritmos de otimização de pools
+- [ ] Dashboard avançado de analytics
+- [ ] Integração com Jupiter para swaps
 - [ ] Sistema de notificações
 
-### Fase 4 - Scale & Optimize 📋
-- [ ] Otimizações de performance
-- [ ] Testes automatizados completos
-- [ ] Monitoramento e logging avançado
-- [ ] Deploy em produção
-- [ ] Documentação completa da API
+### 🎯 Roadmap
+- [ ] Mobile app (React Native)
+- [ ] Suporte a mais DEXs (Orca, Jupiter)
+- [ ] Estratégias de yield farming
+- [ ] API pública para terceiros
 
-## Contribuindo
+## 🛠️ Troubleshooting
 
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Faça suas alterações
-4. Adicione testes se aplicável
-5. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-6. Push para a branch (`git push origin feature/AmazingFeature`)
-7. Abra um Pull Request
+### Problemas Comuns
 
-## Suporte
+**1. "Carregando pools do Raydium..." infinito**
+```bash
+# Verificar se backend está rodando
+curl http://localhost:3001/api/pools/discover
+# Checar logs do PoolService
+docker-compose logs backend
+```
 
-Para suporte, abra uma issue no GitHub ou entre em contato através dos canais oficiais.
+**2. Phantom não conecta**
+```bash
+# Usar teste isolado
+open test-wallet.html
+# Verificar console do navegador
+# Confirmar se extensão está ativada
+```
 
-## Licença
+**3. Erros de lint**
+```bash
+# Backend
+cd backend && npm run lint
+# Prefixar variáveis não usadas com _
+# Evitar uso de 'any'
 
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+# Frontend
+cd frontend && npm run lint
+```
+
+**4. Conflitos de dependências Solana**
+```bash
+# Limpar cache e reinstalar
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+```
+
+### Debug Tools
+- `test-wallet.html` - Teste isolado do Phantom
+- `simple-frontend.html` - Interface mínima funcional
+- Browser DevTools - Console logs detalhados
+- `docker-compose logs` - Logs dos serviços
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feat/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'feat: adiciona nova feature'`)
+4. Push para a branch (`git push origin feat/nova-feature`)
+5. Abra um Pull Request
+
+### Padrões de Commit
+- `feat:` - Nova funcionalidade
+- `fix:` - Correção de bug
+- `docs:` - Documentação
+- `chore:` - Tarefas de manutenção
+- `refactor:` - Refatoração de código
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## 📞 Suporte
+
+- **Documentação**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/seu-usuario/pollsia/issues)
+- **Discussões**: [GitHub Discussions](https://github.com/seu-usuario/pollsia/discussions)
 
 ---
 
-**Versão Atual:** 1.0.0  
-**Última Atualização:** Janeiro 2024  
-**Status:** Em Desenvolvimento Ativo
-
-> ⚠️ **Aviso**: Este projeto está em desenvolvimento ativo. Use por sua própria conta e risco em ambientes de produção.
+**Versão Atual**: 1.0.0  
+**Última Atualização**: Dezembro 2024  
+**Status**: Em desenvolvimento ativo 🚀
