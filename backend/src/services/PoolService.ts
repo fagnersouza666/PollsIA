@@ -3,12 +3,13 @@ import { PoolDiscoveryQuery, PoolAnalysisQuery } from '../schemas/pool';
 import axios from 'axios';
 
 interface RaydiumPool {
-  id: string;
-  mintA: string;
-  mintB: string;
-  tvl: number;
+  name: string;
+  ammId: string;
+  baseMint: string;
+  quoteMint: string;
+  liquidity: number;
   volume24h: number;
-  apy: number;
+  apr24h: number;
 }
 
 export class PoolService {
@@ -26,14 +27,14 @@ export class PoolService {
       
       // Convert to our Pool format and apply filters
       let filteredPools = pools
-        .filter(pool => pool.tvl > 100000) // Filter by TVL
+        .filter(pool => pool.liquidity > 100000) // Filter by liquidity (TVL)
         .slice(0, 20) // Limit to top 20
         .map(pool => ({
-          id: pool.id,
-          tokenA: this.getTokenSymbol(pool.mintA),
-          tokenB: this.getTokenSymbol(pool.mintB), 
-          apy: pool.apy || 0,
-          tvl: pool.tvl,
+          id: pool.ammId,
+          tokenA: this.getTokenSymbol(pool.baseMint),
+          tokenB: this.getTokenSymbol(pool.quoteMint), 
+          apy: pool.apr24h || 0,
+          tvl: pool.liquidity,
           volume24h: pool.volume24h,
           protocol: 'Raydium'
         }));
