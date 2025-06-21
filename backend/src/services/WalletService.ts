@@ -4,12 +4,6 @@ import { config } from '../config/env';
 import { Portfolio, Position } from '../types/wallet';
 import axios from 'axios';
 
-interface TokenBalance {
-  symbol: string;
-  balance: number;
-  value: number;
-  mint: string;
-}
 
 interface TokenPrice {
   [mint: string]: number;
@@ -23,7 +17,7 @@ export class WalletService {
     this.connection = new Connection(config.SOLANA_RPC_URL);
   }
 
-  async connectWallet(publicKey: string, signature: string) {
+  async connectWallet(publicKey: string, _signature: string) {
     try {
       const pubkey = new PublicKey(publicKey);
       
@@ -158,7 +152,7 @@ export class WalletService {
     }
   }
 
-  private couldBeLPToken(mint: string): boolean {
+  private couldBeLPToken(_mint: string): boolean {
     // Simple heuristic - LP tokens often have specific patterns
     // This would need to be replaced with actual LP token registry
     return false; // Simplified for now

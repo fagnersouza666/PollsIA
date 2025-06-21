@@ -1,6 +1,5 @@
 import { WalletService } from './WalletService';
 import { PoolService } from './PoolService';
-import axios from 'axios';
 
 export class AnalyticsService {
   private walletService: WalletService;

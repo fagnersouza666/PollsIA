@@ -119,7 +119,7 @@ export class PoolService {
     return Number((apyScore + riskWeight + liquidityWeight).toFixed(1));
   }
 
-  async analyzePool(poolId: string, query?: PoolAnalysisQuery): Promise<PoolAnalysis> {
+  async analyzePool(poolId: string, _query?: PoolAnalysisQuery): Promise<PoolAnalysis> {
     try {
       // Get pool data from real sources
       const pools = await this.discoverPools();
