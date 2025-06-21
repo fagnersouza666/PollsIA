@@ -696,28 +696,63 @@ fastify.get('/ws/pools', { websocket: true }, (socket, req) => {
 
 ## 7. TypeScript - Tipos Comuns
 
-### Tipos para Solana
+### Tipos para Solana (Modernos)
 
 ```typescript
+import { Address, KeyPairSigner } from '@solana/kit';
+
 export interface SolanaWallet {
-  publicKey: string
+  address: Address
+  signer: KeyPairSigner
   balance: number
   tokenAccounts: TokenAccount[]
 }
 
 export interface TokenAccount {
-  mint: string
-  balance: number
+  mint: Address
+  balance: bigint
   decimals: number
+  owner: Address
+}
+
+export interface RaydiumPool {
+  id: string
+  name: string
+  ammId: string
+  baseMint: string
+  quoteMint: string
+  tokenA: string
+  tokenB: string
+  liquidity: number
+  volume24h: number
+  apr24h: number
+  tvl: number
+  apy: number
+  protocol: string
+}
+
+export interface Portfolio {
+  totalValue: number
+  solBalance: number
+  tokenAccounts: number
+  change24h: number
+  performance: {
+    daily: number
+    weekly: number
+    monthly: number
+  }
 }
 
 export interface PoolPosition {
   poolId: string
+  ammId: string
   tokenA: string
   tokenB: string
-  liquidity: number
+  liquidity: bigint
   fees: number
   apr: number
+  userLiquidity: number
+  rewards: number
 }
 ```
 
