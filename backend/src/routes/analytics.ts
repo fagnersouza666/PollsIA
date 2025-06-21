@@ -39,7 +39,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
-      const params = { publicKey: request.params.publicKey };
+      const params = { publicKey: (request.params as any).publicKey };
       const query = performanceQuerySchema.parse(request.query);
       const performance = await analyticsService.getPerformance(params.publicKey, query.timeframe);
       return {

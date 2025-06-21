@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Conexão Phantom Wallet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 class="text-2xl font-bold text-center mb-6">Teste Phantom Wallet</h1>
+        
+        <div id="status" class="mb-4 p-3 rounded text-center bg-gray-100">
+            Aguardando conexão...
+        </div>
+        
+        <div id="walletInfo" class="hidden mb-4 p-3 bg-blue-50 rounded">
+            <p><strong>Endereço:</strong> <span id="walletAddress"></span></p>
+            <p><strong>Status:</strong> <span id="connectionStatus"></span></p>
+        </div>
+        
+        <div class="space-y-4">
+            <button 
+                id="connectBtn" 
+                onclick="connectWallet()" 
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+            >
+                Conectar Phantom
+            </button>
+            
+            <button 
+                id="disconnectBtn" 
+                onclick="disconnectWallet()" 
+                class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg transition-colors hidden"
+            >
+                Desconectar
+            </button>
+            
+            <button 
+                onclick="checkPhantom()" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+            >
+                Verificar Phantom
+            </button>
+        </div>
+        
+        <div id="logs" class="mt-6 p-3 bg-gray-50 rounded text-xs font-mono max-h-40 overflow-y-auto"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `mb-4 p-3 rounded text-center ${
+                type === 'success' ? 'bg-green-100 text-green-800' :
+                type === 'error' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+            }`;
+        }
+
+        function checkPhantom() {
+            log('Verificando Phantom...');
+            
+            if (typeof window === 'undefined') {
+                log('❌ Window não está disponível');
+                updateStatus('Window não disponível', 'error');
+                return;
+            }
+
+            if (!window.solana) {
+                log('❌ window.solana não encontrado');
+                updateStatus('Phantom não encontrado. Instale em https://phantom.app', 'error');
+                return;
+            }
+
+            if (!window.solana.isPhantom) {
+                log('❌ window.solana.isPhantom é false');
+                updateStatus('Phantom não é válido', 'error');
+                return;
+            }
+
+            log('✅ Phantom detectado');
+            log('✅ window.solana.isPhantom = true');
+            updateStatus('Phantom detectado e pronto!', 'success');
+            
+            // Verificar se já está conectado
+            if (window.solana.isConnected) {
+                log('✅ Já conectado');
+                showWalletInfo(window.solana.publicKey.toString());
+            }
+        }
+
+        async function connectWallet() {
+            try {
+                log('Iniciando conexão...');
+                updateStatus('Conectando...', 'info');
+                
+                if (!window.solana || !window.solana.isPhantom) {
+                    throw new Error('Phantom wallet não encontrado');
+                }
+
+                log('Chamando window.solana.connect()...');
+                const response = await window.solana.connect();
+                
+                log('✅ Conectado com sucesso!');
+                log(`Endereço: ${response.publicKey.toString()}`);
+                
+                showWalletInfo(response.publicKey.toString());
+                updateStatus('Conectado com sucesso!', 'success');
+
+            } catch (error) {
+                log(`❌ Erro na conexão: ${error.message}`);
+                updateStatus(`Erro: ${error.message}`, 'error');
+                console.error('Erro de conexão:', error);
+            }
+        }
+
+        async function disconnectWallet() {
+            try {
+                log('Desconectando...');
+                
+                if (window.solana && window.solana.disconnect) {
+                    await window.solana.disconnect();
+                }
+                
+                hideWalletInfo();
+                updateStatus('Desconectado', 'info');
+                log('✅ Desconectado com sucesso');
+                
+            } catch (error) {
+                log(`❌ Erro ao desconectar: ${error.message}`);
+                console.error('Erro ao desconectar:', error);
+            }
+        }
+
+        function showWalletInfo(address) {
+            document.getElementById('walletAddress').textContent = 
+                address.slice(0, 4) + '...' + address.slice(-4);
+            document.getElementById('connectionStatus').textContent = 'Conectado';
+            document.getElementById('walletInfo').classList.remove('hidden');
+            document.getElementById('connectBtn').classList.add('hidden');
+            document.getElementById('disconnectBtn').classList.remove('hidden');
+        }
+
+        function hideWalletInfo() {
+            document.getElementById('walletInfo').classList.add('hidden');
+            document.getElementById('connectBtn').classList.remove('hidden');
+            document.getElementById('disconnectBtn').classList.add('hidden');
+        }
+
+        // Auto-verificar quando a página carrega
+        window.addEventListener('load', () => {
+            log('Página carregada');
+            checkPhantom();
+        });
+
+        // Detectar mudanças na conexão do Phantom
+        if (window.solana) {
+            window.solana.on('connect', () => {
+                log('Evento: Phantom conectado');
+                if (window.solana.publicKey) {
+                    showWalletInfo(window.solana.publicKey.toString());
+                }
+            });
+
+            window.solana.on('disconnect', () => {
+                log('Evento: Phantom desconectado');
+                hideWalletInfo();
+            });
+        }
+    </script>
+</body>
+</html>

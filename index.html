@@ -157,22 +157,45 @@
 
         async function connectWallet() {
             try {
-                // Tentar conectar com Phantom wallet
-                if (window.solana && window.solana.isPhantom) {
-                    const response = await window.solana.connect();
-                    const publicKey = response.publicKey.toString();
-                    
-                    document.getElementById('walletAddress').textContent = 
-                        publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
-                    
-                    showDashboard();
-                } else {
-                    // Se não tiver Phantom, mostrar instruções
-                    alert('Por favor, instale a carteira Phantom para conectar.\n\nVisite: https://phantom.app');
+                console.log('🔍 Verificando Phantom...');
+                console.log('window.solana exists:', !!window.solana);
+                console.log('window.solana.isPhantom:', window.solana?.isPhantom);
+                
+                if (typeof window.solana === 'undefined') {
+                    console.log('❌ window.solana é undefined');
+                    alert('Phantom wallet não detectado.\n\n1. Instale o Phantom: https://phantom.app\n2. Recarregue a página\n3. Tente novamente');
+                    return;
                 }
+                
+                if (!window.solana.isPhantom) {
+                    console.log('❌ window.solana.isPhantom é false');
+                    alert('Extensão Phantom não detectada.\n\nVerifique se a extensão está ativada no navegador.');
+                    return;
+                }
+                
+                console.log('✅ Phantom detectado, tentando conectar...');
+                
+                const response = await window.solana.connect();
+                console.log('✅ Conectado com sucesso!', response);
+                
+                const publicKey = response.publicKey.toString();
+                console.log('📍 Endereço:', publicKey);
+                
+                document.getElementById('walletAddress').textContent = 
+                    'Carteira: ' + publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+                
+                showDashboard();
+                
             } catch (error) {
-                console.error('Erro ao conectar carteira:', error);
-                alert('Erro ao conectar carteira. Tente novamente.');
+                console.error('❌ Erro ao conectar carteira:', error);
+                
+                if (error.code === 4001) {
+                    alert('Conexão cancelada pelo usuário.');
+                } else if (error.message.includes('User rejected')) {
+                    alert('Conexão rejeitada pelo usuário.');
+                } else {
+                    alert(`Erro ao conectar carteira: ${error.message}\n\nVerifique se:\n1. Phantom está instalado\n2. A extensão está desbloqueada\n3. Tente recarregar a página`);
+                }
             }
         }
 

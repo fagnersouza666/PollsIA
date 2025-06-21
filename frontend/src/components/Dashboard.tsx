@@ -1,18 +1,85 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TrendingUp, Wallet, Activity, Target } from 'lucide-react'
 import { PoolExplorer } from './PoolExplorer'
+import { api } from '../utils/api'
 
 export function Dashboard() {
   const [walletAddress, setWalletAddress] = useState('')
   const [isConnected, setIsConnected] = useState(false)
+  const [portfolio, setPortfolio] = useState<any>(null)
+  const [positions, setPositions] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const handleConnectWallet = () => {
-    // Simular conexão de carteira para demo
-    const demoAddress = '11111111111111111111111111111112'
-    setWalletAddress(demoAddress)
-    setIsConnected(true)
+  const handleConnectWallet = async () => {
+    try {
+      setLoading(true)
+      
+      console.log('🔍 Verificando Phantom...')
+      console.log('window exists:', typeof window !== 'undefined')
+      console.log('window.solana exists:', !!(typeof window !== 'undefined' && window.solana))
+      console.log('window.solana.isPhantom:', typeof window !== 'undefined' && window.solana?.isPhantom)
+      
+      if (typeof window === 'undefined') {
+        alert('Ambiente não suportado')
+        return
+      }
+      
+      if (!window.solana) {
+        console.log('❌ window.solana é undefined')
+        alert('Phantom wallet não detectado.\n\n1. Instale o Phantom: https://phantom.app\n2. Recarregue a página\n3. Tente novamente')
+        return
+      }
+      
+      if (!window.solana.isPhantom) {
+        console.log('❌ window.solana.isPhantom é false')
+        alert('Extensão Phantom não detectada.\n\nVerifique se a extensão está ativada no navegador.')
+        return
+      }
+      
+      console.log('✅ Phantom detectado, tentando conectar...')
+      
+      const response = await window.solana.connect()
+      console.log('✅ Conectado com sucesso!', response)
+      
+      const publicKey = response.publicKey.toString()
+      console.log('📍 Endereço:', publicKey)
+      
+      setWalletAddress(publicKey)
+      setIsConnected(true)
+      
+      // Carregar dados reais da carteira
+      console.log('🔄 Carregando dados da carteira...')
+      await loadWalletData(publicKey)
+      
+    } catch (error: any) {
+      console.error('❌ Erro ao conectar carteira:', error)
+      
+      if (error.code === 4001) {
+        alert('Conexão cancelada pelo usuário.')
+      } else if (error.message?.includes('User rejected')) {
+        alert('Conexão rejeitada pelo usuário.')
+      } else {
+        alert(`Erro ao conectar carteira: ${error.message || 'Erro desconhecido'}\n\nVerifique se:\n1. Phantom está instalado\n2. A extensão está desbloqueada\n3. Tente recarregar a página`)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadWalletData = async (publicKey: string) => {
+    try {
+      // Carregar dados do portfólio
+      const portfolioData = await api.getPortfolio(publicKey)
+      setPortfolio(portfolioData)
+      
+      // Carregar posições
+      const positionsData = await api.getPositions(publicKey)
+      setPositions(positionsData)
+    } catch (error) {
+      console.error('Erro ao carregar dados da carteira:', error)
+    }
   }
 
   if (!isConnected) {
@@ -30,10 +97,10 @@ export function Dashboard() {
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center"
           >
             <Wallet className="h-5 w-5 mr-2" />
-            Conectar Carteira (Demo)
+            Conectar Carteira
           </button>
           <p className="text-sm text-gray-500 mt-4">
-            * Modo demo - mostrando dados reais de pools da Solana
+            * Dados em tempo real dos pools de liquidez da Solana
           </p>
         </div>
       </div>
@@ -52,10 +119,16 @@ export function Dashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">
-                {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                Carteira: {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
               </span>
               <button 
-                onClick={() => setIsConnected(false)}
+                onClick={() => {
+                  if (window.solana && window.solana.isPhantom) {
+                    window.solana.disconnect()
+                  }
+                  setIsConnected(false)
+                  setWalletAddress('')
+                }}
                 className="text-gray-500 hover:text-gray-700 text-sm"
               >
                 Desconectar
@@ -71,30 +144,30 @@ export function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Valor Total do Portfólio"
-            value="$0.00"
+            value={loading ? "Carregando..." : portfolio ? `$${(portfolio.totalValue || 0).toFixed(2)}` : "$0.00"}
             icon={Wallet}
-            change="+0%"
-            changeType="positive"
+            change={portfolio ? `${(portfolio.change24h || 0) >= 0 ? '+' : ''}${(portfolio.change24h || 0).toFixed(2)}%` : "+0%"}
+            changeType={(portfolio?.change24h || 0) >= 0 ? "positive" : "negative"}
           />
           <StatsCard
             title="Posições Ativas"
-            value="0"
+            value={loading ? "..." : positions.length.toString()}
             icon={Activity}
-            change="+0"
+            change={`+${positions.length}`}
             changeType="neutral"
           />
           <StatsCard
-            title="Melhor APY de Pool"
-            value="Carregando..."
+            title="Saldo SOL"
+            value={loading ? "Carregando..." : portfolio ? `${(portfolio.solBalance || 0).toFixed(4)} SOL` : "0 SOL"}
             icon={TrendingUp}
             change=""
             changeType="positive"
           />
           <StatsCard
-            title="Retornos Totais"
-            value="$0.00"
+            title="Contas de Token"
+            value={loading ? "..." : portfolio ? portfolio.tokenAccounts?.toString() || "0" : "0"}
             icon={Target}
-            change="+0%"
+            change=""
             changeType="positive"
           />
         </div>

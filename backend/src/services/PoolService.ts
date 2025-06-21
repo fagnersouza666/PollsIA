@@ -43,9 +43,6 @@ export class PoolService {
       if (query?.minTvl) {
         filteredPools = filteredPools.filter(p => p.tvl >= query.minTvl!);
       }
-      if (query?.minApy) {
-        filteredPools = filteredPools.filter(p => p.apy >= query.minApy!);
-      }
 
       return filteredPools;
     } catch (error) {

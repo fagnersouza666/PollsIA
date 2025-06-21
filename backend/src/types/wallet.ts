@@ -21,27 +21,18 @@ export interface PoolPosition {
 
 export interface Portfolio {
   totalValue: number;
-  tokens: TokenBalance[];
-  positions: PoolPosition[];
+  solBalance: number;
+  tokenAccounts: number;
+  change24h: number;
+  performance: any[];
 }
 
 export interface Position {
-  id: string;
   poolId: string;
-  protocol: string;
-  tokenA: {
-    symbol: string;
-    amount: number;
-  };
-  tokenB: {
-    symbol: string;
-    amount: number;
-  };
-  lpTokens: number;
-  currentValue: number;
-  entryValue: number;
-  pnl: number;
-  pnlPercent: number;
-  impermanentLoss: number;
+  tokenA: string;
+  tokenB: string;
+  liquidity: number;
+  value: number;
+  apy: number;
   entryDate: string;
 }

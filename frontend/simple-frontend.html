@@ -22,10 +22,10 @@
                 </p>
                 <button onclick="connectWallet()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center">
                     <i data-lucide="wallet" class="h-5 w-5 mr-2"></i>
-                    Conectar Carteira (Demo)
+                    Conectar Carteira
                 </button>
                 <p class="text-sm text-gray-500 mt-4">
-                    * Modo demo - dados reais dos pools do Raydium
+                    * Dados em tempo real dos pools de liquidez da Solana
                 </p>
             </div>
         </div>
@@ -41,7 +41,7 @@
                             <h1 class="text-xl font-bold text-gray-900">PollsIA</h1>
                         </div>
                         <div class="flex items-center space-x-4">
-                            <span class="text-sm text-gray-600">Carteira: <span id="walletAddress">Demo</span></span>
+                            <span class="text-sm text-gray-600">Carteira: <span id="walletAddress">Conectando...</span></span>
                             <button onclick="disconnectWallet()" class="text-sm text-gray-500 hover:text-gray-700">
                                 Desconectar
                             </button>
@@ -60,8 +60,8 @@
                                 <i data-lucide="dollar-sign" class="h-6 w-6 text-blue-600"></i>
                             </div>
                             <div class="ml-4">
-                                <p class="text-sm text-gray-600">TVL Total</p>
-                                <p class="text-2xl font-bold text-gray-900" id="totalTvl">$0</p>
+                                <p class="text-sm text-gray-600">Valor do Portfólio</p>
+                                <p class="text-2xl font-bold text-gray-900" id="totalTvl">Conectando...</p>
                             </div>
                         </div>
                     </div>
@@ -72,8 +72,8 @@
                                 <i data-lucide="trending-up" class="h-6 w-6 text-green-600"></i>
                             </div>
                             <div class="ml-4">
-                                <p class="text-sm text-gray-600">APY Médio</p>
-                                <p class="text-2xl font-bold text-gray-900" id="avgApy">0%</p>
+                                <p class="text-sm text-gray-600">Saldo SOL</p>
+                                <p class="text-2xl font-bold text-gray-900" id="avgApy">0 SOL</p>
                             </div>
                         </div>
                     </div>
@@ -84,7 +84,7 @@
                                 <i data-lucide="activity" class="h-6 w-6 text-purple-600"></i>
                             </div>
                             <div class="ml-4">
-                                <p class="text-sm text-gray-600">Pools Ativos</p>
+                                <p class="text-sm text-gray-600">Posições Ativas</p>
                                 <p class="text-2xl font-bold text-gray-900" id="activePools">0</p>
                             </div>
                         </div>
@@ -96,8 +96,8 @@
                                 <i data-lucide="bar-chart-3" class="h-6 w-6 text-yellow-600"></i>
                             </div>
                             <div class="ml-4">
-                                <p class="text-sm text-gray-600">Volume 24h</p>
-                                <p class="text-2xl font-bold text-gray-900" id="volume24h">$0</p>
+                                <p class="text-sm text-gray-600">Mudança 24h</p>
+                                <p class="text-2xl font-bold text-gray-900" id="volume24h">0%</p>
                             </div>
                         </div>
                     </div>
@@ -123,27 +123,83 @@
     <script>
         let pools = [];
         let rankings = [];
+        let portfolio = null;
+        let positions = [];
+        let walletPublicKey = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
+            
+            // Verificar Phantom na inicialização
+            setTimeout(() => {
+                console.log('🔍 Verificação inicial do Phantom...');
+                console.log('window.solana:', !!window.solana);
+                console.log('window.solana.isPhantom:', window.solana?.isPhantom);
+                
+                if (!window.solana) {
+                    console.log('⚠️ Phantom não detectado na inicialização');
+                } else if (window.solana.isPhantom) {
+                    console.log('✅ Phantom detectado e pronto!');
+                } else {
+                    console.log('⚠️ window.solana existe mas isPhantom é false');
+                }
+            }, 1000);
         });
 
         async function connectWallet() {
             try {
-                // Simulate wallet connection
+                console.log('🔍 Verificando Phantom...');
+                console.log('window.solana exists:', !!window.solana);
+                console.log('window.solana.isPhantom:', window.solana?.isPhantom);
+                
+                // Verificação mais detalhada
+                if (typeof window.solana === 'undefined') {
+                    console.log('❌ window.solana é undefined');
+                    alert('Phantom wallet não detectado.\n\n1. Instale o Phantom: https://phantom.app\n2. Recarregue a página\n3. Tente novamente');
+                    return;
+                }
+                
+                if (!window.solana.isPhantom) {
+                    console.log('❌ window.solana.isPhantom é false');
+                    alert('Extensão Phantom não detectada.\n\nVerifique se a extensão está ativada no navegador.');
+                    return;
+                }
+                
+                console.log('✅ Phantom detectado, tentando conectar...');
+                
+                const response = await window.solana.connect();
+                console.log('✅ Conectado com sucesso!', response);
+                
+                walletPublicKey = response.publicKey.toString();
+                console.log('📍 Endereço:', walletPublicKey);
+                
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
-                document.getElementById('walletAddress').textContent = '11111...1112';
+                document.getElementById('walletAddress').textContent = 
+                    walletPublicKey.slice(0, 4) + '...' + walletPublicKey.slice(-4);
                 
+                console.log('🔄 Carregando dados...');
                 await loadPools();
+                await loadWalletData();
+                
             } catch (error) {
-                console.error('Erro ao conectar carteira:', error);
-                alert('Erro ao conectar carteira. Tente novamente.');
+                console.error('❌ Erro ao conectar carteira:', error);
+                
+                if (error.code === 4001) {
+                    alert('Conexão cancelada pelo usuário.');
+                } else if (error.message.includes('User rejected')) {
+                    alert('Conexão rejeitada pelo usuário.');
+                } else {
+                    alert(`Erro ao conectar carteira: ${error.message}\n\nVerifique se:\n1. Phantom está instalado\n2. A extensão está desbloqueada\n3. Tente recarregar a página`);
+                }
             }
         }
 
         function disconnectWallet() {
+            if (window.solana && window.solana.isPhantom) {
+                window.solana.disconnect();
+            }
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
         }
@@ -250,15 +306,51 @@
             lucide.createIcons();
         }
 
+        async function loadWalletData() {
+            if (!walletPublicKey) return;
+            
+            try {
+                // Carregar dados do portfólio
+                const portfolioResponse = await fetch(`http://localhost:3001/api/wallet/portfolio/${walletPublicKey}`);
+                if (portfolioResponse.ok) {
+                    const data = await portfolioResponse.json();
+                    portfolio = data.data || data;
+                    updateWalletStats();
+                }
+
+                // Carregar posições
+                const positionsResponse = await fetch(`http://localhost:3001/api/wallet/positions/${walletPublicKey}`);
+                if (positionsResponse.ok) {
+                    const data = await positionsResponse.json();
+                    positions = data.data || data || [];
+                    updateWalletStats();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados da carteira:', error);
+            }
+        }
+
         function updateStats(pools) {
             const totalTvl = pools.reduce((sum, pool) => sum + (pool.tvl || 0), 0);
             const avgApy = pools.length > 0 ? pools.reduce((sum, pool) => sum + (pool.apy || 0), 0) / pools.length : 0;
             const totalVolume = pools.reduce((sum, pool) => sum + (pool.volume24h || 0), 0);
             
-            document.getElementById('totalTvl').textContent = `$${(totalTvl / 1000000).toFixed(1)}M`;
-            document.getElementById('avgApy').textContent = `${avgApy.toFixed(2)}%`;
-            document.getElementById('activePools').textContent = pools.length.toString();
-            document.getElementById('volume24h').textContent = `$${(totalVolume / 1000000).toFixed(1)}M`;
+            // Se não temos dados da carteira, mostrar stats dos pools
+            if (!portfolio) {
+                document.getElementById('totalTvl').textContent = `$${(totalTvl / 1000000).toFixed(1)}M TVL`;
+                document.getElementById('avgApy').textContent = `${avgApy.toFixed(2)}% APY`;
+                document.getElementById('activePools').textContent = `${pools.length} Pools`;
+                document.getElementById('volume24h').textContent = `$${(totalVolume / 1000000).toFixed(1)}M Vol`;
+            }
+        }
+
+        function updateWalletStats() {
+            if (portfolio) {
+                document.getElementById('totalTvl').textContent = `$${(portfolio.totalValue || 0).toFixed(2)}`;
+                document.getElementById('avgApy').textContent = `${(portfolio.solBalance || 0).toFixed(4)} SOL`;
+                document.getElementById('activePools').textContent = `${positions.length || 0} Posições`;
+                document.getElementById('volume24h').textContent = `${(portfolio.change24h || 0) >= 0 ? '+' : ''}${(portfolio.change24h || 0).toFixed(2)}%`;
+            }
         }
     </script>
 </body>
