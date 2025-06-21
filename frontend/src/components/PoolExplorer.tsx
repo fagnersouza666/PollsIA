@@ -19,7 +19,7 @@ export function PoolExplorer() {
     queryFn: api.getPoolRankings,
   })
 
-  const filteredPools = pools?.filter(pool => {
+  const filteredPools = (pools as any[])?.filter((pool: any) => {
     const matchesSearch = pool.tokenA.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pool.tokenB.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pool.protocol.toLowerCase().includes(searchTerm.toLowerCase())
@@ -66,8 +66,8 @@ export function PoolExplorer() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredPools?.map((pool, index) => {
-            const ranking = rankings?.find(r => r.poolId === pool.id)
+          {filteredPools?.map((pool: any, index: number) => {
+            const ranking = (rankings as any[])?.find((r: any) => r.poolId === pool.id)
             return (
               <PoolCard
                 key={pool.id}

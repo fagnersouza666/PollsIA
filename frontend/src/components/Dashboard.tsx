@@ -7,6 +7,7 @@ import { PoolExplorer } from './PoolExplorer'
 import { PerformanceChart } from './PerformanceChart'
 import { api } from '../utils/api'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 
 export function Dashboard() {
   const { publicKey, connected } = useWallet()
@@ -33,7 +34,7 @@ export function Dashboard() {
           <Wallet className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">Connect Your Wallet</h2>
           <p className="text-gray-600 mb-6">Please connect your Solana wallet to view your portfolio and start optimizing your liquidity positions.</p>
-          <button className="btn-primary">Connect Wallet</button>
+          <WalletMultiButton />
         </div>
       </div>
     )
@@ -49,12 +50,7 @@ export function Dashboard() {
               <TrendingUp className="h-8 w-8 text-primary-600" />
               <span className="ml-2 text-xl font-bold">Solana Pool Optimizer</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                {walletAddress?.slice(0, 4)}...{walletAddress?.slice(-4)}
-              </span>
-              <button className="btn-secondary">Disconnect</button>
-            </div>
+            <WalletMultiButton />
           </div>
         </div>
       </header>

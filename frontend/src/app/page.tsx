@@ -1,15 +1,19 @@
 'use client'
 
-import { Dashboard } from '../components/Dashboard'
-import { LandingPage } from '../components/LandingPage'
+import { PoolExplorer } from '../components/PoolExplorer'
 
 export default function Home() {
-  // Temporariamente sempre mostrar a landing page
-  const connected = false
-
   return (
-    <main className="min-h-screen">
-      {connected ? <Dashboard /> : <LandingPage />}
+    <main className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">PollsIA</h1>
+          <p className="text-gray-600">Solana Pool Optimizer - Real Data from Raydium</p>
+        </header>
+        
+        {/* Show pool explorer with real data */}
+        <PoolExplorer />
+      </div>
     </main>
   )
 }
