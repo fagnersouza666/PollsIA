@@ -3,7 +3,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { Search, Filter, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
-import { api } from '../utils/api'
+
+async function fetchPools() {
+  const response = await fetch('http://localhost:3001/api/pools/discover')
+  const data = await response.json()
+  return data.data || []
+}
+
+async function fetchRankings() {
+  const response = await fetch('http://localhost:3001/api/pools/rankings')
+  const data = await response.json()
+  return data.data || []
+}
 
 export function PoolExplorer() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -11,18 +22,18 @@ export function PoolExplorer() {
 
   const { data: pools, isLoading } = useQuery({
     queryKey: ['pools'],
-    queryFn: api.discoverPools,
+    queryFn: fetchPools,
   })
 
   const { data: rankings } = useQuery({
     queryKey: ['pool-rankings'],
-    queryFn: api.getPoolRankings,
+    queryFn: fetchRankings,
   })
 
-  const filteredPools = (pools as any[])?.filter((pool: any) => {
-    const matchesSearch = pool.tokenA.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pool.tokenB.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pool.protocol.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPools = (pools || []).filter((pool: any) => {
+    const matchesSearch = pool.tokenA?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         pool.tokenB?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         pool.protocol?.toLowerCase().includes(searchTerm.toLowerCase())
     
     if (filterBy === 'high-apy') return matchesSearch && pool.apy > 15
     if (filterBy === 'high-tvl') return matchesSearch && pool.tvl > 1000000
@@ -67,7 +78,7 @@ export function PoolExplorer() {
       ) : (
         <div className="space-y-4">
           {filteredPools?.map((pool: any, index: number) => {
-            const ranking = (rankings as any[])?.find((r: any) => r.poolId === pool.id)
+            const ranking = (rankings || [])?.find((r: any) => r.poolId === pool.id)
             return (
               <PoolCard
                 key={pool.id}

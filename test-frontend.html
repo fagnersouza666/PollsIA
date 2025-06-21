@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PollsIA - Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-6">PollsIA - Test Frontend</h1>
+        <p class="text-gray-600 mb-6">Testing backend connection with real Solana data</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Backend Status</h2>
+                <div id="backend-status" class="text-gray-600">Testing...</div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Pool Data</h2>
+                <div id="pool-data" class="text-gray-600">Loading...</div>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow mt-6">
+            <h2 class="text-xl font-semibold mb-4">Pools from Raydium</h2>
+            <div id="pools-list" class="space-y-4">Loading pools...</div>
+        </div>
+    </div>
+
+    <script>
+        // Test backend connection
+        async function testBackend() {
+            try {
+                const response = await fetch('http://localhost:3001/api/pools/discover');
+                const data = await response.json();
+                
+                document.getElementById('backend-status').innerHTML = 
+                    `<span class="text-green-600">✅ Connected</span><br>
+                     <small>Response: ${JSON.stringify(data).substring(0, 100)}...</small>`;
+                
+                document.getElementById('pool-data').innerHTML = 
+                    `Found ${data.data?.length || 0} pools`;
+                
+                // Display pools
+                const poolsList = document.getElementById('pools-list');
+                if (data.data && data.data.length > 0) {
+                    poolsList.innerHTML = data.data.map(pool => 
+                        `<div class="border p-4 rounded">
+                            <h3 class="font-semibold">${pool.tokenA || 'Unknown'} / ${pool.tokenB || 'Unknown'}</h3>
+                            <p class="text-sm text-gray-600">Protocol: ${pool.protocol || 'N/A'}</p>
+                            <p class="text-sm">APY: ${pool.apy || 0}% | TVL: $${((pool.tvl || 0) / 1000000).toFixed(1)}M</p>
+                        </div>`
+                    ).join('');
+                } else {
+                    poolsList.innerHTML = '<p class="text-yellow-600">No pools found (API might be empty or external API issues)</p>';
+                }
+                
+            } catch (error) {
+                document.getElementById('backend-status').innerHTML = 
+                    `<span class="text-red-600">❌ Connection Failed</span><br>
+                     <small>${error.message}</small>`;
+                document.getElementById('pool-data').innerHTML = 
+                    `<span class="text-red-600">Error: ${error.message}</span>`;
+            }
+        }
+        
+        // Test market overview
+        async function testMarketOverview() {
+            try {
+                const response = await fetch('http://localhost:3001/api/analytics/market-overview');
+                const data = await response.json();
+                console.log('Market overview:', data);
+            } catch (error) {
+                console.log('Market overview error:', error);
+            }
+        }
+        
+        // Run tests
+        testBackend();
+        testMarketOverview();
+    </script>
+</body>
+</html>
