@@ -997,4 +997,84 @@ FRONTEND_URL=http://localhost:3001
 
 ---
 
-Este arquivo deve ser atualizado conforme o projeto evolui e novos padrões são estabelecidos.
+## 11. Segurança Solana
+
+### Validação de Transações
+
+```typescript
+// Validar assinatura de transação
+import { verifySignature } from '@solana/kit';
+
+const validateTransaction = async (transaction: any, expectedSigner: Address) => {
+  const signature = getSignatureFromTransaction(transaction);
+  const isValid = await verifySignature(signature, expectedSigner);
+  
+  if (!isValid) {
+    throw new Error('Assinatura de transação inválida');
+  }
+  
+  return true;
+};
+```
+
+### Proteção contra Ataques
+
+```typescript
+// Limitar compute budget
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
+
+const instructions = [
+  getSetComputeUnitLimitInstruction({ units: 200_000 }),
+  // outras instruções...
+];
+
+// Verificar mint authority antes de mint
+const validateMintAuthority = async (mint: Address, authority: Address) => {
+  const mintInfo = await rpc.getAccountInfo(mint).send();
+  
+  if (!mintInfo.value) {
+    throw new Error('Mint não encontrado');
+  }
+  
+  // Decodificar e verificar authority
+  // ...implementação específica
+};
+```
+
+### Gerenciamento Seguro de Chaves
+
+```typescript
+// NUNCA armazenar chaves privadas em código
+// Usar variáveis de ambiente para development
+const loadKeypairFromEnv = async (): Promise<KeyPairSigner> => {
+  const privateKeyBase58 = process.env.SOLANA_PRIVATE_KEY;
+  
+  if (!privateKeyBase58) {
+    throw new Error('SOLANA_PRIVATE_KEY não configurada');
+  }
+  
+  const privateKeyBytes = base58.decode(privateKeyBase58);
+  return createKeyPairSignerFromBytes(privateKeyBytes);
+};
+```
+
+---
+
+## 12. Padrões de Commit
+
+```bash
+# Estrutura de commit
+tipo(escopo): descrição
+
+feat(pools): implementar descoberta automática de pools Raydium
+fix(wallet): corrigir conexão com Phantom wallet
+docs(tech): atualizar padrões Solana para @solana/kit
+refactor(api): migrar para padrões modernos do Solana
+test(pools): adicionar testes para PoolService
+```
+
+---
+
+**Última Atualização:** Junho 2025 - Integração com Context7 e migração para @solana/kit
+
+Este arquivo foi atualizado com padrões modernos do Solana obtidos via Context7, refletindo as melhores práticas atuais para desenvolvimento na blockchain Solana. Os padrões anteriores usando @solana/web3.js foram substituídos pelos equivalentes modernos do @solana/kit.
