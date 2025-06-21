@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PollsIA - Solana Pool Optimizer</title>
+    <title>PollsIA - Otimizador de Pools Solana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
@@ -19,16 +19,16 @@
                 <i data-lucide="trending-up" class="h-8 w-8 text-blue-600"></i>
             </div>
             <h2 class="text-3xl font-bold text-gray-900 mb-2">PollsIA</h2>
-            <h3 class="text-xl font-semibold text-gray-700 mb-4">Solana Pool Optimizer</h3>
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Otimizador de Pools Solana</h3>
             <p class="text-gray-600 mb-6">
-                Automated liquidity pool management with real-time data from Raydium and Solana blockchain.
+                Gestão automatizada de pools de liquidez com dados em tempo real do Raydium e blockchain Solana.
             </p>
             <button onclick="connectWallet()" class="btn-primary inline-flex items-center">
                 <i data-lucide="wallet" class="h-5 w-5 mr-2"></i>
-                Connect Wallet (Demo)
+                Conectar Carteira
             </button>
             <p class="text-sm text-gray-500 mt-4">
-                * Demo mode - showing real pool data from Solana
+                * Dados reais dos pools do Solana
             </p>
         </div>
     </div>
@@ -46,7 +46,7 @@
                     <div class="flex items-center space-x-4">
                         <span class="text-sm text-gray-600" id="walletAddress">1111...1112</span>
                         <button onclick="disconnectWallet()" class="text-gray-500 hover:text-gray-700 text-sm">
-                            Disconnect
+                            Desconectar
                         </button>
                     </div>
                 </div>
@@ -63,7 +63,7 @@
                             <i data-lucide="wallet" class="h-6 w-6 text-blue-600"></i>
                         </div>
                     </div>
-                    <p class="text-sm font-medium text-gray-600 mb-1">Total Portfolio Value</p>
+                    <p class="text-sm font-medium text-gray-600 mb-1">Valor Total do Portfolio</p>
                     <p class="text-2xl font-bold text-gray-900">$0.00</p>
                     <p class="text-sm mt-1 text-green-600">+0%</p>
                 </div>
@@ -74,7 +74,7 @@
                             <i data-lucide="activity" class="h-6 w-6 text-blue-600"></i>
                         </div>
                     </div>
-                    <p class="text-sm font-medium text-gray-600 mb-1">Active Positions</p>
+                    <p class="text-sm font-medium text-gray-600 mb-1">Posições Ativas</p>
                     <p class="text-2xl font-bold text-gray-900">0</p>
                     <p class="text-sm mt-1 text-gray-600">+0</p>
                 </div>
@@ -85,8 +85,8 @@
                             <i data-lucide="trending-up" class="h-6 w-6 text-blue-600"></i>
                         </div>
                     </div>
-                    <p class="text-sm font-medium text-gray-600 mb-1">Best Pool APY</p>
-                    <p class="text-2xl font-bold text-gray-900" id="bestApy">Loading...</p>
+                    <p class="text-sm font-medium text-gray-600 mb-1">Melhor APY de Pool</p>
+                    <p class="text-2xl font-bold text-gray-900" id="bestApy">Carregando...</p>
                 </div>
 
                 <div class="card p-6">
@@ -95,7 +95,7 @@
                             <i data-lucide="target" class="h-6 w-6 text-blue-600"></i>
                         </div>
                     </div>
-                    <p class="text-sm font-medium text-gray-600 mb-1">Total Returns</p>
+                    <p class="text-sm font-medium text-gray-600 mb-1">Retornos Totais</p>
                     <p class="text-2xl font-bold text-gray-900">$0.00</p>
                     <p class="text-sm mt-1 text-green-600">+0%</p>
                 </div>
@@ -104,13 +104,13 @@
             <!-- Pool Explorer -->
             <div class="card p-6 mb-8">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-semibold">Pool Explorer</h3>
+                    <h3 class="text-lg font-semibold">Explorador de Pools</h3>
                     <div class="flex space-x-4">
                         <div class="relative">
                             <i data-lucide="search" class="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                             <input
                                 type="text"
-                                placeholder="Search pools..."
+                                placeholder="Buscar pools..."
                                 class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 id="searchInput"
                                 oninput="filterPools()"
@@ -121,9 +121,9 @@
                             id="filterSelect"
                             onchange="filterPools()"
                         >
-                            <option value="all">All Pools</option>
-                            <option value="high-apy">High APY</option>
-                            <option value="high-tvl">High TVL</option>
+                            <option value="all">Todos os Pools</option>
+                            <option value="high-apy">Alto APY</option>
+                            <option value="high-tvl">Alto TVL</option>
                         </select>
                         <button onclick="refreshPools()" class="btn-primary">
                             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
@@ -134,18 +134,18 @@
                 <div id="poolsContainer">
                     <div class="text-center py-8">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p class="mt-4 text-gray-600">Loading pools from Raydium...</p>
+                        <p class="mt-4 text-gray-600">Carregando pools do Raydium...</p>
                     </div>
                 </div>
             </div>
 
             <!-- About -->
             <div class="card p-6">
-                <h3 class="text-lg font-semibold mb-4">About PollsIA</h3>
+                <h3 class="text-lg font-semibold mb-4">Sobre o PollsIA</h3>
                 <p class="text-gray-600">
-                    PollsIA is an automated liquidity pool management system for Solana. 
-                    It analyzes real-time data from Raydium and other DEXs to find the best 
-                    opportunities for liquidity provision and yield optimization.
+                    PollsIA é um sistema automatizado de gestão de pools de liquidez para Solana. 
+                    Ele analisa dados em tempo real do Raydium e outras DEXs para encontrar as melhores 
+                    oportunidades de provisão de liquidez e otimização de rendimento.
                 </p>
             </div>
         </main>
@@ -155,13 +155,37 @@
         let pools = [];
         let rankings = [];
 
-        function connectWallet() {
+        async function connectWallet() {
+            try {
+                // Tentar conectar com Phantom wallet
+                if (window.solana && window.solana.isPhantom) {
+                    const response = await window.solana.connect();
+                    const publicKey = response.publicKey.toString();
+                    
+                    document.getElementById('walletAddress').textContent = 
+                        publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+                    
+                    showDashboard();
+                } else {
+                    // Se não tiver Phantom, mostrar instruções
+                    alert('Por favor, instale a carteira Phantom para conectar.\n\nVisite: https://phantom.app');
+                }
+            } catch (error) {
+                console.error('Erro ao conectar carteira:', error);
+                alert('Erro ao conectar carteira. Tente novamente.');
+            }
+        }
+
+        function showDashboard() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
             loadPools();
         }
 
         function disconnectWallet() {
+            if (window.solana && window.solana.isPhantom) {
+                window.solana.disconnect();
+            }
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
         }
@@ -183,7 +207,7 @@
             } catch (error) {
                 console.error('Error loading pools:', error);
                 document.getElementById('poolsContainer').innerHTML = 
-                    '<div class="text-center py-8"><p class="text-red-600">Error loading pools. Make sure backend is running on port 3001.</p></div>';
+                    '<div class="text-center py-8"><p class="text-red-600">Erro ao carregar pools. Certifique-se de que o backend está rodando na porta 3001.</p></div>';
             }
         }
 
@@ -191,7 +215,7 @@
             const container = document.getElementById('poolsContainer');
             
             if (poolsToShow.length === 0) {
-                container.innerHTML = '<div class="text-center py-8"><p class="text-yellow-600">No pools found. The API might be empty or having external API issues.</p></div>';
+                container.innerHTML = '<div class="text-center py-8"><p class="text-yellow-600">Nenhum pool encontrado. A API pode estar vazia ou tendo problemas externos.</p></div>';
                 return;
             }
 
@@ -229,7 +253,7 @@
                                 <p class="font-medium">$${((pool.volume24h || 0) / 1000).toFixed(0)}K</p>
                             </div>
                             <div>
-                                <p class="text-gray-500">Risk Score</p>
+                                <p class="text-gray-500">Score de Risco</p>
                                 <p class="font-medium">
                                     <span class="px-2 py-1 rounded text-xs ${
                                         ranking?.riskScore <= 5 ? 'bg-green-100 text-green-800' :
@@ -276,7 +300,7 @@
 
         function refreshPools() {
             document.getElementById('poolsContainer').innerHTML = 
-                '<div class="text-center py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div><p class="mt-4 text-gray-600">Refreshing pools...</p></div>';
+                '<div class="text-center py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div><p class="mt-4 text-gray-600">Atualizando pools...</p></div>';
             loadPools();
         }
 
