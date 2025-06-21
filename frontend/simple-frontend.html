@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PollsIA - Otimizador de Pools Solana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+            <div class="text-center max-w-md mx-auto p-8">
+                <div class="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="trending-up" class="h-8 w-8 text-blue-600"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">PollsIA</h2>
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Otimizador de Pools Solana</h3>
+                <p class="text-gray-600 mb-6">
+                    Gestão automatizada de pools de liquidez com dados em tempo real do Raydium.
+                </p>
+                <button onclick="connectWallet()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors inline-flex items-center">
+                    <i data-lucide="wallet" class="h-5 w-5 mr-2"></i>
+                    Conectar Carteira (Demo)
+                </button>
+                <p class="text-sm text-gray-500 mt-4">
+                    * Modo demo - dados reais dos pools do Raydium
+                </p>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b">
+                <div class="max-w-7xl mx-auto px-4 py-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <i data-lucide="trending-up" class="h-8 w-8 text-blue-600 mr-3"></i>
+                            <h1 class="text-xl font-bold text-gray-900">PollsIA</h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-600">Carteira: <span id="walletAddress">Demo</span></span>
+                            <button onclick="disconnectWallet()" class="text-sm text-gray-500 hover:text-gray-700">
+                                Desconectar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-4 py-8">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-blue-100 rounded-lg">
+                                <i data-lucide="dollar-sign" class="h-6 w-6 text-blue-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">TVL Total</p>
+                                <p class="text-2xl font-bold text-gray-900" id="totalTvl">$0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <i data-lucide="trending-up" class="h-6 w-6 text-green-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">APY Médio</p>
+                                <p class="text-2xl font-bold text-gray-900" id="avgApy">0%</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <i data-lucide="activity" class="h-6 w-6 text-purple-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Pools Ativos</p>
+                                <p class="text-2xl font-bold text-gray-900" id="activePools">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-yellow-100 rounded-lg">
+                                <i data-lucide="bar-chart-3" class="h-6 w-6 text-yellow-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-600">Volume 24h</p>
+                                <p class="text-2xl font-bold text-gray-900" id="volume24h">$0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pools List -->
+                <div class="bg-white rounded-lg shadow-sm">
+                    <div class="p-6 border-b">
+                        <h2 class="text-lg font-semibold text-gray-900">Pools de Liquidez - Raydium</h2>
+                        <p class="text-sm text-gray-600 mt-1">Dados em tempo real dos melhores pools</p>
+                    </div>
+                    <div id="poolsContainer" class="p-6">
+                        <div class="text-center py-8">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                            <p class="mt-4 text-gray-600">Carregando pools do Raydium...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let pools = [];
+        let rankings = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+
+        async function connectWallet() {
+            try {
+                // Simulate wallet connection
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                document.getElementById('walletAddress').textContent = '11111...1112';
+                
+                await loadPools();
+            } catch (error) {
+                console.error('Erro ao conectar carteira:', error);
+                alert('Erro ao conectar carteira. Tente novamente.');
+            }
+        }
+
+        function disconnectWallet() {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        async function loadPools() {
+            const poolsContainer = document.getElementById('poolsContainer');
+            
+            try {
+                poolsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Carregando pools do Raydium...</p>
+                    </div>
+                `;
+
+                console.log('Carregando pools...');
+                
+                const response = await fetch('http://localhost:3001/api/pools/discover');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Pools data:', data);
+                
+                pools = data.data || [];
+
+                if (pools.length > 0) {
+                    displayPools(pools);
+                    updateStats(pools);
+                    console.log(`Carregados ${pools.length} pools com sucesso`);
+                } else {
+                    poolsContainer.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-yellow-600">Nenhum pool encontrado</p>
+                            <p class="text-sm text-gray-500 mt-2">A API pode estar retornando dados vazios</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar pools:', error);
+                poolsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-red-600">Erro ao carregar pools: ${error.message}</p>
+                        <p class="text-sm text-gray-500 mt-2">Verifique se o backend está rodando na porta 3001</p>
+                        <button onclick="loadPools()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
+                            Tentar novamente
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayPools(poolsToShow) {
+            const container = document.getElementById('poolsContainer');
+            
+            if (poolsToShow.length === 0) {
+                container.innerHTML = '<div class="text-center py-8"><p class="text-yellow-600">Nenhum pool encontrado</p></div>';
+                return;
+            }
+
+            container.innerHTML = poolsToShow.map((pool, index) => `
+                <div class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer mb-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <span class="text-sm font-bold text-blue-600">#${index + 1}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg">
+                                    ${pool.tokenA || 'Token A'} / ${pool.tokenB || 'Token B'}
+                                </h4>
+                                <p class="text-sm text-gray-500">${pool.protocol || 'Raydium'}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="flex items-center text-green-600 mb-1">
+                                <i data-lucide="trending-up" class="h-4 w-4 mr-1"></i>
+                                <span class="font-semibold">${(pool.apy || 0).toFixed(2)}% APY</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500">TVL</p>
+                            <p class="font-medium">$${((pool.tvl || 0) / 1000000).toFixed(2)}M</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Volume 24h</p>
+                            <p class="font-medium">$${((pool.volume24h || 0) / 1000).toFixed(0)}K</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Pool ID</p>
+                            <p class="font-medium text-xs">${(pool.id || '').substring(0, 8)}...</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Re-create icons for new content
+            lucide.createIcons();
+        }
+
+        function updateStats(pools) {
+            const totalTvl = pools.reduce((sum, pool) => sum + (pool.tvl || 0), 0);
+            const avgApy = pools.length > 0 ? pools.reduce((sum, pool) => sum + (pool.apy || 0), 0) / pools.length : 0;
+            const totalVolume = pools.reduce((sum, pool) => sum + (pool.volume24h || 0), 0);
+            
+            document.getElementById('totalTvl').textContent = `$${(totalTvl / 1000000).toFixed(1)}M`;
+            document.getElementById('avgApy').textContent = `${avgApy.toFixed(2)}%`;
+            document.getElementById('activePools').textContent = pools.length.toString();
+            document.getElementById('volume24h').textContent = `$${(totalVolume / 1000000).toFixed(1)}M`;
+        }
+    </script>
+</body>
+</html>
