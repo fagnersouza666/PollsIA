@@ -54,21 +54,137 @@ cp .env.example .env
 nano .env
 ```
 
-### 3. Instalação com Docker (Recomendado)
+## 🚀 **COMO INICIAR - 3 OPÇÕES**
+
+### **Opção 1: 🐳 Docker (MAIS FÁCIL - Recomendado)**
 ```bash
-# Ambiente de desenvolvimento
+# 1. Subir todos os serviços automaticamente
 docker-compose up -d
 
-# Verificar status
+# 2. Verificar se está rodando
 docker-compose ps
 
-# Para build de produção
-docker-compose -f docker-compose.prod.yml up -d
+# 3. Ver logs (opcional)
+docker-compose logs -f
+
+# ✅ Pronto! Acesse: http://localhost:3000
 ```
 
-### 4. Instalação Manual
+### **Opção 2: 💻 Manual (Desenvolvimento)**
+```bash
+# Terminal 1 - Backend (porta 3001)
+cd backend
+npm install --legacy-peer-deps
+npm run dev
 
-#### Backend
+# Terminal 2 - Frontend (porta 3000) 
+cd frontend  
+npm install --legacy-peer-deps
+npm run dev
+
+# ✅ Pronto! Acesse: http://localhost:3000
+```
+
+### **Opção 3: 🌐 Testes Rápidos (Protótipos)**
+```bash
+# Abrir diretamente no browser
+open test-wallet.html        # Teste Phantom Wallet
+open simple-frontend.html    # Interface simples  
+open index.html             # Interface completa
+```
+
+## 🔗 **URLs de Acesso**
+- **🌐 Frontend:** http://localhost:3000
+- **⚙️ Backend API:** http://localhost:3001  
+- **📚 Docs API:** http://localhost:3001/documentation
+- **📊 Redis:** localhost:6379
+
+## ✅ **Verificação de Funcionamento**
+```bash
+# Testar API backend
+curl http://localhost:3001/api/pools/discover
+
+# Testar frontend
+curl http://localhost:3000
+```
+
+## 🎯 **COMANDOS RÁPIDOS**
+```bash
+# 🚀 Iniciar tudo (Docker)
+npm start
+
+# 📊 Ver status
+npm run status
+
+# 📋 Ver logs
+npm run logs
+
+# 🔄 Reiniciar
+npm run restart
+
+# ⏹️ Parar tudo
+npm stop
+
+# 🧪 TESTES (OBRIGATÓRIO antes de commits)
+npm run test:all         # Executar todos os testes
+npm run check:all        # Verificação completa (testes + lint + types)
+npm run pre-commit       # Alias para check:all
+```
+
+## 🔧 **Troubleshooting**
+
+### **❌ Problema: "Port already in use"**
+```bash
+# Verificar o que está usando a porta
+lsof -i :3000  # Frontend
+lsof -i :3001  # Backend
+
+# Parar processo
+kill -9 <PID>
+
+# Ou usar porta diferente
+PORT=3002 npm run dev
+```
+
+### **❌ Problema: "Docker not starting"**
+```bash
+# Limpar containers antigos
+docker-compose down --volumes
+docker system prune -f
+
+# Tentar novamente
+docker-compose up -d
+```
+
+### **❌ Problema: "Phantom não conecta"**
+1. Instale Phantom: https://phantom.app
+2. Desbloqueie a extensão
+3. Use `test-wallet.html` para debug
+4. Verifique console do browser (F12)
+
+### **❌ Problema: "API retorna erro 500"**
+```bash
+# Ver logs do backend
+docker-compose logs backend
+
+# Ou em desenvolvimento manual
+cd backend && npm run dev
+```
+
+### **❌ Problema: "npm install falha"**
+```bash
+# Use legacy peer deps
+npm install --legacy-peer-deps
+
+# Limpar cache se necessário
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+```
+
+### 4. Instalação de Produção com Docker
+
+#### Backend (Produção)
 ```bash
 cd backend
 npm install --legacy-peer-deps
@@ -76,7 +192,7 @@ npm run build
 npm start
 ```
 
-#### Frontend
+#### Frontend (Produção)
 ```bash
 cd frontend
 npm install

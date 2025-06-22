@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { AnalyticsService } from '../services/AnalyticsService';
-import { performanceQuerySchema, opportunitiesQuerySchema } from '../schemas/analytics';
+import { performanceQuerySchema } from '../schemas/analytics';
 import { ApiResponse } from '../types/pool';
 import { PerformanceData, MarketOverview, Opportunity } from '../types/analytics';
 

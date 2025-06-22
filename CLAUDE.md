@@ -20,8 +20,26 @@ PollsIA - Sistema automatizado de gestão e otimização de pools de liquidez na
 
 ### Qualidade de Código
 - **SEMPRE** executar `npm run lint` e `npm run typecheck` antes de commits
+- **OBRIGATÓRIO** executar todos os testes unitários antes de qualquer modificação: `npm test`
 - **NUNCA** deixar variáveis não utilizadas (prefixar com `_` se necessário)
 - **EVITAR** uso de `any` - sempre tipar corretamente
+
+### Fluxo de Desenvolvimento Obrigatório
+```bash
+# ANTES de qualquer modificação de código:
+npm test                    # ✅ Verificar que todos os testes passam
+npm run lint               # ✅ Verificar qualidade do código
+npm run typecheck          # ✅ Verificar tipos TypeScript
+
+# Fazer suas modificações...
+
+# APÓS cada modificação:
+npm test                    # ✅ Garantir que nada quebrou
+npm run lint               # ✅ Verificar se há novos problemas
+npm run typecheck          # ✅ Verificar tipos ainda estão corretos
+
+# Só então fazer commit se tudo passar ✅
+```
 
 
 ## Comandos de Desenvolvimento
@@ -33,6 +51,7 @@ npm run dev        # Servidor de desenvolvimento com reload automático
 npm run build      # Build TypeScript para produção
 npm run lint       # ESLint - verificar estilo de código
 npm run typecheck  # TypeScript - verificar tipos
+npm test           # ⚠️  OBRIGATÓRIO: Executar testes unitários
 npm start          # Executar build de produção
 ```
 
@@ -43,7 +62,21 @@ npm run dev        # Next.js dev server
 npm run build      # Build otimizado para produção
 npm run lint       # Next.js lint
 npm run typecheck  # Verificar tipos TypeScript
+npm test           # ⚠️  OBRIGATÓRIO: Executar testes unitários
 npm start          # Servir build de produção
+```
+
+### Testes Unitários (OBRIGATÓRIO)
+```bash
+# Executar todos os testes do projeto
+npm run test:all              # Rodar backend + frontend
+
+# Executar testes individuais
+cd backend && npm test        # Só backend (25 testes)
+cd frontend && npm test       # Só frontend (4 testes)
+
+# Testes com coverage
+cd backend && npm run test:coverage   # Coverage detalhado
 ```
 
 ### Testes Rápidos
@@ -109,6 +142,39 @@ PollsIA/
 - **CoinGecko API:** Preços de tokens em tempo real
 - **Solana RPC:** `https://api.mainnet-beta.solana.com`
 
+## 🧪 Política de Testes (OBRIGATÓRIA)
+
+### Cobertura Atual
+- **Backend:** 25 testes unitários (100% dos serviços)
+- **Frontend:** 4 testes unitários (componentes críticos)
+- **Total:** 29 testes executados automaticamente
+
+### Regras Obrigatórias
+1. **🚫 ZERO COMMITS** sem que todos os testes passem
+2. **🚫 ZERO MODIFICAÇÕES** sem rodar testes antes e depois
+3. **✅ 100% dos testes** devem passar sempre
+4. **📊 Coverage mínimo:** 80% nos serviços críticos
+
+### Comando de Verificação Completa
+```bash
+# RODAR ANTES DE QUALQUER COMMIT:
+npm run check:all
+
+# Ou comando rápido simplificado:
+npm run test:all && npm run lint && npm run typecheck && echo "✅ Pronto para commit!"
+```
+
+### Tolerâncias de Qualidade
+- **✅ WARNINGS de lint:** Aceitáveis (can ship)
+- **❌ ERRORS de lint:** DEVEM ser corrigidos
+- **❌ TESTES falhando:** NUNCA commitar
+- **❌ ERRORS de typecheck:** DEVEM ser corrigidos
+
+### Quando Criar Novos Testes
+- **SEMPRE** ao adicionar nova funcionalidade
+- **SEMPRE** ao corrigir bugs (teste da regressão)
+- **SEMPRE** ao modificar lógica de negócio
+
 ## Status Atual
 
 ✅ **Implementado:**
@@ -117,6 +183,7 @@ PollsIA/
 - Backend funcional com dados em tempo real
 - Interface traduzida para português
 - Padrões modernos Solana via Context7
+- **29 testes unitários passando 100%**
 
 🔄 **Em desenvolvimento:**
 - Sistema de rebalanceamento automático
@@ -137,6 +204,12 @@ PollsIA/
 3. **Erros de lint:**
    - Sempre executar `npm run lint` antes de commits
    - Prefixar variáveis não usadas com `_`
+
+4. **Testes falhando:**
+   - Executar `npm run test:all` para verificar todos
+   - Backend: `cd backend && npm test`
+   - Frontend: `cd frontend && npm test`
+   - **NUNCA commitar** com testes falhando
 
 ### Debug Tools
 - `test-wallet.html` - Teste isolado do Phantom

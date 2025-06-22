@@ -26,7 +26,9 @@ export function Dashboard() {
           }
         }
       } catch (error) {
-        console.log('Erro ao verificar conexão:', error)
+        // eslint-disable-next-line no-console
+        // eslint-disable-next-line no-console
+      console.log('Erro ao verificar conexão:', error)
       }
     }
 
@@ -63,6 +65,7 @@ export function Dashboard() {
     try {
       setLoading(true)
 
+      // eslint-disable-next-line no-console
       console.log('🔍 Verificando Phantom...')
 
       if (!(await phantomWallet.isPhantomInstalled())) {
@@ -70,19 +73,23 @@ export function Dashboard() {
         return
       }
 
+      // eslint-disable-next-line no-console
       console.log('✅ Phantom detectado, tentando conectar...')
 
       const publicKey = await phantomWallet.connect()
+      // eslint-disable-next-line no-console
       console.log('✅ Conectado com sucesso!', publicKey)
 
       setWalletAddress(publicKey)
       setIsConnected(true)
 
       // Carregar dados reais da carteira
+      // eslint-disable-next-line no-console
       console.log('🔄 Carregando dados da carteira...')
       await loadWalletData(publicKey)
 
     } catch (error: any) {
+      // eslint-disable-next-line no-console
       console.error('❌ Erro ao conectar carteira:', error)
 
       if (error.code === 4001) {
@@ -105,6 +112,7 @@ export function Dashboard() {
       setPortfolio(null)
       setPositions([])
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Erro ao desconectar:', error)
     }
   }
@@ -119,6 +127,7 @@ export function Dashboard() {
       const positionsData = await api.getPositions(publicKey)
       setPositions(Array.isArray(positionsData) ? positionsData : [])
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Erro ao carregar dados da carteira:', error)
     }
   }

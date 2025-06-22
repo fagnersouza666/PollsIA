@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Search, Filter, TrendingUp } from 'lucide-react'
+import { Search, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 
 async function fetchPools() {

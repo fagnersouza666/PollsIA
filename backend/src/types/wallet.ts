@@ -1,20 +1,23 @@
+import { Address } from '@solana/addresses';
+import { KeyPairSigner } from '@solana/signers';
+
 // Tipos para integração com Solana usando padrões modernos
 export interface SolanaWallet {
-  address: string;
-  signer: unknown; // Será tipado corretamente após instalação das dependências
+  address: Address;
+  signer: KeyPairSigner;
   balance: number;
   tokenAccounts: TokenAccount[];
 }
 
 export interface TokenAccount {
-  mint: string;
+  mint: Address;
   balance: bigint;
   decimals: number;
-  owner: string;
+  owner: Address;
 }
 
 export interface WalletConnection {
-  publicKey: string;
+  publicKey: Address;
   connected: boolean;
   balance: number;
 }

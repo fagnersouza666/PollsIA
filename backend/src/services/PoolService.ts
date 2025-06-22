@@ -1,5 +1,6 @@
 import { Pool, PoolRanking, PoolAnalysis } from '../types/pool';
 import { PoolDiscoveryQuery, PoolAnalysisQuery } from '../schemas/pool';
+import { createSolanaRpc } from '@solana/rpc';
 import axios from 'axios';
 
 interface RaydiumPool {
@@ -14,9 +15,11 @@ interface RaydiumPool {
 
 export class PoolService {
   private raydiumApiUrl = 'https://api.raydium.io/v2';
+  private rpc: ReturnType<typeof createSolanaRpc>;
   
   constructor() {
-    // Real Solana integration
+    // Conexão RPC moderna usando @solana/kit
+    this.rpc = createSolanaRpc(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
   }
 
   async discoverPools(query?: PoolDiscoveryQuery): Promise<Pool[]> {
@@ -53,7 +56,7 @@ export class PoolService {
   }
 
   private getTokenSymbol(mint: string): string {
-    // Common token addresses to symbols mapping
+    // Common token addresses to symbols mapping usando Address types
     const tokenMap: Record<string, string> = {
       'So11111111111111111111111111111111111111112': 'SOL',
       'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',

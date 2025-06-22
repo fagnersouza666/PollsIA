@@ -1,5 +1,5 @@
 import { createSolanaRpc } from '@solana/rpc';
-import { address } from '@solana/addresses';
+import { Address, address } from '@solana/addresses';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { config } from '../config/env';
 import { supabase } from './supabaseClient';
@@ -21,7 +21,7 @@ export class WalletService {
   async connectWallet(publicKey: string, _signature: string) {
     try {
       if (process.env.NODE_ENV === 'test') {
-        return { publicKey, connected: true, balance: 2 };
+        return { publicKey: publicKey as Address, connected: true, balance: 2 };
       }
       const pubkeyAddress = address(publicKey);
 
@@ -44,7 +44,7 @@ export class WalletService {
       }
 
       return {
-        publicKey,
+        publicKey: publicKey as Address,
         connected: true,
         balance
       };

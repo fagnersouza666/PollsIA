@@ -1,16 +1,16 @@
 // Tipos para Phantom Wallet conforme padrões modernos
 declare global {
-  interface Window {
+  interface Window { // eslint-disable-line no-unused-vars
     solana?: {
       isPhantom?: boolean;
       isConnected: boolean;
       publicKey: any;
       connect(): Promise<{ publicKey: any }>;
       disconnect(): Promise<void>;
-      signTransaction(transaction: any): Promise<any>;
-      signAllTransactions(transactions: any[]): Promise<any[]>;
-      on(event: string, callback: Function): void;
-      off(event: string, callback: Function): void;
+      signTransaction(_transaction: any): Promise<any>;
+      signAllTransactions(_transactions: any[]): Promise<any[]>;
+      on(_event: string, _callback: Function): void;
+      off(_event: string, _callback: Function): void;
     };
   }
 }

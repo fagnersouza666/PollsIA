@@ -1,8 +1,6 @@
 import { PhantomWalletService } from '../src/utils/phantom-wallet';
 
-declare global {
-  interface Window { solana?: any }
-}
+// Tipo de teste para window.solana
 
 describe('PhantomWalletService', () => {
   const service = new PhantomWalletService();

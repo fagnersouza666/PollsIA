@@ -1,16 +1,18 @@
+import { Address } from '@solana/addresses';
+
 // Service para gerenciar conexão com Phantom usando padrões modernos
 export class PhantomWalletService {
     async isPhantomInstalled(): Promise<boolean> {
         return !!(window.solana?.isPhantom);
     }
 
-    async connect(): Promise<string> {
+    async connect(): Promise<Address> {
         if (!window.solana?.isPhantom) {
             throw new Error('Phantom wallet não detectado');
         }
 
         const response = await window.solana.connect();
-        return response.publicKey.toString();
+        return response.publicKey.toString() as Address;
     }
 
     async disconnect(): Promise<void> {
@@ -27,13 +29,15 @@ export class PhantomWalletService {
         return await window.solana.signTransaction(transaction);
     }
 
-    onAccountChanged(callback: (publicKey: string | null) => void): void {
-        window.solana?.on?.('accountChanged', callback);
+    onAccountChanged(callback: (_publicKey: Address | null) => void): void {
+        window.solana?.on?.('accountChanged', (_publicKey: any) => {
+            callback(_publicKey ? _publicKey.toString() as Address : null);
+        });
     }
 
-    onConnect(callback: (publicKey: string) => void): void {
-        window.solana?.on?.('connect', (publicKey: any) => {
-            callback(publicKey.toString());
+    onConnect(callback: (_publicKey: Address) => void): void {
+        window.solana?.on?.('connect', (_publicKey: any) => {
+            callback(_publicKey.toString() as Address);
         });
     }
 
@@ -45,8 +49,8 @@ export class PhantomWalletService {
         return window.solana?.isConnected || false;
     }
 
-    getPublicKey(): string | null {
-        return window.solana?.publicKey?.toString() || null;
+    getPublicKey(): Address | null {
+        return window.solana?.publicKey?.toString() as Address || null;
     }
 }
 

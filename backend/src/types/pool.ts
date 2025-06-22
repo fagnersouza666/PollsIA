@@ -1,3 +1,5 @@
+import { Address } from '@solana/addresses';
+
 export interface Pool {
   id: string;
   tokenA: string;
@@ -6,7 +8,7 @@ export interface Pool {
   tvl: number;
   volume24h: number;
   protocol: string;
-  address?: string;
+  address?: Address;
   fees?: number;
   apr?: number;
 }

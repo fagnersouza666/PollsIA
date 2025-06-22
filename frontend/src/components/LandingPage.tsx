@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { TrendingUp, Shield, Zap, BarChart3 } from 'lucide-react'
 
 export function LandingPage() {
