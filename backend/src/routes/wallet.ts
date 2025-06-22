@@ -42,7 +42,17 @@ const PortfolioSchema = {
     solBalance: { type: 'number' },
     tokenAccounts: { type: 'number' },
     change24h: { type: 'number' },
-    performance: { type: 'array', items: { type: 'object' } }
+    performance: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          date: { type: 'string' },
+          value: { type: 'number' },
+          change: { type: 'number' }
+        }
+      }
+    }
   }
 };
 

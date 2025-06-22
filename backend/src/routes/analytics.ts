@@ -30,8 +30,25 @@ const MarketOverviewSchema = {
   properties: {
     totalTvl: { type: 'number' },
     averageApy: { type: 'number' },
-    topPools: { type: 'array', items: { type: 'object' } },
-    marketTrends: { type: 'object' }
+    topPools: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          protocol: { type: 'string' },
+          tvl: { type: 'number' },
+          pools: { type: 'number' }
+        }
+      }
+    },
+    marketTrends: {
+      type: 'object',
+      properties: {
+        tvlChange24h: { type: 'number' },
+        volumeChange24h: { type: 'number' },
+        newPools24h: { type: 'number' }
+      }
+    }
   }
 };
 
