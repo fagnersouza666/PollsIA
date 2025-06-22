@@ -133,7 +133,7 @@ const signature = await window.solana.signMessage(
           description: 'Carteira conectada com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: { $ref: 'WalletConnection#' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -143,8 +143,8 @@ const signature = await window.solana.signMessage(
           description: 'Assinatura inválida',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: false },
-            error: { type: 'string', example: 'Assinatura inválida' },
+            success: { type: 'boolean' },
+            error: { type: 'string' },
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
@@ -228,7 +228,6 @@ Dados são atualizados a cada 5 minutos para otimizar performance.
           publicKey: {
             type: 'string',
             description: 'Chave pública da carteira',
-            example: 'HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337',
             pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
           }
         }
@@ -238,7 +237,7 @@ Dados são atualizados a cada 5 minutos para otimizar performance.
           description: 'Portfólio retornado com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: { $ref: 'Portfolio#' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -323,7 +322,6 @@ Retorna todas as posições ativas da carteira em pools de liquidez.
           publicKey: {
             type: 'string',
             description: 'Chave pública da carteira',
-            example: 'HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337',
             pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
           }
         }
@@ -354,7 +352,7 @@ Retorna todas as posições ativas da carteira em pools de liquidez.
           description: 'Posições retornadas com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: {
               type: 'array',
               items: { $ref: 'Position#' }
@@ -426,8 +424,7 @@ A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\
         properties: {
           publicKey: {
             type: 'string',
-            description: 'Chave pública da carteira a desconectar',
-            example: 'HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337',
+            description: 'Chave pública da carteira',
             pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
           }
         }
@@ -437,11 +434,11 @@ A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\
           description: 'Carteira desconectada com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: {
               type: 'object',
               properties: {
-                disconnected: { type: 'boolean', example: true }
+                disconnected: { type: 'boolean' }
               }
             },
             timestamp: { type: 'string', format: 'date-time' }
@@ -454,9 +451,9 @@ A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\
   }, async (request, reply) => {
     try {
       const { publicKey } = request.params as { publicKey: string };
-      const result = await walletService.disconnectWallet(publicKey);
+      const disconnected = await walletService.disconnectWallet(publicKey);
 
-      if (!result) {
+      if (!disconnected) {
         return reply.status(404).send({
           success: false,
           error: 'Carteira não encontrada ou já desconectada',
@@ -470,7 +467,7 @@ A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      fastify.log.error('Wallet disconnect error:', error);
+      fastify.log.error('Disconnect error:', error);
       return reply.status(500).send({
         success: false,
         error: 'Erro ao desconectar carteira',

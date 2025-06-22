@@ -154,7 +154,7 @@ Dados atualizados a cada 10 minutos com informações em tempo real.
           description: 'Visão geral do mercado retornada com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: { $ref: 'MarketOverview#' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -255,8 +255,7 @@ Identifica oportunidades de investimento baseado em análise algorítmica avanç
           amount: {
             type: 'number',
             minimum: 1,
-            description: 'Valor a ser investido (USD)',
-            example: 1000
+            description: 'Valor a ser investido (USD)'
           },
           strategy: {
             type: 'string',
@@ -278,7 +277,7 @@ Identifica oportunidades de investimento baseado em análise algorítmica avanç
           description: 'Oportunidades identificadas com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: {
               type: 'array',
               items: { $ref: 'Opportunity#' }
@@ -403,23 +402,23 @@ Fornece análise detalhada da performance histórica do mercado e estratégias.
           description: 'Análise de performance retornada com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: {
               type: 'object',
               properties: {
-                period: { type: 'string', example: '30d' },
-                totalReturn: { type: 'number', example: 12.5 },
-                annualizedReturn: { type: 'number', example: 150.0 },
-                volatility: { type: 'number', example: 25.3 },
-                sharpeRatio: { type: 'number', example: 1.85 },
-                maxDrawdown: { type: 'number', example: -8.2 },
-                winRate: { type: 'number', example: 68.5 },
+                period: { type: 'string' },
+                totalReturn: { type: 'number' },
+                annualizedReturn: { type: 'number' },
+                volatility: { type: 'number' },
+                sharpeRatio: { type: 'number' },
+                maxDrawdown: { type: 'number' },
+                winRate: { type: 'number' },
                 benchmark: {
                   type: 'object',
                   properties: {
-                    name: { type: 'string', example: 'SOL' },
-                    return: { type: 'number', example: 8.3 },
-                    outperformance: { type: 'number', example: 4.2 }
+                    name: { type: 'string' },
+                    return: { type: 'number' },
+                    outperformance: { type: 'number' }
                   }
                 },
                 byStrategy: {
@@ -427,10 +426,10 @@ Fornece análise detalhada da performance histórica do mercado e estratégias.
                   items: {
                     type: 'object',
                     properties: {
-                      strategy: { type: 'string', example: 'conservative' },
-                      return: { type: 'number', example: 8.5 },
-                      risk: { type: 'number', example: 15.2 },
-                      sharpe: { type: 'number', example: 1.25 }
+                      strategy: { type: 'string' },
+                      return: { type: 'number' },
+                      risk: { type: 'number' },
+                      sharpe: { type: 'number' }
                     }
                   }
                 }

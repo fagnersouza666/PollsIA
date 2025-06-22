@@ -72,7 +72,7 @@ O algoritmo considera múltiplos fatores:
           description: 'Pools descobertos com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: {
               type: 'array',
               items: {
@@ -94,7 +94,7 @@ O algoritmo considera múltiplos fatores:
           description: 'Requisição inválida',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: false },
+            success: { type: 'boolean' },
             error: { type: 'string' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -103,7 +103,7 @@ O algoritmo considera múltiplos fatores:
           description: 'Erro interno do servidor',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: false },
+            success: { type: 'boolean' },
             error: { type: 'string' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -176,7 +176,7 @@ Rankings são atualizados a cada 15 minutos com dados em tempo real.
           description: 'Rankings retornados com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: {
               type: 'array',
               items: {
@@ -196,7 +196,7 @@ Rankings são atualizados a cada 15 minutos com dados em tempo real.
           description: 'Erro interno do servidor',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: false },
+            success: { type: 'boolean' },
             error: { type: 'string' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -231,53 +231,48 @@ Rankings são atualizados a cada 15 minutos com dados em tempo real.
       tags: ['Pools'],
       summary: 'Análise detalhada de pool específico',
       description: `
-Fornece análise aprofundada de um pool específico com métricas avançadas.
+Fornece análise aprofundada de um pool específico incluindo métricas avançadas.
 
 ### Análises Incluídas
 
 #### 1. Perda Impermanente (IL)
-- **Atual**: IL baseado nos preços atuais vs entrada
-- **Histórica**: IL dos últimos 30 dias
-- **Projeção**: IL estimado baseado em volatilidade
+- **IL Atual**: Perda impermanente no momento
+- **IL Projetada**: Estimativa para próximos 30 dias
+- **Histórico**: Evolução da IL ao longo do tempo
+- **Cenários**: IL em diferentes movimentos de preço
 
 #### 2. Análise de Volume
-- **Tendência**: Crescimento/declínio do volume
-- **Padrões**: Sazonalidade e ciclos
-- **Previsão**: Volume esperado próximas 24h
+- **Tendência**: Direção do volume (crescente/decrescente)
+- **Volatilidade**: Estabilidade do volume
+- **Predição**: Volume esperado para próximas 24h
+- **Padrões**: Identificação de padrões sazonais
 
 #### 3. Métricas de Risco
-- **Volatilidade**: Desvio padrão dos preços
-- **Correlação**: Relação entre tokens do par
-- **VaR**: Value at Risk (95% confiança)
+- **Risco Geral**: Avaliação consolidada
+- **Risco de Liquidez**: Possibilidade de baixa liquidez
+- **Risco de Protocolo**: Segurança do protocolo
+- **Risco de Token**: Volatilidade dos tokens
 
-#### 4. Indicadores Técnicos
-- **RSI**: Força relativa dos tokens
-- **Bollinger Bands**: Bandas de volatilidade
-- **MACD**: Convergência/divergência
+#### 4. Comparação de Mercado
+- **Benchmarks**: Comparação com pools similares
+- **Percentis**: Posição relativa no mercado
+- **Correlações**: Correlação com outros ativos
 
-#### 5. Análise Fundamental
-- **Tokenomics**: Supply, inflation, utility
-- **Adoção**: Crescimento de holders
-- **Desenvolvimento**: Atividade no GitHub
-
-### Timeframes Disponíveis
-- **1h**: Análise intraday
-- **24h**: Análise diária
-- **7d**: Análise semanal
-- **30d**: Análise mensal (padrão)
-
-### Histórico
-Use \`includeHistory=true\` para incluir dados históricos detalhados.
+### Parâmetros
+- **timeframe**: Período de análise (1h, 24h, 7d, 30d)
+- **includeHistory**: Incluir dados históricos detalhados
       `,
       params: {
         type: 'object',
+        required: ['poolId'],
         properties: {
           poolId: {
             type: 'string',
-            description: 'ID único do pool ou endereço na blockchain'
+            description: 'ID único do pool para análise',
+            minLength: 1,
+            maxLength: 100
           }
-        },
-        required: ['poolId']
+        }
       },
       querystring: {
         type: 'object',
@@ -285,13 +280,11 @@ Use \`includeHistory=true\` para incluir dados históricos detalhados.
           timeframe: {
             type: 'string',
             enum: ['1h', '24h', '7d', '30d'],
-            description: 'Período de análise',
-            default: '30d'
+            description: 'Período de análise'
           },
           includeHistory: {
             type: 'boolean',
-            description: 'Incluir dados históricos detalhados',
-            default: false
+            description: 'Incluir dados históricos detalhados'
           }
         }
       },
@@ -300,14 +293,14 @@ Use \`includeHistory=true\` para incluir dados históricos detalhados.
           description: 'Análise retornada com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: true },
+            success: { type: 'boolean' },
             data: {
               type: 'object',
               properties: {
                 poolId: { type: 'string' },
-                impermanentLoss: { type: 'number' },
-                volatility: { type: 'number' },
-                liquidity: { type: 'number' }
+                impermanentLoss: { type: 'object' },
+                volumeAnalysis: { type: 'object' },
+                riskMetrics: { type: 'object' }
               }
             },
             timestamp: { type: 'string', format: 'date-time' }
@@ -317,7 +310,7 @@ Use \`includeHistory=true\` para incluir dados históricos detalhados.
           description: 'Pool não encontrado',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: false },
+            success: { type: 'boolean' },
             error: { type: 'string' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -326,7 +319,7 @@ Use \`includeHistory=true\` para incluir dados históricos detalhados.
           description: 'Erro interno do servidor',
           type: 'object',
           properties: {
-            success: { type: 'boolean', example: false },
+            success: { type: 'boolean' },
             error: { type: 'string' },
             timestamp: { type: 'string', format: 'date-time' }
           }
@@ -335,14 +328,15 @@ Use \`includeHistory=true\` para incluir dados históricos detalhados.
     }
   }, async (request, reply) => {
     try {
-      const params = poolIdSchema.parse(request.params);
+      const { poolId } = poolIdSchema.parse(request.params);
       const query = poolAnalysisQuerySchema.parse(request.query);
-      const analysis = await poolService.analyzePool(params.poolId, query);
+
+      const analysis = await poolService.analyzePool(poolId, query);
 
       if (!analysis) {
         return reply.status(404).send({
           success: false,
-          error: 'Pool não encontrado para análise',
+          error: 'Pool não encontrado ou dados insuficientes para análise',
           timestamp: new Date().toISOString()
         });
       }
