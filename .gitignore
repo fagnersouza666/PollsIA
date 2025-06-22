@@ -152,7 +152,6 @@ Thumbs.db
 *.sqlite3
 
 # Docker
-.dockerignore
 
 # Temporary files
 tmp/

@@ -6,14 +6,15 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (skip network issues)
-RUN npm install --no-audit --no-fund || echo "Install completed with warnings"
+# Install dependencies
+RUN npm install --no-audit --no-fund --production || echo "Install completed with warnings"
 
 # Copy source code
 COPY . .
 
-# Expose port
+# Build and expose port
+RUN npm run build
 EXPOSE 3000
 
-# Start in development mode
-CMD ["npm", "run", "dev"]
+# Start the application
+CMD ["npm", "start"]

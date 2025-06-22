@@ -1,0 +1,6 @@
+.git
+node_modules
+Dockerfile
+**/node_modules
+**/tests
+**/*.log
