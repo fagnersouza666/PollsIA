@@ -4,7 +4,77 @@ import { walletConnectSchema } from '../schemas/wallet';
 import { ApiResponse } from '../types/pool';
 import { Portfolio, Position, WalletConnection } from '../types/wallet';
 
+const BadRequestResponse = {
+  description: 'Requisição inválida',
+  type: 'object',
+  properties: {
+    success: { type: 'boolean' },
+    error: { type: 'string' },
+    timestamp: { type: 'string', format: 'date-time' }
+  }
+};
+
+const NotFoundResponse = {
+  description: 'Recurso não encontrado',
+  type: 'object',
+  properties: {
+    success: { type: 'boolean' },
+    error: { type: 'string' },
+    timestamp: { type: 'string', format: 'date-time' }
+  }
+};
+
+const InternalServerErrorResponse = {
+  description: 'Erro interno do servidor',
+  type: 'object',
+  properties: {
+    success: { type: 'boolean' },
+    error: { type: 'string' },
+    timestamp: { type: 'string', format: 'date-time' }
+  }
+};
+
+const PortfolioSchema = {
+  $id: 'Portfolio',
+  type: 'object',
+  properties: {
+    totalValue: { type: 'number' },
+    solBalance: { type: 'number' },
+    tokenAccounts: { type: 'number' },
+    change24h: { type: 'number' },
+    performance: { type: 'array', items: { type: 'object' } }
+  }
+};
+
+const PositionSchema = {
+  $id: 'Position',
+  type: 'object',
+  properties: {
+    poolId: { type: 'string' },
+    tokenA: { type: 'string' },
+    tokenB: { type: 'string' },
+    liquidity: { type: 'number' },
+    value: { type: 'number' },
+    apy: { type: 'number' },
+    entryDate: { type: 'string' }
+  }
+};
+
+const WalletConnectionSchema = {
+  $id: 'WalletConnection',
+  type: 'object',
+  required: ['publicKey', 'connected', 'balance'],
+  properties: {
+    publicKey: { type: 'string' },
+    connected: { type: 'boolean' },
+    balance: { type: 'number' }
+  }
+};
+
 export const walletRoutes: FastifyPluginAsync = async (fastify) => {
+  fastify.addSchema(WalletConnectionSchema);
+  fastify.addSchema(PortfolioSchema);
+  fastify.addSchema(PositionSchema);
   const walletService = new WalletService();
 
   // Conectar carteira
@@ -64,11 +134,11 @@ const signature = await window.solana.signMessage(
           type: 'object',
           properties: {
             success: { type: 'boolean', example: true },
-            data: { $ref: '#/components/schemas/WalletConnection' },
+            data: { $ref: 'WalletConnection#' },
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        400: { $ref: '#/components/responses/BadRequest' },
+        400: BadRequestResponse,
         401: {
           description: 'Assinatura inválida',
           type: 'object',
@@ -78,7 +148,7 @@ const signature = await window.solana.signMessage(
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        500: { $ref: '#/components/responses/InternalServerError' }
+        500: InternalServerErrorResponse
       }
     }
   }, async (request, reply) => {
@@ -169,12 +239,12 @@ Dados são atualizados a cada 5 minutos para otimizar performance.
           type: 'object',
           properties: {
             success: { type: 'boolean', example: true },
-            data: { $ref: '#/components/schemas/Portfolio' },
+            data: { $ref: 'Portfolio#' },
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        404: { $ref: '#/components/responses/NotFound' },
-        500: { $ref: '#/components/responses/InternalServerError' }
+        404: NotFoundResponse,
+        500: InternalServerErrorResponse
       }
     }
   }, async (request, reply) => {
@@ -287,13 +357,13 @@ Retorna todas as posições ativas da carteira em pools de liquidez.
             success: { type: 'boolean', example: true },
             data: {
               type: 'array',
-              items: { $ref: '#/components/schemas/Position' }
+              items: { $ref: 'Position#' }
             },
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        404: { $ref: '#/components/responses/NotFound' },
-        500: { $ref: '#/components/responses/InternalServerError' }
+        404: NotFoundResponse,
+        500: InternalServerErrorResponse
       }
     }
   }, async (request, reply) => {
@@ -377,8 +447,8 @@ A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        404: { $ref: '#/components/responses/NotFound' },
-        500: { $ref: '#/components/responses/InternalServerError' }
+        404: NotFoundResponse,
+        500: InternalServerErrorResponse
       }
     }
   }, async (request, reply) => {

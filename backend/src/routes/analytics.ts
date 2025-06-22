@@ -4,7 +4,55 @@ import { performanceQuerySchema, opportunitiesQuerySchema } from '../schemas/ana
 import { ApiResponse } from '../types/pool';
 import { PerformanceData, MarketOverview, Opportunity } from '../types/analytics';
 
+const BadRequestResponse = {
+  description: 'Requisição inválida',
+  type: 'object',
+  properties: {
+    success: { type: 'boolean' },
+    error: { type: 'string' },
+    timestamp: { type: 'string', format: 'date-time' }
+  }
+};
+
+const InternalServerErrorResponse = {
+  description: 'Erro interno do servidor',
+  type: 'object',
+  properties: {
+    success: { type: 'boolean' },
+    error: { type: 'string' },
+    timestamp: { type: 'string', format: 'date-time' }
+  }
+};
+
+const MarketOverviewSchema = {
+  $id: 'MarketOverview',
+  type: 'object',
+  properties: {
+    totalTvl: { type: 'number' },
+    averageApy: { type: 'number' },
+    topPools: { type: 'array', items: { type: 'object' } },
+    marketTrends: { type: 'object' }
+  }
+};
+
+const OpportunitySchema = {
+  $id: 'Opportunity',
+  type: 'object',
+  properties: {
+    poolId: { type: 'string' },
+    protocol: { type: 'string' },
+    tokenA: { type: 'string' },
+    tokenB: { type: 'string' },
+    estimatedApy: { type: 'number' },
+    riskScore: { type: 'number' },
+    confidence: { type: 'number' },
+    reason: { type: 'string' }
+  }
+};
+
 export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
+  fastify.addSchema(MarketOverviewSchema);
+  fastify.addSchema(OpportunitySchema);
   const analyticsService = new AnalyticsService();
 
   fastify.get<{
@@ -31,7 +79,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'object' },
+            data: { type: 'object', additionalProperties: true },
             timestamp: { type: 'string' }
           }
         }
@@ -107,11 +155,11 @@ Dados atualizados a cada 10 minutos com informações em tempo real.
           type: 'object',
           properties: {
             success: { type: 'boolean', example: true },
-            data: { $ref: '#/components/schemas/MarketOverview' },
+            data: { $ref: 'MarketOverview#' },
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        500: { $ref: '#/components/responses/InternalServerError' }
+        500: InternalServerErrorResponse
       }
     }
   }, async (request, reply) => {
@@ -233,13 +281,13 @@ Identifica oportunidades de investimento baseado em análise algorítmica avanç
             success: { type: 'boolean', example: true },
             data: {
               type: 'array',
-              items: { $ref: '#/components/schemas/Opportunity' }
+              items: { $ref: 'Opportunity#' }
             },
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        400: { $ref: '#/components/responses/BadRequest' },
-        500: { $ref: '#/components/responses/InternalServerError' }
+        400: BadRequestResponse,
+        500: InternalServerErrorResponse
       }
     }
   }, async (request, reply) => {
@@ -391,8 +439,8 @@ Fornece análise detalhada da performance histórica do mercado e estratégias.
             timestamp: { type: 'string', format: 'date-time' }
           }
         },
-        400: { $ref: '#/components/responses/BadRequest' },
-        500: { $ref: '#/components/responses/InternalServerError' }
+        400: BadRequestResponse,
+        500: InternalServerErrorResponse
       }
     }
   }, async (request, reply) => {
