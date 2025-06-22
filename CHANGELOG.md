@@ -5,6 +5,20 @@ Todas as mudanças importantes deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.0.1] - 2025-06-22
+
+### 🐛 Corrigido
+- **Schema Validation Error**: Resolvido erro crítico do Fastify
+  - Removidas todas as propriedades `example` dos schemas JSON
+  - Arquivos corrigidos: `backend/src/routes/wallet.ts`, `pools.ts`, `analytics.ts`
+  - Erro resolvido: `Failed building the validation schema for GET: /api/wallet/:publicKey/portfolio, due to error strict mode: unknown keyword: "example"`
+  - Backend agora inicia sem erros de validação
+  - Todas as rotas da API funcionando corretamente
+
+### 📚 Documentação
+- **README.md**: Adicionado seção de troubleshooting com a correção recente
+- **CHANGELOG.md**: Documentado a correção do schema validation
+
 ## [1.0.0] - 2024-12-21
 
 ### ✨ Adicionado

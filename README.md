@@ -133,6 +133,15 @@ npm run pre-commit       # Alias para check:all
 
 ## 🔧 **Troubleshooting**
 
+### **✅ CORREÇÃO RECENTE: Schema Validation Error**
+**Problema resolvido:** `Failed building the validation schema for GET: /api/wallet/:publicKey/portfolio, due to error strict mode: unknown keyword: "example"`
+
+**Solução aplicada:**
+- Removidas todas as propriedades `example` dos schemas do Fastify
+- Arquivos corrigidos: `wallet.ts`, `pools.ts`, `analytics.ts`
+- Backend agora inicia sem erros de validação
+- Todas as rotas da API funcionando corretamente
+
 ### **❌ Problema: "Port already in use"**
 ```bash
 # Verificar o que está usando a porta
