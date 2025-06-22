@@ -56,11 +56,14 @@ nano .env
 
 ### 3. Instalação com Docker (Recomendado)
 ```bash
-# Iniciar todos os serviços
+# Ambiente de desenvolvimento
 docker-compose up -d
 
 # Verificar status
 docker-compose ps
+
+# Para build de produção
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ### 4. Instalação Manual
