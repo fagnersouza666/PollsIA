@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 export const performanceQuerySchema = z.object({
-  publicKey: z.string().min(32, 'Invalid public key').max(50, 'Public key too long'),
   timeframe: z.enum(['1d', '7d', '30d', '90d']).optional().default('30d'),
 });
 

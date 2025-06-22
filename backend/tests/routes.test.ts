@@ -38,11 +38,12 @@ describe('API routes', () => {
       getOpportunities: jest.fn()
     } as any;
 
+    process.env.NODE_ENV = 'test';
     MockedPoolService.mockImplementation(() => poolMock);
     MockedWalletService.mockImplementation(() => walletMock);
     MockedAnalyticsService.mockImplementation(() => analyticsMock);
 
-    app = Fastify();
+    app = Fastify({ ajv: { customOptions: { strict: false } } });
     await app.register(poolRoutes, { prefix: '/api/pools' });
     await app.register(walletRoutes, { prefix: '/api/wallet' });
     await app.register(analyticsRoutes, { prefix: '/api/analytics' });
@@ -68,36 +69,38 @@ describe('API routes', () => {
   });
 
   it('POST /api/wallet/connect returns connection', async () => {
-    walletMock.connectWallet.mockResolvedValue({ connected: true } as any);
+    walletMock.connectWallet.mockResolvedValue({ publicKey: 'pk', connected: true, balance: 2 } as any);
     const res = await app.inject({
       method: 'POST',
       url: '/api/wallet/connect',
-      payload: { publicKey: 'p', signature: 's' }
+      payload: { publicKey: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', signature: 's'.repeat(64) }
     });
+    console.log('connect', res.statusCode, res.payload);
     expect(JSON.parse(res.payload).data.connected).toBe(true);
   });
 
   it('GET /api/wallet/pk/portfolio returns portfolio', async () => {
     walletMock.getPortfolio.mockResolvedValue({ totalValue: 1 } as any);
-    const res = await app.inject({ method: 'GET', url: '/api/wallet/pk/portfolio' });
+    const res = await app.inject({ method: 'GET', url: `/api/wallet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/portfolio` });
     expect(JSON.parse(res.payload).data.totalValue).toBe(1);
   });
 
   it('GET /api/wallet/pk/positions returns positions', async () => {
     walletMock.getPositions.mockResolvedValue([{} as any]);
-    const res = await app.inject({ method: 'GET', url: '/api/wallet/pk/positions' });
+    const res = await app.inject({ method: 'GET', url: `/api/wallet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/positions` });
     expect(JSON.parse(res.payload).data.length).toBe(1);
   });
 
   it('DELETE /api/wallet/pk/disconnect returns true', async () => {
     walletMock.disconnectWallet.mockResolvedValue(true);
-    const res = await app.inject({ method: 'DELETE', url: '/api/wallet/pk/disconnect' });
+    const res = await app.inject({ method: 'DELETE', url: `/api/wallet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/disconnect` });
     expect(JSON.parse(res.payload).data.disconnected).toBe(true);
   });
 
   it('GET /api/analytics/performance/pk returns metrics', async () => {
-    analyticsMock.getPerformance.mockResolvedValue({ totalReturn: 1 } as any);
-    const res = await app.inject({ method: 'GET', url: '/api/analytics/performance/pk' });
+    analyticsMock.getPerformance.mockResolvedValue({ totalReturn: 1, history: [] } as any);
+    const res = await app.inject({ method: 'GET', url: `/api/analytics/performance/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R` });
+    console.log('perf', res.statusCode, res.payload, analyticsMock.getPerformance.mock.calls);
     expect(JSON.parse(res.payload).data.totalReturn).toBe(1);
   });
 

@@ -16,7 +16,7 @@ describe('PoolService', () => {
     ]});
 
     const service = new PoolService();
-    const pools = await service.discoverPools({ minTvl: 100000 });
+    const pools = await service.discoverPools({ minTvl: 100000, limit: 20 });
 
     expect(pools).toHaveLength(1);
     expect(pools[0]).toEqual(expect.objectContaining({
