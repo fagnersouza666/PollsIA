@@ -7,7 +7,7 @@ Textos sempre em português
 ## Arquitetura do Projeto
 
 **Sistema:** Microserviços desacoplados
-- **Backend:** Node.js/TypeScript + Fastify + PostgreSQL + Redis
+- **Backend:** Node.js/TypeScript + Fastify + Supabase (PostgreSQL) + Redis
 - **Frontend:** Next.js 14 + TailwindCSS + Solana Wallet Adapter
 - **Blockchain:** Integração com Solana via @solana/kit (padrões modernos)
 - **Deploy:** Docker + Kubernetes
@@ -460,7 +460,7 @@ fastify.get('/protected', {
 
 ---
 
-## 4. PostgreSQL (node-postgres)
+## 4. Supabase (PostgreSQL)
 
 ### Configuração de Pool de Conexões
 

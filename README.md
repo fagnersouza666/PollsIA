@@ -21,7 +21,7 @@ PollsIA é uma plataforma completa para descoberta, análise e gestão de pools 
 - **Runtime**: Node.js 20+
 - **Framework**: Fastify + TypeScript
 - **Blockchain**: Solana 2.0 (mainnet-beta)
-- **Banco de Dados**: PostgreSQL + Redis
+- **Banco de Dados**: Supabase (PostgreSQL) + Redis
 - **APIs Externas**: Raydium DEX, CoinGecko, Solana RPC
 - **Documentação**: Swagger/OpenAPI 3.0
 
@@ -233,6 +233,8 @@ docker-compose -f docker-compose.prod.yml up -d
 ```bash
 NODE_ENV=production
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+SUPABASE_URL=https://project.supabase.co
+SUPABASE_KEY=your-anon-key
 DATABASE_URL=postgresql://user:pass@host:5432/pollsia
 REDIS_URL=redis://host:6379
 FRONTEND_URL=https://pollsia.com

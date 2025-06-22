@@ -2,6 +2,7 @@ import { createSolanaRpc } from '@solana/rpc';
 import { address } from '@solana/addresses';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { config } from '../config/env';
+import { supabase } from './supabaseClient';
 import { Portfolio, Position } from '../types/wallet';
 import axios from 'axios';
 
@@ -32,6 +33,15 @@ export class WalletService {
 
       // Obter saldo real
       const balance = await this.getBalance(publicKey);
+
+      try {
+        await supabase.from('wallet_connections').insert({
+          public_key: publicKey,
+          connected_at: new Date().toISOString()
+        });
+      } catch (insertError) {
+        console.warn('Falha ao registrar conexão no Supabase');
+      }
 
       return {
         publicKey,
