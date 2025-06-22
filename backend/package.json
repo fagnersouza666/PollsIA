@@ -27,6 +27,7 @@
     "@solana/transaction-messages": "^2.0.0-preview.4",
     "@solana/transactions": "^2.0.0-preview.4",
     "@solana/web3.js": "^2.0.0-preview.4",
+    "@supabase/supabase-js": "^2.50.0",
     "axios": "^1.6.5",
     "bullmq": "^5.1.9",
     "dotenv": "^16.3.1",

@@ -22,7 +22,7 @@ Sistema automatizado de gestão e otimização de pools de liquidez na blockchai
 
 - **Backend**: Node.js 20+ + TypeScript + Fastify
 - **Blockchain**: Solana 2.0 (mainnet-beta)
-- **Banco de Dados**: PostgreSQL + Redis
+- **Banco de Dados**: Supabase (PostgreSQL) + Redis
 - **APIs Externas**: Raydium DEX, CoinGecko, Solana RPC
 
 ## 🔗 Integrações Principais
