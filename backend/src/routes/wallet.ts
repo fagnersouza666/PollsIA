@@ -1,84 +1,195 @@
 import { FastifyPluginAsync } from 'fastify';
 import { WalletService } from '../services/WalletService';
-import { walletConnectSchema, publicKeyParamSchema } from '../schemas/wallet';
+import { walletConnectSchema } from '../schemas/wallet';
 import { ApiResponse } from '../types/pool';
-import { WalletConnection, Portfolio, Position } from '../types/wallet';
+import { Portfolio, Position, WalletConnection } from '../types/wallet';
 
 export const walletRoutes: FastifyPluginAsync = async (fastify) => {
   const walletService = new WalletService();
 
+  // Conectar carteira
   fastify.post<{
     Body: any;
     Reply: ApiResponse<WalletConnection>;
   }>('/connect', {
     schema: {
+      tags: ['Wallet'],
+      summary: 'Conectar carteira Solana',
+      description: `
+Conecta uma carteira Solana à plataforma e valida a propriedade.
+
+### Processo de Conexão
+1. **Validação**: Verifica se a chave pública é válida
+2. **Assinatura**: Valida a assinatura fornecida
+3. **Registro**: Registra a carteira no sistema
+4. **Análise**: Inicia análise do portfólio
+
+### Requisitos
+- **publicKey**: Chave pública válida da carteira Solana
+- **signature**: Assinatura de uma mensagem específica
+
+### Phantom Wallet
+Para carteiras Phantom, use o método \`signMessage\` para gerar a assinatura:
+\`\`\`javascript
+const message = "Conectar à PollsIA";
+const signature = await window.solana.signMessage(
+  new TextEncoder().encode(message)
+);
+\`\`\`
+
+### Segurança
+- Assinaturas são validadas usando criptografia ed25519
+- Nenhuma chave privada é armazenada
+- Conexões expiram em 24 horas
+      `,
       body: {
         type: 'object',
+        required: ['publicKey', 'signature'],
         properties: {
-          publicKey: { type: 'string' },
-          signature: { type: 'string' }
-        },
-        required: ['publicKey', 'signature']
+          publicKey: {
+            type: 'string',
+            description: 'Chave pública da carteira Solana',
+            pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
+          },
+          signature: {
+            type: 'string',
+            description: 'Assinatura da mensagem de autenticação',
+            minLength: 64
+          }
+        }
       },
       response: {
         200: {
+          description: 'Carteira conectada com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean' },
-            data: { type: 'object' },
-            timestamp: { type: 'string' }
+            success: { type: 'boolean', example: true },
+            data: { $ref: '#/components/schemas/WalletConnection' },
+            timestamp: { type: 'string', format: 'date-time' }
           }
-        }
+        },
+        400: { $ref: '#/components/responses/BadRequest' },
+        401: {
+          description: 'Assinatura inválida',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: { type: 'string', example: 'Assinatura inválida' },
+            timestamp: { type: 'string', format: 'date-time' }
+          }
+        },
+        500: { $ref: '#/components/responses/InternalServerError' }
       }
     }
   }, async (request, reply) => {
     try {
       const body = walletConnectSchema.parse(request.body);
-      const { publicKey, signature } = body;
-      const result = await walletService.connectWallet(publicKey, signature);
+      const connection = await walletService.connectWallet(body.publicKey, body.signature);
       return {
         success: true,
-        data: result,
+        data: connection,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
       fastify.log.error('Wallet connection error:', error);
-      return reply.status(400).send({
+
+      if (error instanceof Error && error.message.includes('Invalid signature')) {
+        return reply.status(401).send({
+          success: false,
+          error: 'Assinatura inválida',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      return reply.status(500).send({
         success: false,
-        error: 'Failed to connect wallet',
+        error: 'Erro ao conectar carteira',
         timestamp: new Date().toISOString()
       });
     }
   });
 
+  // Obter portfólio
   fastify.get<{
     Params: any;
     Reply: ApiResponse<Portfolio>;
-  }>('/portfolio/:publicKey', {
+  }>('/:publicKey/portfolio', {
     schema: {
+      tags: ['Wallet'],
+      summary: 'Obter portfólio da carteira',
+      description: `
+Retorna análise completa do portfólio de uma carteira conectada.
+
+### Informações Incluídas
+
+#### 1. Visão Geral
+- **Valor Total**: Soma de todos os ativos em USD
+- **Saldo SOL**: Saldo nativo da carteira
+- **Token Accounts**: Número de contas de token
+- **Mudança 24h**: Variação percentual do portfólio
+
+#### 2. Distribuição de Ativos
+- **Tokens**: Lista de todos os tokens com valores
+- **Percentuais**: Distribuição por token
+- **Preços**: Preços atuais de cada token
+
+#### 3. Posições em Pools
+- **Pools Ativos**: Posições em pools de liquidez
+- **Rewards**: Recompensas acumuladas
+- **IL**: Perda impermanente atual
+
+#### 4. Histórico de Performance
+- **Gráficos**: Evolução do valor do portfólio
+- **Métricas**: ROI, Sharpe ratio, drawdown
+- **Comparação**: Performance vs SOL, vs mercado
+
+#### 5. Análise de Risco
+- **Concentração**: Diversificação do portfólio
+- **Volatilidade**: Risco histórico
+- **Correlações**: Correlação entre ativos
+
+### Cache
+Dados são atualizados a cada 5 minutos para otimizar performance.
+      `,
       params: {
         type: 'object',
+        required: ['publicKey'],
         properties: {
-          publicKey: { type: 'string' }
-        },
-        required: ['publicKey']
+          publicKey: {
+            type: 'string',
+            description: 'Chave pública da carteira',
+            example: 'HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337',
+            pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
+          }
+        }
       },
       response: {
         200: {
+          description: 'Portfólio retornado com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean' },
-            data: { type: 'object' },
-            timestamp: { type: 'string' }
+            success: { type: 'boolean', example: true },
+            data: { $ref: '#/components/schemas/Portfolio' },
+            timestamp: { type: 'string', format: 'date-time' }
           }
-        }
+        },
+        404: { $ref: '#/components/responses/NotFound' },
+        500: { $ref: '#/components/responses/InternalServerError' }
       }
     }
   }, async (request, reply) => {
     try {
-      const params = publicKeyParamSchema.parse(request.params);
-      const { publicKey } = params;
+      const { publicKey } = request.params as { publicKey: string };
       const portfolio = await walletService.getPortfolio(publicKey);
+
+      if (!portfolio) {
+        return reply.status(404).send({
+          success: false,
+          error: 'Carteira não encontrada ou não conectada',
+          timestamp: new Date().toISOString()
+        });
+      }
+
       return {
         success: true,
         data: portfolio,
@@ -88,40 +199,116 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
       fastify.log.error('Portfolio error:', error);
       return reply.status(500).send({
         success: false,
-        error: 'Failed to get portfolio',
+        error: 'Erro ao obter portfólio',
         timestamp: new Date().toISOString()
       });
     }
   });
 
+  // Obter posições
   fastify.get<{
     Params: any;
     Reply: ApiResponse<Position[]>;
-  }>('/positions/:publicKey', {
+  }>('/:publicKey/positions', {
     schema: {
+      tags: ['Wallet'],
+      summary: 'Obter posições em pools de liquidez',
+      description: `
+Retorna todas as posições ativas da carteira em pools de liquidez.
+
+### Informações por Posição
+
+#### 1. Dados Básicos
+- **Pool ID**: Identificador único do pool
+- **Tokens**: Par de tokens (tokenA/tokenB)
+- **Liquidez**: Quantidade de liquidez fornecida
+- **Valor**: Valor atual da posição em USD
+
+#### 2. Performance
+- **APY**: Retorno anualizado da posição
+- **Rewards**: Recompensas acumuladas
+- **Fees Earned**: Taxas ganhas até o momento
+- **Entry Date**: Data de entrada na posição
+
+#### 3. Análise de Risco
+- **IL Atual**: Perda impermanente atual
+- **IL Máximo**: Maior IL registrado
+- **Volatilidade**: Volatilidade dos tokens
+- **Correlação**: Correlação entre os tokens
+
+#### 4. Sugestões
+- **Rebalanceamento**: Sugestões de otimização
+- **Exit Signals**: Sinais de saída
+- **Opportunities**: Oportunidades de migração
+
+### Filtros
+- **active**: Apenas posições ativas
+- **minValue**: Valor mínimo da posição
+- **protocol**: Filtrar por protocolo
+      `,
       params: {
         type: 'object',
+        required: ['publicKey'],
         properties: {
-          publicKey: { type: 'string' }
-        },
-        required: ['publicKey']
+          publicKey: {
+            type: 'string',
+            description: 'Chave pública da carteira',
+            example: 'HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337',
+            pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
+          }
+        }
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          active: {
+            type: 'boolean',
+            description: 'Filtrar apenas posições ativas',
+            default: true
+          },
+          minValue: {
+            type: 'number',
+            minimum: 0,
+            description: 'Valor mínimo da posição em USD'
+          },
+          protocol: {
+            type: 'string',
+            enum: ['raydium', 'orca', 'all'],
+            description: 'Filtrar por protocolo',
+            default: 'all'
+          }
+        }
       },
       response: {
         200: {
+          description: 'Posições retornadas com sucesso',
           type: 'object',
           properties: {
-            success: { type: 'boolean' },
-            data: { type: 'array' },
-            timestamp: { type: 'string' }
+            success: { type: 'boolean', example: true },
+            data: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Position' }
+            },
+            timestamp: { type: 'string', format: 'date-time' }
           }
-        }
+        },
+        404: { $ref: '#/components/responses/NotFound' },
+        500: { $ref: '#/components/responses/InternalServerError' }
       }
     }
   }, async (request, reply) => {
     try {
-      const params = publicKeyParamSchema.parse(request.params);
-      const { publicKey } = params;
+      const { publicKey } = request.params as { publicKey: string };
       const positions = await walletService.getPositions(publicKey);
+
+      if (!positions) {
+        return reply.status(404).send({
+          success: false,
+          error: 'Carteira não encontrada ou sem posições',
+          timestamp: new Date().toISOString()
+        });
+      }
+
       return {
         success: true,
         data: positions,
@@ -131,7 +318,92 @@ export const walletRoutes: FastifyPluginAsync = async (fastify) => {
       fastify.log.error('Positions error:', error);
       return reply.status(500).send({
         success: false,
-        error: 'Failed to get positions',
+        error: 'Erro ao obter posições',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Desconectar carteira
+  fastify.delete<{
+    Params: any;
+    Reply: ApiResponse<{ disconnected: boolean }>;
+  }>('/:publicKey/disconnect', {
+    schema: {
+      tags: ['Wallet'],
+      summary: 'Desconectar carteira',
+      description: `
+Desconecta uma carteira da plataforma e limpa dados de sessão.
+
+### Processo de Desconexão
+1. **Validação**: Verifica se a carteira está conectada
+2. **Limpeza**: Remove dados de sessão e cache
+3. **Notificação**: Registra evento de desconexão
+4. **Confirmação**: Retorna status de desconexão
+
+### Segurança
+- Remove todos os dados temporários
+- Invalida tokens de sessão
+- Limpa cache do portfólio
+- Registra log de auditoria
+
+### Reconexão
+A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\`.
+      `,
+      params: {
+        type: 'object',
+        required: ['publicKey'],
+        properties: {
+          publicKey: {
+            type: 'string',
+            description: 'Chave pública da carteira a desconectar',
+            example: 'HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337',
+            pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
+          }
+        }
+      },
+      response: {
+        200: {
+          description: 'Carteira desconectada com sucesso',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            data: {
+              type: 'object',
+              properties: {
+                disconnected: { type: 'boolean', example: true }
+              }
+            },
+            timestamp: { type: 'string', format: 'date-time' }
+          }
+        },
+        404: { $ref: '#/components/responses/NotFound' },
+        500: { $ref: '#/components/responses/InternalServerError' }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { publicKey } = request.params as { publicKey: string };
+      const result = await walletService.disconnectWallet(publicKey);
+
+      if (!result) {
+        return reply.status(404).send({
+          success: false,
+          error: 'Carteira não encontrada ou já desconectada',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      return {
+        success: true,
+        data: { disconnected: true },
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      fastify.log.error('Wallet disconnect error:', error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Erro ao desconectar carteira',
         timestamp: new Date().toISOString()
       });
     }

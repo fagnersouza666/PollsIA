@@ -1,230 +1,286 @@
-# PollsIA - Otimizador de Pools Solana
+# 🚀 PollsIA - Sistema de Gestão de Pools Solana
 
-Sistema automatizado de gestão e otimização de pools de liquidez na blockchain Solana, maximizando retornos através de rebalanceamento inteligente e gestão automatizada de posições com dados em tempo real do Raydium DEX.
+Sistema automatizado de gestão e otimização de pools de liquidez na blockchain Solana com integração em tempo real ao Raydium DEX.
 
-## ✨ Características Principais
+## 📋 Visão Geral
 
-- **🚀 Padrões Modernos Solana**: Integração com Solana 2.0 usando `@solana/rpc`, `@solana/keys` e `@solana-program/token`
-- **🔗 Phantom Wallet**: Conexão nativa com carteira Phantom usando APIs modernas
-- **📊 Dados em Tempo Real**: Integração direta com Raydium DEX API (695k+ pools)
-- **🤖 Gestão Automatizada**: Algoritmos de otimização de liquidez em desenvolvimento
-- **🌐 Interface Multilíngue**: Todos os textos em português brasileiro
+PollsIA é uma plataforma completa para descoberta, análise e gestão de pools de liquidez na blockchain Solana. Integra dados em tempo real de mais de 695.000 pools do Raydium DEX, fornecendo analytics avançados e oportunidades de investimento otimizadas.
+
+### ✨ Características Principais
+
+- **🔗 Solana 2.0**: Integração moderna com `@solana/rpc`, `@solana/keys`
+- **📊 Dados em Tempo Real**: Integração direta com Raydium DEX (695k+ pools)
+- **🤖 Analytics Avançado**: Métricas de performance e análise de riscos
+- **👛 Phantom Wallet**: Conexão nativa com carteira Phantom
 - **⚡ Performance**: WebSockets para atualizações em tempo real
+- **📚 Documentação Swagger**: API REST completamente documentada
 
 ## 🛠️ Stack Tecnológico
 
 ### Backend
-- **Runtime**: Node.js 18+ com TypeScript
-- **Framework**: Fastify (alta performance)
-- **Blockchain**: Solana 2.0 (`@solana/rpc`, `@solana/keys`)
+- **Runtime**: Node.js 20+
+- **Framework**: Fastify + TypeScript
+- **Blockchain**: Solana 2.0 (mainnet-beta)
 - **Banco de Dados**: PostgreSQL + Redis
-- **Jobs**: BullMQ para processamento em background
+- **APIs Externas**: Raydium DEX, CoinGecko, Solana RPC
+- **Documentação**: Swagger/OpenAPI 3.0
 
 ### Frontend
-- **Framework**: Next.js 14 com App Router
-- **UI**: TailwindCSS + Lucide Icons + Radix UI
-- **Estado**: Zustand + TanStack Query
-- **Carteira**: Phantom Wallet Adapter + APIs nativas
+- **Framework**: Next.js 14 + TypeScript
+- **Styling**: TailwindCSS
+- **State Management**: Zustand
+- **Gráficos**: Chart.js
+- **Wallet**: Phantom Wallet Integration
 
-### Blockchain & APIs
-- **Solana RPC**: Endpoints mainnet-beta oficiais
-- **Raydium DEX**: API v2 para dados de pools
-- **CoinGecko**: Preços de tokens em tempo real
-- **Jupiter**: Agregador de swaps (planejado)
-
-## 📦 Instalação
+## 🚀 Instalação e Configuração
 
 ### Pré-requisitos
-- Node.js 18+ (recomendado 20+)
-- npm ou yarn
-- PostgreSQL 14+
-- Redis 6+
+- Node.js 20+
+- Docker e Docker Compose
+- Git
 
-### Backend (Porta 3001)
+### 1. Clone o Repositório
 ```bash
-cd backend
-npm install
-cp .env.example .env
-# Configure as variáveis de ambiente
-npm run dev        # Desenvolvimento com hot reload
-npm run build      # Build para produção
-npm run lint       # Verificar código
-npm run typecheck  # Verificar tipos TypeScript
+git clone https://github.com/pollsia/pollsia.git
+cd pollsia
 ```
 
-### Frontend (Porta 3000)
+### 2. Configuração de Ambiente
+```bash
+# Copie o arquivo de exemplo
+cp .env.example .env
+
+# Configure as variáveis necessárias
+nano .env
+```
+
+### 3. Instalação com Docker (Recomendado)
+```bash
+# Iniciar todos os serviços
+docker-compose up -d
+
+# Verificar status
+docker-compose ps
+```
+
+### 4. Instalação Manual
+
+#### Backend
+```bash
+cd backend
+npm install --legacy-peer-deps
+npm run build
+npm start
+```
+
+#### Frontend
 ```bash
 cd frontend
 npm install
+npm run build
+npm start
+```
+
+## 📚 Documentação da API
+
+### Swagger UI
+A API está completamente documentada com Swagger/OpenAPI 3.0:
+
+- **Swagger UI**: http://localhost:3001/docs
+- **OpenAPI JSON**: http://localhost:3001/docs/json
+- **Documentação Detalhada**: [API_DOCUMENTATION.md](backend/API_DOCUMENTATION.md)
+
+### Principais Endpoints
+
+| Grupo | Endpoint | Descrição |
+|-------|----------|-----------|
+| **Health** | `GET /health` | Status da API |
+| **Pools** | `GET /api/pools/discover` | Descobrir pools otimizados |
+| **Pools** | `GET /api/pools/rankings` | Rankings de pools |
+| **Pools** | `GET /api/pools/{id}/analysis` | Análise detalhada de pool |
+| **Wallet** | `POST /api/wallet/connect` | Conectar carteira |
+| **Wallet** | `GET /api/wallet/{key}/portfolio` | Portfólio da carteira |
+| **Wallet** | `GET /api/wallet/{key}/positions` | Posições ativas |
+| **Analytics** | `GET /api/analytics/market-overview` | Visão geral do mercado |
+| **Analytics** | `GET /api/analytics/opportunities` | Oportunidades de investimento |
+| **Analytics** | `GET /api/analytics/performance` | Análise de performance |
+
+### Rate Limits
+| Grupo de Endpoints | Limite | Janela |
+|-------------------|--------|--------|
+| `/api/pools/*` | 60 req | 1 minuto |
+| `/api/wallet/*` | 120 req | 1 minuto |
+| `/api/analytics/*` | 30 req | 1 minuto |
+
+## 🔧 Desenvolvimento
+
+### Comandos Úteis
+
+#### Backend
+```bash
+cd backend
 npm run dev        # Servidor de desenvolvimento
-npm run build      # Build otimizado
-npm run lint       # Next.js lint
-npm run typecheck  # Verificar tipos
+npm run build      # Build de produção
+npm run lint       # Linting
+npm run test       # Testes
 ```
 
-### Docker (Recomendado)
+#### Frontend
 ```bash
-docker-compose up -d  # Subir todos os serviços
-docker-compose logs   # Ver logs dos containers
-docker-compose down   # Parar serviços
+cd frontend
+npm run dev        # Servidor de desenvolvimento
+npm run build      # Build de produção
+npm run lint       # Linting
+npm run test       # Testes
 ```
 
-## 🚀 Uso Rápido
+### Estrutura do Projeto
+```
+pollsia/
+├── backend/                 # API REST + Swagger
+│   ├── src/
+│   │   ├── config/         # Configurações (Swagger, ENV)
+│   │   ├── routes/         # Endpoints da API
+│   │   ├── services/       # Lógica de negócio
+│   │   ├── schemas/        # Validação Zod
+│   │   └── types/          # TypeScript types
+│   ├── API_DOCUMENTATION.md # Documentação completa
+│   └── package.json
+├── frontend/               # Interface Next.js
+│   ├── src/
+│   │   ├── app/           # App Router
+│   │   ├── components/    # Componentes React
+│   │   └── utils/         # Utilitários
+│   └── package.json
+├── docker-compose.yml      # Orquestração Docker
+└── README.md              # Este arquivo
+```
 
-### Testes de Conectividade
+## 🔗 Integrações
+
+### Solana Blockchain
+- **RPC**: Mainnet-beta oficial
+- **Bibliotecas**: `@solana/rpc`, `@solana/keys`, `@solana-program/token`
+- **Carteiras**: Phantom Wallet
+
+### APIs Externas
+- **Raydium DEX**: Dados de pools em tempo real
+- **CoinGecko**: Preços e dados de mercado
+- **Solana RPC**: Dados on-chain
+
+## 📊 Exemplos de Uso
+
+### 1. Descobrir Pools de Alto Rendimento
 ```bash
-# Teste de carteira Phantom (debug completo)
-open test-wallet.html
-
-# Interface simples funcional
-open simple-frontend.html
-
-# Interface completa
-open index.html
+curl -X GET "http://localhost:3001/api/pools/discover?minTvl=1000000&sortBy=apy&limit=5" \
+  -H "Accept: application/json"
 ```
 
-### Desenvolvimento
+### 2. Conectar Carteira Phantom
 ```bash
-# Terminal 1 - Backend
-cd backend && npm run dev
-
-# Terminal 2 - Frontend  
-cd frontend && npm run dev
-
-# Terminal 3 - Logs em tempo real
-docker-compose logs -f
+curl -X POST "http://localhost:3001/api/wallet/connect" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicKey": "HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337",
+    "signature": "signature_hash_here"
+  }'
 ```
 
-## 📡 APIs Implementadas
-
-### Endpoints Backend
-- `GET /api/pools/discover` - Descobrir pools do Raydium
-- `GET /api/pools/rankings` - Rankings por performance
-- `GET /api/wallet/portfolio/:publicKey` - Dados do portfólio
-- `GET /api/wallet/positions/:publicKey` - Posições ativas
-- `POST /api/wallet/connect` - Conectar carteira Phantom
-
-### Integrações Externas
-- **Raydium API**: `https://api.raydium.io/v2/sdk/liquidity/mainnet.json`
-- **CoinGecko**: Preços USD em tempo real
-- **Solana RPC**: `https://api.mainnet-beta.solana.com`
-
-## 🔧 Configuração
-
-### Variáveis de Ambiente (.env)
+### 3. Obter Análise de Mercado
 ```bash
-# Solana
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-SOLANA_NETWORK=mainnet-beta
-
-# Banco de Dados
-DATABASE_URL=postgresql://user:password@localhost:5432/pollsia
-REDIS_URL=redis://localhost:6379
-
-# APIs Externas
-COINGECKO_API_KEY=your_key_here
-RAYDIUM_API_URL=https://api.raydium.io/v2
-
-# Aplicação
-PORT=3001
-NODE_ENV=development
+curl -X GET "http://localhost:3001/api/analytics/market-overview" \
+  -H "Accept: application/json"
 ```
 
-## 📊 Status Atual
-
-### ✅ Implementado
-- [x] Conexão com Phantom Wallet (debug completo)
-- [x] Integração real com Raydium DEX (695k+ pools)
-- [x] Backend funcional com dados em tempo real
-- [x] Interface traduzida para português
-- [x] Padrões modernos Solana 2.0
-- [x] WalletService com RPC moderno
-- [x] PhantomWalletService nativo
-
-### 🔄 Em Desenvolvimento
-- [ ] Sistema de rebalanceamento automático
-- [ ] Algoritmos de otimização de pools
-- [ ] Dashboard avançado de analytics
-- [ ] Integração com Jupiter para swaps
-- [ ] Sistema de notificações
-
-### 🎯 Roadmap
-- [ ] Mobile app (React Native)
-- [ ] Suporte a mais DEXs (Orca, Jupiter)
-- [ ] Estratégias de yield farming
-- [ ] API pública para terceiros
-
-## 🛠️ Troubleshooting
+## 🐛 Troubleshooting
 
 ### Problemas Comuns
 
-**1. "Carregando pools do Raydium..." infinito**
+1. **Dependências do Solana**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+2. **Porta 3001 em uso**
+   ```bash
+   # Verificar processo usando a porta
+   lsof -i :3001
+   # Ou alterar PORT no .env
+   ```
+
+3. **Problemas de CORS**
+   - Verifique se `FRONTEND_URL` está configurado corretamente no `.env`
+
+4. **Timeout na Solana RPC**
+   - Aumente o timeout nas configurações
+   - Verifique conectividade com a rede Solana
+
+## 🚀 Deploy
+
+### Produção com Docker
 ```bash
-# Verificar se backend está rodando
-curl http://localhost:3001/api/pools/discover
-# Checar logs do PoolService
-docker-compose logs backend
+# Build das imagens
+docker-compose -f docker-compose.prod.yml build
+
+# Deploy
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
-**2. Phantom não conecta**
+### Variáveis de Ambiente de Produção
 ```bash
-# Usar teste isolado
-open test-wallet.html
-# Verificar console do navegador
-# Confirmar se extensão está ativada
+NODE_ENV=production
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+DATABASE_URL=postgresql://user:pass@host:5432/pollsia
+REDIS_URL=redis://host:6379
+FRONTEND_URL=https://pollsia.com
 ```
 
-**3. Erros de lint**
-```bash
-# Backend
-cd backend && npm run lint
-# Prefixar variáveis não usadas com _
-# Evitar uso de 'any'
+## 📈 Roadmap
 
-# Frontend
-cd frontend && npm run lint
-```
-
-**4. Conflitos de dependências Solana**
-```bash
-# Limpar cache e reinstalar
-rm -rf node_modules package-lock.json
-npm install --legacy-peer-deps
-```
-
-### Debug Tools
-- `test-wallet.html` - Teste isolado do Phantom
-- `simple-frontend.html` - Interface mínima funcional
-- Browser DevTools - Console logs detalhados
-- `docker-compose logs` - Logs dos serviços
+- [x] **v1.0**: API REST básica com Swagger
+- [x] **v1.1**: Integração Raydium DEX
+- [x] **v1.2**: Phantom Wallet
+- [ ] **v2.0**: WebSockets em tempo real
+- [ ] **v2.1**: Machine Learning para predições
+- [ ] **v2.2**: Mobile App (React Native)
+- [ ] **v3.0**: Multi-chain (Ethereum, BSC)
 
 ## 🤝 Contribuição
 
 1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feat/nova-feature`)
-3. Commit suas mudanças (`git commit -m 'feat: adiciona nova feature'`)
-4. Push para a branch (`git push origin feat/nova-feature`)
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
 
 ### Padrões de Commit
-- `feat:` - Nova funcionalidade
-- `fix:` - Correção de bug
-- `docs:` - Documentação
-- `chore:` - Tarefas de manutenção
-- `refactor:` - Refatoração de código
+- `feat:` Nova funcionalidade
+- `fix:` Correção de bug
+- `docs:` Documentação
+- `chore:` Tarefas de manutenção
+- `refactor:` Refatoração de código
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ## 📞 Suporte
 
-- **Documentação**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/seu-usuario/pollsia/issues)
-- **Discussões**: [GitHub Discussions](https://github.com/seu-usuario/pollsia/discussions)
+- **Issues**: [GitHub Issues](https://github.com/pollsia/pollsia/issues)
+- **Email**: dev@pollsia.com
+- **Documentação**: [API Docs](backend/API_DOCUMENTATION.md)
+- **Swagger UI**: http://localhost:3001/docs
+
+## 🙏 Agradecimentos
+
+- **Solana Foundation**: Pela blockchain e documentação
+- **Raydium Protocol**: Pelos dados de pools
+- **Phantom Wallet**: Pela integração de carteira
+- **Fastify**: Pelo framework web performático
+- **Next.js**: Pelo framework frontend
 
 ---
 
-**Versão Atual**: 1.0.0  
+**Versão**: 1.0.0  
 **Última Atualização**: Dezembro 2024  
-**Status**: Em desenvolvimento ativo 🚀
+**Status**: Documentação Swagger Completa ✅

@@ -1,95 +1,101 @@
-# API REST - PollsIA Backend
+# 🚀 PollsIA API - Documentação Completa
 
-## Visão Geral
+Sistema automatizado de gestão e otimização de pools de liquidez na blockchain Solana.
 
-Esta é a documentação completa da API REST do PollsIA, um sistema automatizado de gestão de pools de liquidez na blockchain Solana com integração em tempo real ao Raydium DEX.
+## 📋 Índice
 
-**Base URL:** `http://localhost:3001`  
-**Arquitetura:** Node.js + Fastify + TypeScript  
-**Blockchain:** Solana via `@solana/kit` (padrões modernos)
+1. [Visão Geral](#visão-geral)
+2. [Autenticação](#autenticação)
+3. [Rate Limits](#rate-limits)
+4. [Endpoints](#endpoints)
+   - [Health](#health)
+   - [Pools](#pools)
+   - [Wallet](#wallet)
+   - [Analytics](#analytics)
+5. [Schemas](#schemas)
+6. [Códigos de Erro](#códigos-de-erro)
+7. [Exemplos de Uso](#exemplos-de-uso)
 
----
+## 🌟 Visão Geral
 
-## Estrutura de Resposta Padrão
+### Base URL
+- **Desenvolvimento**: `http://localhost:3001`
+- **Produção**: `https://api.pollsia.com`
 
-Todas as rotas seguem o padrão de resposta `ApiResponse<T>`:
+### Características Principais
+- **🔗 Solana 2.0**: Integração moderna com `@solana/rpc`, `@solana/keys`
+- **📊 Dados em Tempo Real**: Integração direta com Raydium DEX (695k+ pools)
+- **🤖 Analytics Avançado**: Métricas de performance e análise de riscos
+- **👛 Phantom Wallet**: Conexão nativa com carteira Phantom
+- **⚡ Performance**: WebSockets para atualizações em tempo real
 
-```typescript
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  timestamp?: string;
-}
-```
+### Stack Tecnológico
+- **Backend**: Node.js 20+ + TypeScript + Fastify
+- **Blockchain**: Solana 2.0 (mainnet-beta)
+- **Banco de Dados**: PostgreSQL + Redis
+- **APIs Externas**: Raydium DEX, CoinGecko, Solana RPC
 
-### Exemplo de Resposta de Sucesso
+## 🔐 Autenticação
+
+### Versão Atual (v1.0)
+- **Status**: API pública (sem autenticação)
+- **Uso**: Livre para desenvolvimento e testes
+
+### Versão Futura (v2.0)
+- **JWT Bearer Token**: Para operações sensíveis
+- **API Key**: Para integrações de terceiros
+- **Rate Limiting**: Por usuário/API key
+
+## 📊 Rate Limits
+
+| Grupo de Endpoints | Limite | Janela | Descrição |
+|-------------------|--------|--------|-----------|
+| `/api/pools/*` | 60 req | 1 minuto | Descoberta e análise de pools |
+| `/api/wallet/*` | 120 req | 1 minuto | Operações de carteira |
+| `/api/analytics/*` | 30 req | 1 minuto | Analytics e performance |
+| `/health` | Ilimitado | - | Status da API |
+
+## 🛠️ Endpoints
+
+### Health
+
+#### `GET /health`
+Verificar status da API e informações do sistema.
+
+**Resposta:**
 ```json
 {
-  "success": true,
-  "data": { /* dados específicos */ },
-  "timestamp": "2025-06-21T10:30:00.000Z"
+  "status": "ok",
+  "timestamp": "2024-12-21T15:30:45.123Z",
+  "version": "1.0.0",
+  "uptime": 3600
 }
 ```
 
-### Exemplo de Resposta de Erro
-```json
-{
-  "success": false,
-  "error": "Mensagem de erro descritiva",
-  "timestamp": "2025-06-21T10:30:00.000Z"
-}
-```
+### Pools
 
----
+#### `GET /api/pools/discover`
+Descobre pools de liquidez otimizados baseado em critérios específicos.
 
-## 🏊 Endpoints de Pools
+**Parâmetros de Query:**
+- `protocol` (string, opcional): `raydium` | `orca` | `all`
+- `minTvl` (string, opcional): TVL mínimo em USD
+- `maxRisk` (string, opcional): `low` | `medium` | `high`
+- `sortBy` (string, opcional): `apy` | `tvl` | `volume`
+- `limit` (string, opcional): Número máximo de pools (1-50)
 
-### `GET /api/pools/discover`
-
-Descobre pools de liquidez disponíveis nos protocolos suportados (principalmente Raydium).
-
-#### Query Parameters
-```typescript
-{
-  protocol?: 'raydium' | 'orca' | 'all';    // Protocolo DEX
-  minTvl?: string;                          // TVL mínimo
-  maxRisk?: 'low' | 'medium' | 'high';      // Nível máximo de risco
-  sortBy?: 'apy' | 'tvl' | 'volume';        // Ordenação
-  limit?: string;                           // Limite de resultados
-}
-```
-
-#### Resposta
-```typescript
-ApiResponse<Pool[]>
-
-interface Pool {
-  id: string;           // ID único do pool
-  tokenA: string;       // Símbolo do primeiro token
-  tokenB: string;       // Símbolo do segundo token
-  apy: number;          // APY anualizado (%)
-  tvl: number;          // Total Value Locked (USD)
-  volume24h: number;    // Volume 24h (USD)
-  protocol: string;     // Protocolo (ex: "Raydium")
-  address?: string;     // Endereço do pool na blockchain
-  fees?: number;        // Taxa de trading (%)
-  apr?: number;         // APR anualizado (%)
-}
-```
-
-#### Exemplo de Requisição
+**Exemplo de Requisição:**
 ```bash
-curl "http://localhost:3001/api/pools/discover?protocol=raydium&minTvl=1000000&sortBy=apy&limit=50"
+GET /api/pools/discover?protocol=raydium&minTvl=1000000&sortBy=apy&limit=10
 ```
 
-#### Exemplo de Resposta
+**Resposta:**
 ```json
 {
   "success": true,
   "data": [
     {
-      "id": "pool_123",
+      "id": "pool_sol_usdc_001",
       "tokenA": "SOL",
       "tokenB": "USDC",
       "apy": 12.45,
@@ -101,138 +107,82 @@ curl "http://localhost:3001/api/pools/discover?protocol=raydium&minTvl=1000000&s
       "apr": 11.80
     }
   ],
-  "timestamp": "2025-06-21T10:30:00.000Z"
+  "timestamp": "2024-12-21T15:30:45.123Z"
 }
 ```
 
----
+#### `GET /api/pools/rankings`
+Retorna rankings de pools baseado em algoritmo proprietário de scoring.
 
-### `GET /api/pools/rankings`
-
-Retorna ranking de pools baseado em algoritmos de pontuação que consideram APY, risco e liquidez.
-
-#### Resposta
-```typescript
-ApiResponse<PoolRanking[]>
-
-interface PoolRanking {
-  rank: number;             // Posição no ranking
-  poolId: string;           // ID do pool
-  score: number;            // Score calculado (0-100)
-  apy: number;              // APY do pool
-  riskScore: number;        // Score de risco (0-10)
-  liquidityScore: number;   // Score de liquidez (0-10)
-}
-```
-
-#### Exemplo de Requisição
-```bash
-curl "http://localhost:3001/api/pools/rankings"
-```
-
-#### Exemplo de Resposta
+**Resposta:**
 ```json
 {
   "success": true,
   "data": [
     {
       "rank": 1,
-      "poolId": "pool_123",
+      "poolId": "pool_sol_usdc_001",
       "score": 89.5,
       "apy": 12.45,
       "riskScore": 3.2,
       "liquidityScore": 9.1
     }
   ],
-  "timestamp": "2025-06-21T10:30:00.000Z"
+  "timestamp": "2024-12-21T15:30:45.123Z"
 }
 ```
 
----
+#### `GET /api/pools/{poolId}/analysis`
+Fornece análise aprofundada de um pool específico.
 
-### `GET /api/pools/:poolId/analysis`
+**Parâmetros de Path:**
+- `poolId` (string, obrigatório): ID único do pool
 
-Análise detalhada de um pool específico incluindo métricas de risco e predições.
+**Parâmetros de Query:**
+- `timeframe` (string, opcional): `1h` | `24h` | `7d` | `30d`
+- `includeHistory` (boolean, opcional): Incluir dados históricos
 
-#### Path Parameters
-- `poolId` (string): ID único do pool
-
-#### Query Parameters
-```typescript
+**Resposta:**
+```json
 {
-  timeframe?: '1h' | '24h' | '7d' | '30d';   // Período de análise
-  includeHistory?: boolean;                   // Incluir dados históricos
+  "success": true,
+  "data": {
+    "poolId": "pool_sol_usdc_001",
+    "impermanentLoss": {
+      "current": -2.3,
+      "predicted30d": -5.1,
+      "historical": [-1.2, -2.3, -1.8, -2.9]
+    },
+    "volumeAnalysis": {
+      "trend": "increasing",
+      "volatility": "medium",
+      "prediction24h": 2800000
+    },
+    "riskMetrics": {
+      "overall": "medium",
+      "liquidityRisk": "low",
+      "protocolRisk": "low",
+      "tokenRisk": "medium"
+    }
+  },
+  "timestamp": "2024-12-21T15:30:45.123Z"
 }
 ```
 
-#### Resposta
-```typescript
-ApiResponse<PoolAnalysis>
+### Wallet
 
-interface PoolAnalysis {
-  poolId: string;
-  impermanentLoss: {
-    current: number;            // IL atual (%)
-    predicted30d: number;       // IL previsto 30 dias (%)
-    historical: number[];       // Histórico de IL
-  };
-  volumeAnalysis: {
-    trend: 'increasing' | 'decreasing' | 'stable';
-    volatility: 'low' | 'medium' | 'high';
-    prediction24h: number;      // Volume previsto 24h
-  };
-  riskMetrics: {
-    overall: 'low' | 'medium' | 'high';
-    liquidityRisk: 'low' | 'medium' | 'high';
-    protocolRisk: 'low' | 'medium' | 'high';
-    tokenRisk: 'low' | 'medium' | 'high';
-  };
-}
-```
+#### `POST /api/wallet/connect`
+Conecta uma carteira Solana à plataforma.
 
-#### Exemplo de Requisição
-```bash
-curl "http://localhost:3001/api/pools/pool_123/analysis?timeframe=7d&includeHistory=true"
-```
-
----
-
-## 💰 Endpoints de Carteira
-
-### `POST /api/wallet/connect`
-
-Conecta e valida uma carteira Solana na rede.
-
-#### Request Body
-```typescript
+**Body:**
+```json
 {
-  publicKey: string;    // Chave pública da carteira (base58)
-  signature: string;    // Assinatura de validação
+  "publicKey": "HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337",
+  "signature": "3yZe7d4xKrEnc8TKvKKKjdjjdjdj..."
 }
 ```
 
-#### Resposta
-```typescript
-ApiResponse<WalletConnection>
-
-interface WalletConnection {
-  publicKey: string;    // Chave pública confirmada
-  connected: boolean;   // Status da conexão
-  balance: number;      // Saldo SOL
-}
-```
-
-#### Exemplo de Requisição
-```bash
-curl -X POST "http://localhost:3001/api/wallet/connect" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "publicKey": "HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337",
-    "signature": "signature_hash_here"
-  }'
-```
-
-#### Exemplo de Resposta
+**Resposta:**
 ```json
 {
   "success": true,
@@ -241,44 +191,17 @@ curl -X POST "http://localhost:3001/api/wallet/connect" \
     "connected": true,
     "balance": 12.456789
   },
-  "timestamp": "2025-06-21T10:30:00.000Z"
+  "timestamp": "2024-12-21T15:30:45.123Z"
 }
 ```
 
----
+#### `GET /api/wallet/{publicKey}/portfolio`
+Retorna análise completa do portfólio de uma carteira.
 
-### `GET /api/wallet/portfolio/:publicKey`
+**Parâmetros de Path:**
+- `publicKey` (string, obrigatório): Chave pública da carteira
 
-Obtém informações detalhadas do portfólio de uma carteira específica.
-
-#### Path Parameters
-- `publicKey` (string): Chave pública da carteira Solana
-
-#### Resposta
-```typescript
-ApiResponse<Portfolio>
-
-interface Portfolio {
-  totalValue: number;       // Valor total em USD
-  solBalance: number;       // Saldo SOL
-  tokenAccounts: number;    // Número de contas de token
-  change24h: number;        // Mudança 24h (%)
-  performance: PerformanceData[];
-}
-
-interface PerformanceData {
-  date: string;
-  value: number;
-  change: number;
-}
-```
-
-#### Exemplo de Requisição
-```bash
-curl "http://localhost:3001/api/wallet/portfolio/HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337"
-```
-
-#### Exemplo de Resposta
+**Resposta:**
 ```json
 {
   "success": true,
@@ -289,272 +212,314 @@ curl "http://localhost:3001/api/wallet/portfolio/HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4
     "change24h": 3.45,
     "performance": [
       {
-        "date": "2025-06-20",
+        "date": "2024-12-20",
         "value": 1200.45,
         "change": 2.1
       }
     ]
   },
-  "timestamp": "2025-06-21T10:30:00.000Z"
+  "timestamp": "2024-12-21T15:30:45.123Z"
 }
 ```
 
----
+#### `GET /api/wallet/{publicKey}/positions`
+Retorna todas as posições ativas da carteira em pools de liquidez.
 
-### `GET /api/wallet/positions/:publicKey`
+**Parâmetros de Path:**
+- `publicKey` (string, obrigatório): Chave pública da carteira
 
-Lista todas as posições ativas de liquidez da carteira.
+**Parâmetros de Query:**
+- `active` (boolean, opcional): Filtrar apenas posições ativas
+- `minValue` (number, opcional): Valor mínimo da posição em USD
+- `protocol` (string, opcional): `raydium` | `orca` | `all`
 
-#### Path Parameters
-- `publicKey` (string): Chave pública da carteira Solana
-
-#### Resposta
-```typescript
-ApiResponse<Position[]>
-
-interface Position {
-  poolId: string;       // ID do pool
-  tokenA: string;       // Token A do par
-  tokenB: string;       // Token B do par
-  liquidity: number;    // Liquidez fornecida
-  value: number;        // Valor atual da posição (USD)
-  apy: number;          // APY da posição
-  entryDate: string;    // Data de entrada
-  impermanentLoss: number; // Perda impermanente atual
-}
-```
-
-#### Exemplo de Requisição
-```bash
-curl "http://localhost:3001/api/wallet/positions/HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337"
-```
-
-#### Exemplo de Resposta
+**Resposta:**
 ```json
 {
   "success": true,
   "data": [
     {
-      "poolId": "pool_123",
+      "poolId": "pool_sol_usdc_001",
       "tokenA": "SOL",
       "tokenB": "USDC",
       "liquidity": 5000,
       "value": 5123.45,
       "apy": 12.45,
-      "entryDate": "2025-06-15T10:00:00.000Z",
+      "entryDate": "2024-12-15T10:00:00.000Z",
       "impermanentLoss": -2.3
     }
   ],
-  "timestamp": "2025-06-21T10:30:00.000Z"
+  "timestamp": "2024-12-21T15:30:45.123Z"
 }
 ```
 
----
+#### `DELETE /api/wallet/{publicKey}/disconnect`
+Desconecta uma carteira da plataforma.
 
-## 📊 Endpoints de Analytics
+**Parâmetros de Path:**
+- `publicKey` (string, obrigatório): Chave pública da carteira
 
-### `GET /api/analytics/performance/:publicKey`
-
-Análise de performance detalhada de uma carteira específica.
-
-#### Path Parameters
-- `publicKey` (string): Chave pública da carteira Solana
-
-#### Query Parameters
-```typescript
-{
-  timeframe?: '7d' | '30d' | '90d' | '1y';   // Período de análise
-}
-```
-
-#### Resposta
-```typescript
-ApiResponse<PerformanceData>
-
-interface PerformanceData {
-  totalReturn: number;      // Retorno total (%)
-  alpha: number;            // Alpha da estratégia
-  sharpeRatio: number;      // Índice Sharpe
-  maxDrawdown: number;      // Máximo drawdown (%)
-  timeframe: string;        // Período analisado
-  history: Array<{
-    date: string;
-    value: number;
-  }>;
-}
-```
-
-#### Exemplo de Requisição
-```bash
-curl "http://localhost:3001/api/analytics/performance/HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337?timeframe=30d"
-```
-
----
-
-### `GET /api/analytics/market-overview`
-
-Visão geral do mercado DeFi na Solana.
-
-#### Resposta
-```typescript
-ApiResponse<MarketOverview>
-
-interface MarketOverview {
-  totalTvl: number;         // TVL total do mercado
-  averageApy: number;       // APY médio
-  topPools: Array<{
-    protocol: string;
-    tvl: number;
-    pools: number;
-  }>;
-  marketTrends: {
-    tvlChange24h: number;     // Mudança TVL 24h (%)
-    volumeChange24h: number;  // Mudança volume 24h (%)
-    newPools24h: number;      // Novos pools 24h
-  };
-}
-```
-
-#### Exemplo de Requisição
-```bash
-curl "http://localhost:3001/api/analytics/market-overview"
-```
-
----
-
-### `GET /api/analytics/opportunities`
-
-Identifica oportunidades de investimento baseadas em análise algorítmica.
-
-#### Query Parameters
-```typescript
-{
-  riskLevel?: 'conservative' | 'moderate' | 'aggressive';
-}
-```
-
-#### Resposta
-```typescript
-ApiResponse<Opportunity[]>
-
-interface Opportunity {
-  poolId: string;           // ID do pool
-  protocol: string;         // Protocolo DEX
-  tokenA: string;           // Token A
-  tokenB: string;           // Token B
-  estimatedApy: number;     // APY estimado
-  riskScore: number;        // Score de risco (0-10)
-  confidence: number;       // Confiança da predição (0-100)
-  reason: string;           // Razão da oportunidade
-}
-```
-
-#### Exemplo de Requisição
-```bash
-curl "http://localhost:3001/api/analytics/opportunities?riskLevel=moderate"
-```
-
----
-
-## Códigos de Status HTTP
-
-| Código | Descrição |
-|--------|-----------|
-| `200` | Sucesso |
-| `400` | Bad Request - Parâmetros inválidos |
-| `404` | Not Found - Recurso não encontrado |
-| `500` | Internal Server Error - Erro interno |
-
----
-
-## Integração com Solana
-
-### RPC Endpoint
-- **Mainnet:** `https://api.mainnet-beta.solana.com`
-- **Devnet:** `https://api.devnet.solana.com`
-
-### Dependências Modernas
+**Resposta:**
 ```json
 {
-  "@solana/kit": "^2.0.0",
-  "@solana/rpc": "^2.0.0", 
-  "@solana-program/token": "^0.1.0"
+  "success": true,
+  "data": {
+    "disconnected": true
+  },
+  "timestamp": "2024-12-21T15:30:45.123Z"
 }
 ```
 
-### Integração Raydium
-- **API Base:** `https://api.raydium.io/v2`
-- **Pools Endpoint:** `/sdk/liquidity/mainnet.json`
-- **Dados:** 695,000+ pools em tempo real
+### Analytics
 
----
+#### `GET /api/analytics/market-overview`
+Fornece visão abrangente do estado atual do mercado DeFi na Solana.
 
-## Rate Limits
-
-| Endpoint | Limite |
-|----------|--------|
-| `/api/pools/discover` | 60 req/min |
-| `/api/wallet/*` | 120 req/min |
-| `/api/analytics/*` | 30 req/min |
-
----
-
-## Configuração de Desenvolvimento
-
-### Variáveis de Ambiente
-```bash
-# .env
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-PORT=3001
-NODE_ENV=development
+**Resposta:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalTvl": 2500000000,
+    "averageApy": 8.75,
+    "topPools": [
+      {
+        "protocol": "Raydium",
+        "tvl": 1500000000,
+        "pools": 250
+      },
+      {
+        "protocol": "Orca",
+        "tvl": 1000000000,
+        "pools": 180
+      }
+    ],
+    "marketTrends": {
+      "tvlChange24h": 2.5,
+      "volumeChange24h": -1.2,
+      "newPools24h": 3
+    }
+  },
+  "timestamp": "2024-12-21T15:30:45.123Z"
+}
 ```
 
-### Comandos
-```bash
-cd backend
-npm run dev        # Servidor de desenvolvimento
-npm run lint       # Verificar código
-npm run typecheck  # Verificar tipos TypeScript
+#### `GET /api/analytics/opportunities`
+Identifica oportunidades de investimento baseado em análise algorítmica.
+
+**Parâmetros de Query:**
+- `riskLevel` (string, opcional): `low` | `medium` | `high` | `all`
+- `minApy` (number, opcional): APY mínimo esperado (%)
+- `timeframe` (string, opcional): `short` | `medium` | `long`
+- `amount` (number, opcional): Valor a ser investido (USD)
+- `strategy` (string, opcional): `conservative` | `balanced` | `aggressive` | `yield-farming`
+- `limit` (integer, opcional): Número máximo de oportunidades (1-20)
+
+**Resposta:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "poolId": "pool_sol_usdc_001",
+      "protocol": "Raydium",
+      "tokenA": "SOL",
+      "tokenB": "USDC",
+      "estimatedApy": 12.45,
+      "riskScore": 3.2,
+      "confidence": 0.85,
+      "reason": "High APY potential + Strong liquidity + Low risk profile"
+    }
+  ],
+  "timestamp": "2024-12-21T15:30:45.123Z"
+}
 ```
 
----
+#### `GET /api/analytics/performance`
+Fornece análise detalhada da performance histórica.
 
-## Exemplo de Cliente
+**Parâmetros de Query:**
+- `period` (string, opcional): `24h` | `7d` | `30d` | `90d` | `1y` | `all`
+- `strategy` (string, opcional): `conservative` | `balanced` | `aggressive` | `yield-farming` | `all`
+- `protocol` (string, opcional): `raydium` | `orca` | `jupiter` | `all`
+- `benchmark` (string, opcional): `sol` | `usdc` | `market` | `none`
+- `includeRisk` (boolean, opcional): Incluir métricas de risco detalhadas
 
-### JavaScript/TypeScript
+**Resposta:**
+```json
+{
+  "success": true,
+  "data": {
+    "period": "30d",
+    "totalReturn": 12.5,
+    "annualizedReturn": 150.0,
+    "volatility": 25.3,
+    "sharpeRatio": 1.85,
+    "maxDrawdown": -8.2,
+    "winRate": 68.5,
+    "benchmark": {
+      "name": "SOL",
+      "return": 8.3,
+      "outperformance": 4.2
+    },
+    "byStrategy": [
+      {
+        "strategy": "conservative",
+        "return": 8.5,
+        "risk": 15.2,
+        "sharpe": 1.25
+      }
+    ]
+  },
+  "timestamp": "2024-12-21T15:30:45.123Z"
+}
+```
+
+## 📝 Schemas
+
+### Pool
 ```typescript
-class PollsIAClient {
-  private baseUrl = 'http://localhost:3001';
-
-  async discoverPools(params?: {
-    protocol?: string;
-    minTvl?: string;
-    sortBy?: string;
-  }) {
-    const query = new URLSearchParams(params as any);
-    const response = await fetch(`${this.baseUrl}/api/pools/discover?${query}`);
-    return response.json();
-  }
-
-  async getPortfolio(publicKey: string) {
-    const response = await fetch(`${this.baseUrl}/api/wallet/portfolio/${publicKey}`);
-    return response.json();
-  }
-
-  async connectWallet(publicKey: string, signature: string) {
-    const response = await fetch(`${this.baseUrl}/api/wallet/connect`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ publicKey, signature })
-    });
-    return response.json();
-  }
+interface Pool {
+  id: string;
+  tokenA: string;
+  tokenB: string;
+  apy: number;
+  tvl: number;
+  volume24h: number;
+  protocol: string;
+  address?: string;
+  fees?: number;
+  apr?: number;
 }
 ```
 
+### Portfolio
+```typescript
+interface Portfolio {
+  totalValue: number;
+  solBalance: number;
+  tokenAccounts: number;
+  change24h: number;
+  performance: PerformanceData[];
+}
+```
+
+### Position
+```typescript
+interface Position {
+  poolId: string;
+  tokenA: string;
+  tokenB: string;
+  liquidity: number;
+  value: number;
+  apy: number;
+  entryDate: string;
+  impermanentLoss?: number;
+}
+```
+
+### ApiResponse
+```typescript
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  timestamp: string;
+}
+```
+
+## 🚨 Códigos de Erro
+
+| Código | Significado | Descrição |
+|--------|-------------|-----------|
+| `200` | ✅ Success | Operação bem-sucedida |
+| `400` | ❌ Bad Request | Parâmetros inválidos ou malformados |
+| `401` | 🔒 Unauthorized | Token inválido ou expirado |
+| `404` | 🔍 Not Found | Recurso não encontrado |
+| `429` | 🚫 Too Many Requests | Rate limit excedido |
+| `500` | 💥 Internal Server Error | Erro interno do servidor |
+
+### Exemplo de Resposta de Erro
+```json
+{
+  "success": false,
+  "error": "Pool não encontrado ou indisponível",
+  "timestamp": "2024-12-21T15:30:45.123Z"
+}
+```
+
+## 💡 Exemplos de Uso
+
+### 1. Descobrir Pools de Alto Rendimento
+```bash
+curl -X GET "http://localhost:3001/api/pools/discover?minTvl=1000000&sortBy=apy&limit=5" \
+  -H "Accept: application/json"
+```
+
+### 2. Conectar Carteira Phantom
+```bash
+curl -X POST "http://localhost:3001/api/wallet/connect" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicKey": "HM5ZgL6J9fRsrM8fj5dbJtVVq7Bz8J4eW48Caa1hT337",
+    "signature": "signature_hash_here"
+  }'
+```
+
+### 3. Obter Análise de Mercado
+```bash
+curl -X GET "http://localhost:3001/api/analytics/market-overview" \
+  -H "Accept: application/json"
+```
+
+### 4. Identificar Oportunidades Conservadoras
+```bash
+curl -X GET "http://localhost:3001/api/analytics/opportunities?riskLevel=low&minApy=5&limit=10" \
+  -H "Accept: application/json"
+```
+
+### 5. Analisar Pool Específico
+```bash
+curl -X GET "http://localhost:3001/api/pools/pool_sol_usdc_001/analysis?timeframe=30d&includeHistory=true" \
+  -H "Accept: application/json"
+```
+
+## 🔗 Links Úteis
+
+- **Swagger UI**: `http://localhost:3001/docs`
+- **OpenAPI Spec**: `http://localhost:3001/docs/json`
+- **GitHub**: [PollsIA Repository](https://github.com/pollsia/api)
+- **Raydium DEX**: [Documentação Oficial](https://docs.raydium.io/)
+- **Solana RPC**: [Documentação Oficial](https://docs.solana.com/api)
+
+## 🐛 Troubleshooting
+
+### Problemas Comuns
+
+1. **Timeout nas Requisições**
+   - Algumas operações podem demorar devido à latência da Solana RPC
+   - Aumente o timeout do cliente para 30 segundos
+
+2. **Pool Não Encontrado**
+   - Verifique se o poolId está correto
+   - Alguns pools podem estar temporariamente indisponíveis
+
+3. **Carteira Inválida**
+   - Certifique-se que a chave pública é válida (formato base58)
+   - Verifique se a carteira existe na rede mainnet-beta
+
+4. **Rate Limit Excedido**
+   - Respeite os limites de requisições por minuto
+   - Implemente backoff exponencial nas suas requisições
+
+### Suporte
+
+- **Issues**: [GitHub Issues](https://github.com/pollsia/api/issues)
+- **Email**: dev@pollsia.com
+- **Documentação**: [Docs Completas](https://github.com/pollsia/api/blob/main/README.md)
+
 ---
 
-**Última Atualização:** Junho 2025  
-**Versão da API:** 1.0  
-**Framework:** Fastify + TypeScript  
-**Blockchain:** Solana (@solana/kit)
+**Versão**: 1.0.0  
+**Última Atualização**: Dezembro 2024  
+**Status**: Documentação Completa ✅

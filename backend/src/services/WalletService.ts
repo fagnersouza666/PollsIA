@@ -1,5 +1,5 @@
 import { createSolanaRpc } from '@solana/rpc';
-import { address } from '@solana/keys';
+import { address } from '@solana/addresses';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { config } from '../config/env';
 import { Portfolio, Position } from '../types/wallet';
@@ -22,7 +22,7 @@ export class WalletService {
       const pubkeyAddress = address(publicKey);
 
       // Verificar se a carteira existe na rede Solana
-      const accountInfo = await this.rpc.getAccountInfo(pubkeyAddress).send();
+      const accountInfo = await this.rpc.getAccountInfo(pubkeyAddress as any).send();
       if (!accountInfo.value) {
         throw new Error('Carteira não encontrada na rede Solana');
       }
@@ -49,7 +49,7 @@ export class WalletService {
       const pubkeyAddress = address(publicKey);
 
       // Obter saldo SOL
-      const balanceResponse = await this.rpc.getBalance(pubkeyAddress).send();
+      const balanceResponse = await this.rpc.getBalance(pubkeyAddress as any).send();
       const solBalance = Number(balanceResponse.value) / 1000000000; // Converter lamports para SOL
       console.log('Saldo SOL:', solBalance);
 
@@ -69,8 +69,8 @@ export class WalletService {
       let tokenAccountsCount = 0;
       try {
         const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
-          pubkeyAddress,
-          { programId: TOKEN_PROGRAM_ADDRESS }
+          pubkeyAddress as any,
+          { programId: TOKEN_PROGRAM_ADDRESS as any }
         ).send();
         tokenAccountsCount = tokenAccounts.value.length;
         console.log('Contas de token encontradas:', tokenAccountsCount);
@@ -126,8 +126,8 @@ export class WalletService {
 
       const pubkeyAddress = address(publicKey);
       const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
-        pubkeyAddress,
-        { programId: TOKEN_PROGRAM_ADDRESS }
+        pubkeyAddress as any,
+        { programId: TOKEN_PROGRAM_ADDRESS as any }
       ).send();
 
       const positions: Position[] = [];
@@ -193,7 +193,25 @@ export class WalletService {
 
   private async getBalance(publicKey: string) {
     const pubkeyAddress = address(publicKey);
-    const balanceResponse = await this.rpc.getBalance(pubkeyAddress).send();
+    const balanceResponse = await this.rpc.getBalance(pubkeyAddress as any).send();
     return Number(balanceResponse.value) / 1e9; // Converter lamports para SOL
+  }
+
+  async disconnectWallet(publicKey: string): Promise<boolean> {
+    try {
+      // TODO: Implementar lógica real de desconexão
+      console.log(`Desconectando carteira: ${publicKey}`);
+
+      // Simular limpeza de dados de sessão
+      // Em produção, isso removeria:
+      // - Cache do portfólio
+      // - Dados de sessão
+      // - Tokens temporários
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao desconectar carteira:', error);
+      return false;
+    }
   }
 }
