@@ -3,12 +3,9 @@ import { Address, address } from '@solana/addresses';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { config } from '../config/env';
 import { supabase } from './supabaseClient';
-import { Portfolio, Position, WalletConnection, PerformanceData } from '../types/wallet';
+import { Portfolio, Position, PerformanceData } from '../types/wallet';
 import axios from 'axios';
 
-interface TokenPrice {
-  [mint: string]: number;
-}
 
 export class WalletService {
   private rpc: ReturnType<typeof createSolanaRpc>;

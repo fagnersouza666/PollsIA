@@ -28,15 +28,25 @@ export class PoolService {
       let pools: RaydiumPool[] = [];
 
       try {
-        // Primeiro tentar a API oficial do Raydium
+        // Primeiro tentar a API oficial do Raydium com processamento em chunks
         const response = await axios.get(`${this.raydiumApiUrl}/sdk/liquidity/mainnet.json`, {
-          timeout: 10000
+          timeout: 30000,
+          maxContentLength: 50 * 1024 * 1024, // 50MB max
+          maxBodyLength: 50 * 1024 * 1024, // 50MB max
         });
 
-        if (response.data && response.data.official) {
-          pools = response.data.official;
-        } else if (response.data && Array.isArray(response.data)) {
-          pools = response.data;
+        // Processar resposta em chunks para evitar overflow de string
+        let data = response.data;
+        if (typeof data === 'string' && data.length > 50 * 1024 * 1024) {
+          console.warn('Resposta muito grande, usando apenas primeiros 50MB');
+          data = data.substring(0, 50 * 1024 * 1024);
+          data = JSON.parse(data);
+        }
+
+        if (data && data.official) {
+          pools = data.official.slice(0, 100); // Limitar a 100 pools iniciais
+        } else if (data && Array.isArray(data)) {
+          pools = data.slice(0, 100); // Limitar a 100 pools iniciais
         }
       } catch (apiError) {
         console.warn('Raydium API principal falhou, tentando endpoint alternativo:', apiError);

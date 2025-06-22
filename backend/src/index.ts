@@ -69,7 +69,7 @@ async function start() {
           }
         }
       }
-    }, async (request, reply) => {
+    }, async (_request, _reply) => {
       return {
         status: 'ok',
         timestamp: new Date().toISOString(),
@@ -79,7 +79,7 @@ async function start() {
     });
 
     // Redirect root to docs
-    fastify.get('/', async (request, reply) => {
+    fastify.get('/', async (request,_ reply)_) => {
       return reply.redirect('/docs');
     });
 

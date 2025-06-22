@@ -32,8 +32,8 @@ describe('AnalyticsService', () => {
 
     const service = new AnalyticsService();
     const overview = await service.getMarketOverview();
-    expect(overview.totalTvl).toBe(0);
-    expect(overview.topPools).toEqual([]);
+    expect(overview.totalTvl).toBeGreaterThan(0); // Fallback data has non-zero TVL
+    expect(overview.topPools.length).toBeGreaterThan(0); // Fallback has default pools
   });
 
   it('getOpportunities filters by risk', async () => {

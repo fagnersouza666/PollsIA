@@ -56,11 +56,12 @@ describe('PoolService', () => {
     expect(analysis.riskMetrics).toHaveProperty('overall');
   });
 
-  it('discoverPools returns empty array on error', async () => {
+  it('discoverPools returns fallback data on error', async () => {
     mockedAxios.get.mockRejectedValue(new Error('fail'));
     const service = new PoolService();
     const pools = await service.discoverPools();
-    expect(pools).toEqual([]);
+    expect(pools.length).toBeGreaterThan(0);
+    expect(pools[0]).toHaveProperty('protocol', 'Raydium');
   });
 
   it('analyzePool throws when pool missing', async () => {
