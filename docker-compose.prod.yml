@@ -1,20 +1,6 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: pollsia
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -28,15 +14,14 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/pollsia
+      SUPABASE_URL: https://project.supabase.co
+      SUPABASE_KEY: your-anon-key
       REDIS_URL: redis://redis:6379
       FRONTEND_URL: http://localhost:3000
       JWT_SECRET: production-secret-change-this
       NODE_ENV: production
       PORT: 3001
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_started
     restart: unless-stopped
@@ -54,5 +39,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
   redis_data:
