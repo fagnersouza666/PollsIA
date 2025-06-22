@@ -66,7 +66,7 @@ docker-compose logs   # Ver logs dos containers
 **Sistema:** Microserviços desacoplados com integração blockchain em tempo real
 
 ### Stack Tecnológico
-- **Backend:** Node.js/TypeScript + Fastify + PostgreSQL + Redis
+- **Backend:** Node.js/TypeScript + Fastify + SUPABASE + Redis
 - **Frontend:** Next.js 14 + TailwindCSS + React
 - **Blockchain:** Solana via `@solana/kit` (padrões modernos)
 - **Wallet:** Phantom Wallet integration
