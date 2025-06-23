@@ -12,29 +12,10 @@ export function Dashboard() {
   const [portfolio, setPortfolio] = useState<any>(null)
   const [positions, setPositions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [marketOverview, setMarketOverview] = useState<any>(null)
+  const [pools, setPools] = useState<any[]>([])
 
   useEffect(() => {
-    // Verificar se já está conectado
-    const checkConnection = async () => {
-      try {
-        if (await phantomWallet.isPhantomInstalled()) {
-          const publicKey = phantomWallet.getPublicKey()
-          if (publicKey && phantomWallet.isConnected()) {
-            setWalletAddress(publicKey)
-            setIsConnected(true)
-            await loadWalletData(publicKey)
-          }
-        }
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        // eslint-disable-next-line no-console
-      console.log('Erro ao verificar conexão:', error)
-      }
-    }
-
-    checkConnection()
-
-    // Configurar listeners
     phantomWallet.onConnect((publicKey: string) => {
       setWalletAddress(publicKey)
       setIsConnected(true)
@@ -59,6 +40,9 @@ export function Dashboard() {
         setPositions([])
       }
     })
+
+    // Carregar dados do mercado independentemente da carteira
+    loadMarketData();
   }, [])
 
   const handleConnectWallet = async () => {
@@ -119,16 +103,58 @@ export function Dashboard() {
 
   const loadWalletData = async (publicKey: string) => {
     try {
+      console.log('🔄 Iniciando carregamento de dados para:', publicKey);
+
       // Carregar dados do portfólio
-      const portfolioData = await api.getPortfolio(publicKey)
-      setPortfolio(portfolioData)
+      console.log('📊 Buscando dados do portfólio...');
+      const portfolioData = await api.getPortfolio(publicKey);
+      console.log('✅ Dados do portfólio recebidos:', portfolioData);
+      setPortfolio(portfolioData);
 
       // Carregar posições
-      const positionsData = await api.getPositions(publicKey)
-      setPositions(Array.isArray(positionsData) ? positionsData : [])
+      console.log('📈 Buscando posições...');
+      const positionsData = await api.getPositions(publicKey);
+      console.log('✅ Dados das posições recebidos:', positionsData);
+      setPositions(Array.isArray(positionsData) ? positionsData : []);
+
+      console.log('✅ Todos os dados carregados com sucesso!');
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Erro ao carregar dados da carteira:', error)
+      console.error('❌ Erro ao carregar dados da carteira:', error);
+
+      // Mostrar erro mais específico para o usuário
+      if (error instanceof Error) {
+        console.error('Detalhes do erro:', error.message);
+        alert(`Erro ao carregar dados: ${error.message}`);
+      } else {
+        console.error('Erro desconhecido:', error);
+        alert('Erro desconhecido ao carregar dados da carteira');
+      }
+    }
+  }
+
+  const loadMarketData = async () => {
+    try {
+      console.log('🌐 Iniciando carregamento de dados do mercado...');
+
+      // Carregar overview do mercado
+      console.log('📈 Buscando market overview...');
+      const marketData = await api.getMarketOverview();
+      console.log('✅ Market overview recebido:', marketData);
+      setMarketOverview(marketData);
+
+      // Carregar pools
+      console.log('🏊 Buscando pools...');
+      const poolsData = await api.discoverPools();
+      console.log('✅ Pools recebidos:', poolsData);
+      setPools(Array.isArray(poolsData) ? poolsData : []);
+
+      console.log('✅ Dados do mercado carregados com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados do mercado:', error);
+
+      if (error instanceof Error) {
+        console.error('Detalhes do erro:', error.message);
+      }
     }
   }
 

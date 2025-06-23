@@ -38,11 +38,11 @@ class ApiClient {
   }
 
   async getPortfolio(publicKey: string) {
-    return this.request(`/wallet/portfolio/${publicKey}`)
+    return this.request(`/wallet/${publicKey}/portfolio`)
   }
 
   async getPositions(publicKey: string) {
-    return this.request(`/wallet/positions/${publicKey}`)
+    return this.request(`/wallet/${publicKey}/positions`)
   }
 
   async getPerformance(publicKey: string, timeframe?: string) {
