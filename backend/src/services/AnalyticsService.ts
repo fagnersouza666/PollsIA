@@ -119,28 +119,46 @@ export class AnalyticsService {
     try {
       // Get real pool data for market overview
       const pools = await this.poolService.discoverPools();
+      console.log('Pools encontrados:', pools.length);
 
-      if (pools.length === 0) {
-        console.log('Nenhum pool encontrado, usando fallback');
+      // Calculate aggregated metrics
+      let totalTvl = 0;
+      let averageApy = 0;
+
+      if (pools.length > 0) {
+        console.log('=== DEBUG TVL CALCULATION ===');
+        console.log('Pools encontrados:', pools.length);
+        console.log('Primeiros 3 pools:', pools.slice(0, 3).map(p => ({ id: p.id, tvl: p.tvl, apy: p.apy })));
+
+        totalTvl = pools.reduce((sum, pool) => {
+          const poolTvl = pool.tvl || 0;
+          console.log(`Pool ${pool.id}: TVL = ${poolTvl}, Sum = ${sum + poolTvl}`);
+          return sum + poolTvl;
+        }, 0);
+
+        averageApy = pools.reduce((sum, pool) => sum + (pool.apy || 0), 0) / pools.length;
+        console.log('=== RESULTADO FINAL ===');
+        console.log('Total TVL calculado:', totalTvl);
+        console.log('APY médio calculado:', averageApy);
+        console.log('========================');
+      }
+
+      // Se não temos dados reais, usar valores de fallback
+      if (totalTvl === 0 || pools.length === 0) {
+        console.log('Usando dados de fallback completo');
         return this.getFallbackMarketOverview();
       }
 
-      // Calculate aggregated metrics
-      const totalTvl = pools.reduce((sum, pool) => sum + pool.tvl, 0);
-      const averageApy = pools.reduce((sum, pool) => sum + pool.apy, 0) / pools.length;
-
-      // Group by protocol - corrigindo a lógica
+      // Group by protocol
       const protocolStats = pools.reduce((acc, pool) => {
         const protocol = pool.protocol || 'Unknown';
         if (!acc[protocol]) {
           acc[protocol] = { tvl: 0, pools: 0 };
         }
-        acc[protocol].tvl += pool.tvl;
+        acc[protocol].tvl += (pool.tvl || 0);
         acc[protocol].pools += 1;
         return acc;
       }, {} as Record<string, { tvl: number, pools: number }>);
-
-      console.log('Protocol stats:', protocolStats);
 
       const topPools = Object.entries(protocolStats)
         .map(([protocol, stats]) => ({
@@ -151,21 +169,21 @@ export class AnalyticsService {
         .sort((a, b) => b.tvl - a.tvl)
         .slice(0, 5);
 
-      // Garantir que sempre temos pelo menos dados básicos
       const marketTrends = {
-        tvlChange24h: Number(((Math.random() - 0.5) * 10).toFixed(1)), // -5% to +5%
-        volumeChange24h: Number(((Math.random() - 0.5) * 15).toFixed(1)), // -7.5% to +7.5%
-        newPools24h: Math.floor(Math.random() * 8) + 1 // 1-8 novos pools
+        tvlChange24h: Number(((Math.random() - 0.5) * 10).toFixed(1)),
+        volumeChange24h: Number(((Math.random() - 0.5) * 15).toFixed(1)),
+        newPools24h: Math.floor(Math.random() * 8) + 1
       };
 
+      // SEMPRE incluir totalValueLocked
       const result = {
-        totalTvl: Number(totalTvl.toFixed(0)),
+        totalValueLocked: Number(totalTvl.toFixed(0)),
         averageApy: Number(averageApy.toFixed(1)),
         topPools: topPools.length > 0 ? topPools : this.getDefaultTopPools(),
         marketTrends
       };
 
-      console.log('Market overview result:', JSON.stringify(result, null, 2));
+      console.log('Market overview result final:', JSON.stringify(result, null, 2));
       return result;
     } catch (error) {
       console.error('Error getting market overview:', error);
@@ -185,7 +203,7 @@ export class AnalyticsService {
 
   private getFallbackMarketOverview() {
     return {
-      totalTvl: 3050000000, // 3.05B TVL total
+      totalValueLocked: 3050000000, // 3.05B TVL total
       averageApy: 12.8,
       topPools: this.getDefaultTopPools(),
       marketTrends: {

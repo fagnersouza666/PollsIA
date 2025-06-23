@@ -79,7 +79,7 @@ async function start() {
     });
 
     // Redirect root to docs
-    fastify.get('/', async (request,_ reply)_) => {
+    fastify.get('/', async (_request, reply) => {
       return reply.redirect('/docs');
     });
 
