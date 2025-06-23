@@ -175,9 +175,9 @@ export class AnalyticsService {
         newPools24h: Math.floor(Math.random() * 8) + 1
       };
 
-      // SEMPRE incluir totalValueLocked
+      // SEMPRE incluir totalTvl
       const result = {
-        totalValueLocked: Number(totalTvl.toFixed(0)),
+        totalTvl: Number(totalTvl.toFixed(0)),
         averageApy: Number(averageApy.toFixed(1)),
         topPools: topPools.length > 0 ? topPools : this.getDefaultTopPools(),
         marketTrends
@@ -203,7 +203,7 @@ export class AnalyticsService {
 
   private getFallbackMarketOverview() {
     return {
-      totalValueLocked: 3050000000, // 3.05B TVL total
+      totalTvl: 3050000000, // 3.05B TVL total
       averageApy: 12.8,
       topPools: this.getDefaultTopPools(),
       marketTrends: {

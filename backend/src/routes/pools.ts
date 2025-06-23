@@ -83,6 +83,7 @@ O algoritmo considera múltiplos fatores:
                   tokenB: { type: 'string' },
                   apy: { type: 'number' },
                   tvl: { type: 'number' },
+                  volume24h: { type: 'number' },
                   protocol: { type: 'string' }
                 }
               }

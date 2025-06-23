@@ -1,7 +1,6 @@
 import { Pool, PoolRanking, PoolAnalysis } from '../types/pool';
 import { PoolDiscoveryQuery, PoolAnalysisQuery } from '../schemas/pool';
 import { createSolanaRpc } from '@solana/rpc';
-import axios from 'axios';
 
 interface RaydiumPool {
   name: string;

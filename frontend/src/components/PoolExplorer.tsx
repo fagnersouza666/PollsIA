@@ -133,7 +133,7 @@ function PoolCard({ pool, ranking, rank }: {
         </div>
         <div>
           <p className="text-gray-500">Volume 24h</p>
-          <p className="font-medium">${(pool.volume24h / 1000).toFixed(0)}K</p>
+          <p className="font-medium">${pool.volume24h ? (pool.volume24h / 1000).toFixed(0) : '0'}K</p>
         </div>
         <div>
           <p className="text-gray-500">Pontuação de Risco</p>
