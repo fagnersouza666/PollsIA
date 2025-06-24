@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, Wallet, Activity, Target } from 'lucide-react'
 import { PoolExplorer } from './PoolExplorer'
+import { WalletPools } from './WalletPools'
 import { api } from '../utils/api'
 import { phantomWallet } from '../utils/phantom-wallet'
 
@@ -12,8 +13,6 @@ export function Dashboard() {
   const [portfolio, setPortfolio] = useState<any>(null)
   const [positions, setPositions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [marketOverview, setMarketOverview] = useState<any>(null)
-  const [pools, setPools] = useState<any[]>([])
 
   useEffect(() => {
     phantomWallet.onConnect((publicKey: string) => {
@@ -41,41 +40,27 @@ export function Dashboard() {
       }
     })
 
-    // Carregar dados do mercado independentemente da carteira
-    loadMarketData();
+    // Dados do mercado são carregados conforme necessário
   }, [])
 
   const handleConnectWallet = async () => {
     try {
       setLoading(true)
 
-      // eslint-disable-next-line no-console
-      console.log('🔍 Verificando Phantom...')
-
       if (!(await phantomWallet.isPhantomInstalled())) {
         alert('Phantom wallet não detectado.\n\n1. Instale o Phantom: https://phantom.app\n2. Recarregue a página\n3. Tente novamente')
         return
       }
 
-      // eslint-disable-next-line no-console
-      console.log('✅ Phantom detectado, tentando conectar...')
-
       const publicKey = await phantomWallet.connect()
-      // eslint-disable-next-line no-console
-      console.log('✅ Conectado com sucesso!', publicKey)
 
       setWalletAddress(publicKey)
       setIsConnected(true)
 
       // Carregar dados reais da carteira
-      // eslint-disable-next-line no-console
-      console.log('🔄 Carregando dados da carteira...')
       await loadWalletData(publicKey)
 
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('❌ Erro ao conectar carteira:', error)
-
       if (error.code === 4001) {
         alert('Conexão cancelada pelo usuário.')
       } else if (error.message?.includes('User rejected')) {
@@ -96,67 +81,30 @@ export function Dashboard() {
       setPortfolio(null)
       setPositions([])
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Erro ao desconectar:', error)
+      // Erro ao desconectar é não crítico
     }
   }
 
   const loadWalletData = async (publicKey: string) => {
     try {
-      console.log('🔄 Iniciando carregamento de dados para:', publicKey);
-
       // Carregar dados do portfólio
-      console.log('📊 Buscando dados do portfólio...');
       const portfolioData = await api.getPortfolio(publicKey);
-      console.log('✅ Dados do portfólio recebidos:', portfolioData);
       setPortfolio(portfolioData);
 
       // Carregar posições
-      console.log('📈 Buscando posições...');
       const positionsData = await api.getPositions(publicKey);
-      console.log('✅ Dados das posições recebidos:', positionsData);
       setPositions(Array.isArray(positionsData) ? positionsData : []);
 
-      console.log('✅ Todos os dados carregados com sucesso!');
     } catch (error) {
-      console.error('❌ Erro ao carregar dados da carteira:', error);
-
       // Mostrar erro mais específico para o usuário
       if (error instanceof Error) {
-        console.error('Detalhes do erro:', error.message);
         alert(`Erro ao carregar dados: ${error.message}`);
       } else {
-        console.error('Erro desconhecido:', error);
         alert('Erro desconhecido ao carregar dados da carteira');
       }
     }
   }
 
-  const loadMarketData = async () => {
-    try {
-      console.log('🌐 Iniciando carregamento de dados do mercado...');
-
-      // Carregar overview do mercado
-      console.log('📈 Buscando market overview...');
-      const marketData = await api.getMarketOverview();
-      console.log('✅ Market overview recebido:', marketData);
-      setMarketOverview(marketData);
-
-      // Carregar pools
-      console.log('🏊 Buscando pools...');
-      const poolsData = await api.discoverPools();
-      console.log('✅ Pools recebidos:', poolsData);
-      setPools(Array.isArray(poolsData) ? poolsData : []);
-
-      console.log('✅ Dados do mercado carregados com sucesso!');
-    } catch (error) {
-      console.error('❌ Erro ao carregar dados do mercado:', error);
-
-      if (error instanceof Error) {
-        console.error('Detalhes do erro:', error.message);
-      }
-    }
-  }
 
   if (!isConnected) {
     return (
@@ -241,6 +189,11 @@ export function Dashboard() {
             change=""
             changeType="positive"
           />
+        </div>
+
+        {/* Minhas Pools */}
+        <div className="mb-8">
+          <WalletPools walletAddress={walletAddress} />
         </div>
 
         {/* Pool Explorer */}

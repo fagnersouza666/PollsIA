@@ -18,5 +18,10 @@ test('discoverPools calls correct endpoint', async () => {
 
 test('getPortfolio calls wallet endpoint', async () => {
   await api.getPortfolio('pub');
-  expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/api/wallet/portfolio/pub', expect.any(Object));
+  expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/api/wallet/pub/portfolio', expect.any(Object));
+});
+
+test('getWalletPools calls wallet pools endpoint', async () => {
+  await api.getWalletPools('pub', 'active', 'value');
+  expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/api/wallet/pub/pools?status=active&sortBy=value', expect.any(Object));
 });

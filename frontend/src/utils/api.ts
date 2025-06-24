@@ -45,6 +45,14 @@ class ApiClient {
     return this.request(`/wallet/${publicKey}/positions`)
   }
 
+  async getWalletPools(publicKey: string, status?: string, sortBy?: string) {
+    const params = new URLSearchParams()
+    if (status) params.append('status', status)
+    if (sortBy) params.append('sortBy', sortBy)
+    const query = params.toString() ? `?${params.toString()}` : ''
+    return this.request(`/wallet/${publicKey}/pools${query}`)
+  }
+
   async getPerformance(publicKey: string, timeframe?: string) {
     const params = timeframe ? `?timeframe=${timeframe}` : ''
     return this.request(`/analytics/performance/${publicKey}${params}`)

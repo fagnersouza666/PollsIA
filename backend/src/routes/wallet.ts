@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { WalletService } from '../services/WalletService';
 import { walletConnectSchema } from '../schemas/wallet';
 import { ApiResponse } from '../types/pool';
-import { Portfolio, Position, WalletConnection } from '../types/wallet';
+import { Portfolio, Position, WalletConnection, WalletPool } from '../types/wallet';
 
 const BadRequestResponse = {
   description: 'Requisição inválida',
@@ -81,10 +81,29 @@ const WalletConnectionSchema = {
   }
 };
 
+const WalletPoolSchema = {
+  $id: 'WalletPool',
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    tokenA: { type: 'string' },
+    tokenB: { type: 'string' },
+    myLiquidity: { type: 'number' },
+    myValue: { type: 'number' },
+    apy: { type: 'number' },
+    entryDate: { type: 'string' },
+    currentValue: { type: 'number' },
+    pnl: { type: 'number' },
+    rewardsEarned: { type: 'number' },
+    status: { type: 'string', enum: ['active', 'inactive', 'pending'] }
+  }
+};
+
 export const walletRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.addSchema(WalletConnectionSchema);
   fastify.addSchema(PortfolioSchema);
   fastify.addSchema(PositionSchema);
+  fastify.addSchema(WalletPoolSchema);
   const walletService = new WalletService();
 
   // Conectar carteira
@@ -397,6 +416,152 @@ Retorna todas as posições ativas da carteira em pools de liquidez.
       return reply.status(500).send({
         success: false,
         error: 'Erro ao obter posições',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Obter pools da carteira
+  fastify.get<{
+    Params: any;
+    Reply: ApiResponse<WalletPool[]>;
+  }>('/:publicKey/pools', {
+    schema: {
+      tags: ['Wallet'],
+      summary: 'Obter pools de liquidez da carteira',
+      description: `
+Retorna todas as pools de liquidez nas quais a carteira possui posições ativas.
+
+### Informações por Pool
+
+#### 1. Dados da Posição
+- **Pool ID**: Identificador único do pool
+- **Tokens**: Par de tokens da pool (tokenA/tokenB)
+- **Minha Liquidez**: Quantidade de liquidez fornecida
+- **Meu Valor**: Valor atual da posição em USD
+
+#### 2. Performance da Posição
+- **APY**: Retorno anualizado da posição
+- **Valor Atual**: Valor atualizado da posição
+- **P&L**: Lucro ou prejuízo desde a entrada
+- **Rewards**: Recompensas acumuladas em USD
+- **Data Entrada**: Quando a posição foi iniciada
+
+#### 3. Status
+- **Active**: Posição ativa gerando rendimentos
+- **Inactive**: Posição inativa ou removida
+- **Pending**: Posição em processamento
+
+### Métricas Calculadas
+- **Total Investido**: Soma de todas as posições
+- **Total P&L**: Lucro/prejuízo consolidado
+- **Total Rewards**: Recompensas totais acumuladas
+- **APY Médio**: Média ponderada dos APYs
+
+### Filtros Disponíveis
+- **status**: Filtrar por status da posição
+- **minValue**: Valor mínimo da posição
+- **sortBy**: Ordenar por valor, APY, P&L, ou data
+      `,
+      params: {
+        type: 'object',
+        required: ['publicKey'],
+        properties: {
+          publicKey: {
+            type: 'string',
+            description: 'Chave pública da carteira',
+            pattern: '^[1-9A-HJ-NP-Za-km-z]{32,44}$'
+          }
+        }
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['active', 'inactive', 'pending', 'all'],
+            description: 'Filtrar por status',
+            default: 'active'
+          },
+          minValue: {
+            type: 'number',
+            minimum: 0,
+            description: 'Valor mínimo da posição em USD'
+          },
+          sortBy: {
+            type: 'string',
+            enum: ['value', 'apy', 'pnl', 'date'],
+            description: 'Critério de ordenação',
+            default: 'value'
+          }
+        }
+      },
+      response: {
+        200: {
+          description: 'Pools da carteira retornadas com sucesso',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'array',
+              items: { $ref: 'WalletPool#' }
+            },
+            timestamp: { type: 'string', format: 'date-time' }
+          }
+        },
+        404: NotFoundResponse,
+        500: InternalServerErrorResponse
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { publicKey } = request.params as { publicKey: string };
+      const { status = 'active', minValue, sortBy = 'value' } = request.query as any;
+      
+      let pools = await walletService.getWalletPools(publicKey);
+
+      if (!pools || pools.length === 0) {
+        return reply.status(404).send({
+          success: false,
+          error: 'Nenhuma pool encontrada na carteira',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Aplicar filtros
+      if (status !== 'all') {
+        pools = pools.filter(pool => pool.status === status);
+      }
+
+      if (minValue) {
+        pools = pools.filter(pool => pool.currentValue >= minValue);
+      }
+
+      // Aplicar ordenação
+      switch (sortBy) {
+        case 'apy':
+          pools.sort((a, b) => b.apy - a.apy);
+          break;
+        case 'pnl':
+          pools.sort((a, b) => b.pnl - a.pnl);
+          break;
+        case 'date':
+          pools.sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime());
+          break;
+        default: // value
+          pools.sort((a, b) => b.currentValue - a.currentValue);
+      }
+
+      return {
+        success: true,
+        data: pools,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      fastify.log.error('Wallet pools error:', error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Erro ao obter pools da carteira',
         timestamp: new Date().toISOString()
       });
     }

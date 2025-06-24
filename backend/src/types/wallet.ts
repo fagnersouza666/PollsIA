@@ -60,3 +60,17 @@ export interface Position {
   apy: number;
   entryDate: string;
 }
+
+export interface WalletPool {
+  id: string;
+  tokenA: string;
+  tokenB: string;
+  myLiquidity: number;
+  myValue: number;
+  apy: number;
+  entryDate: string;
+  currentValue: number;
+  pnl: number;
+  rewardsEarned: number;
+  status: 'active' | 'inactive' | 'pending';
+}
