@@ -5,6 +5,23 @@ Todas as mudanças importantes deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.0.3] - 2025-06-24
+
+### 🐛 Corrigido
+- **Erro de Codificação JSON-RPC**: Resolvido erro crítico na busca de token accounts
+  - **Erro específico**: `Encoded binary (base 58) data should be less than 128 bytes, please use Base64 encoding`
+  - **Causa**: Uso incorreto de tipos Address na integração com Solana 2.0 RPC
+  - **Solução**: Implementação correta do `getTokenAccountsByOwner` com commitment 'confirmed'
+  - **Resultado**: API de portfolio funcionando perfeitamente com carteiras reais
+  - **Testado com**: Carteira `DuASG5ubHN6qsBCGJVfLa5G5TjDQ48TJ3XcZ8U6eDee` ✅
+- **Robustez**: Melhorado tratamento de erros em token accounts individuais
+- **Performance**: Adicionado commitment level para maior confiabilidade das consultas
+
+### 🔧 Melhorado
+- **WalletService**: Implementação mais robusta da busca de informações de carteira
+- **Error Handling**: Melhor tratamento de falhas em token accounts específicos
+- **Logging**: Logs mais detalhados para debug de problemas de conectividade
+
 ## [1.0.2] - 2025-06-22
 
 ### 🐛 Corrigido

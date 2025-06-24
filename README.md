@@ -133,14 +133,15 @@ npm run pre-commit       # Alias para check:all
 
 ## 🔧 **Troubleshooting**
 
-### **✅ CORREÇÃO RECENTE: Schema Validation Error**
-**Problema resolvido:** `Failed building the validation schema for GET: /api/wallet/:publicKey/portfolio, due to error strict mode: unknown keyword: "example"`
+### **✅ CORREÇÕES RECENTES**
 
-**Solução aplicada:**
-- Removidas todas as propriedades `example` dos schemas do Fastify
-- Arquivos corrigidos: `wallet.ts`, `pools.ts`, `analytics.ts`
-- Backend agora inicia sem erros de validação
-- Todas as rotas da API funcionando corretamente
+#### **Schema Validation Error** (Resolvido v1.0.1)
+**Problema:** `Failed building the validation schema for GET: /api/wallet/:publicKey/portfolio, due to error strict mode: unknown keyword: "example"`
+**Solução:** Removidas propriedades `example` dos schemas do Fastify ✅
+
+#### **Erro de Codificação JSON-RPC** (Resolvido v1.0.3)
+**Problema:** `Encoded binary (base 58) data should be less than 128 bytes, please use Base64 encoding`
+**Solução:** Corrigida implementação do `getTokenAccountsByOwner` para Solana 2.0 ✅
 
 ### **✅ CORREÇÃO RECENTE: Dados Zerados**
 **Problema resolvido:** Vários dados aparecendo zerados no sistema, especificamente para carteiras conectadas.
