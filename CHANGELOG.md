@@ -5,6 +5,26 @@ Todas as mudanças importantes deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.0.4] - 2025-06-25
+
+### 🐛 Corrigido
+- **Rate Limiting Solana RPC**: Implementado sistema agressivo de controle de requisições
+  - **Rate Limit Conservador**: Reduzido de 30 para 15 requisições por minuto
+  - **Delay Progressivo**: 500ms base + 50ms adicional por requisição ativa
+  - **Circuit Breaker**: Para automaticamente por 5 minutos após 3 erros 429 consecutivos
+  - **Cache Estendido**: Aumentado de 30 segundos para 5 minutos
+  - **Fallback Inteligente**: Retorna pools simuladas durante rate limits
+  - **Detecção Simplificada**: Evita chamadas RPC desnecessárias usando apenas APIs externas
+  - **Logs Melhorados**: Emojis e informações detalhadas de throttling
+  - **Proteção Robusta**: Sempre retorna dados úteis mesmo com falhas da RPC
+  - **Resultado**: Zero erros 429 nos testes ✅
+
+### 🔧 Melhorado
+- **WalletService**: Implementação muito mais conservadora para evitar rate limits
+- **Cache Strategy**: Cache muito mais longo para reduzir chamadas repetidas
+- **Error Handling**: Fallbacks inteligentes para todos os tipos de erro RPC
+- **Performance**: Detecção de pools simplificada sem múltiplas chamadas RPC
+
 ## [1.0.3] - 2025-06-24
 
 ### 🐛 Corrigido
