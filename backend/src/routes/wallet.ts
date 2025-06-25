@@ -517,7 +517,7 @@ Retorna todas as pools de liquidez nas quais a carteira possui posições ativas
     try {
       const { publicKey } = request.params as { publicKey: string };
       const { status = 'active', minValue, sortBy = 'value' } = request.query as any;
-      
+
       let pools = await walletService.getWalletPools(publicKey);
 
       // Não retornar erro 404 para array vazio - isso é um estado válido
@@ -643,6 +643,86 @@ A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\
       return reply.status(500).send({
         success: false,
         error: 'Erro ao desconectar carteira',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Endpoint para listar TODOS os tokens da carteira
+  fastify.get('/wallet/:publicKey/tokens', {
+    schema: {
+      description: 'Lista TODOS os tokens encontrados na carteira com detalhes completos',
+      tags: ['wallet'],
+      params: {
+        type: 'object',
+        properties: {
+          publicKey: { type: 'string', description: 'Chave pública da carteira' }
+        },
+        required: ['publicKey']
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                wallet: { type: 'string' },
+                totalTokens: { type: 'number' },
+                tokens: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      mint: { type: 'string' },
+                      name: { type: 'string' },
+                      symbol: { type: 'string' },
+                      balance: { type: 'number' },
+                      decimals: { type: 'number' },
+                      rawAmount: { type: 'string' },
+                      isLPToken: { type: 'boolean' },
+                      metadata: { type: 'object' }
+                    }
+                  }
+                }
+              }
+            },
+            timestamp: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { publicKey } = request.params as { publicKey: string };
+
+      console.log(`\n🔍 LISTANDO TODOS OS TOKENS DA CARTEIRA: ${publicKey}`);
+      console.log('═'.repeat(80));
+
+      const tokens = await walletService.getAllTokensDetailed(publicKey);
+
+      console.log(`\n📊 RESUMO FINAL:`);
+      console.log(`   💰 Total de tokens: ${tokens.length}`);
+      console.log(`   🔥 LP tokens potenciais: ${tokens.filter(t => t.isLPToken).length}`);
+      console.log(`   💎 Tokens com balance: ${tokens.filter(t => t.balance > 0).length}`);
+      console.log('═'.repeat(80));
+
+      return reply.send({
+        success: true,
+        data: {
+          wallet: publicKey,
+          totalTokens: tokens.length,
+          tokens: tokens
+        },
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      console.error('❌ Erro ao listar tokens:', error);
+      return reply.status(500).send({
+        success: false,
+        error: error.message || 'Erro interno do servidor',
         timestamp: new Date().toISOString()
       });
     }

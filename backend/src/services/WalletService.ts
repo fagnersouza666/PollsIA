@@ -192,43 +192,146 @@ export class WalletService {
     private async getTokenAccounts(publicKey: string) {
         try {
             await this.throttleRpcCall();
-            const pubkeyAddress = address(publicKey);
 
-            // Usar encoding correto para evitar erro de base58
+            const publicKeyAddress = address(publicKey) as Address<string>;
+
             const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
-                pubkeyAddress as any,
-                { programId: TOKEN_PROGRAM_ADDRESS as any },
-                {
-                    commitment: 'confirmed',
-                    encoding: 'jsonParsed'
-                }
+                publicKeyAddress,
+                { programId: TOKEN_PROGRAM_ADDRESS },
+                { encoding: 'jsonParsed' }
             ).send();
 
-            const accounts = [];
+            console.log(`\n🔍 CARTEIRA: ${publicKey}`);
+            console.log(`📊 TOTAL DE TOKEN ACCOUNTS ENCONTRADOS: ${tokenAccounts.value.length}`);
+            console.log('═'.repeat(80));
 
-            for (const account of tokenAccounts.value) {
-                try {
-                    const accountData = account.account.data as any;
-                    if (accountData && typeof accountData === 'object' && accountData.parsed) {
-                        const parsed = accountData.parsed;
-                        if (parsed.info) {
-                            const tokenAmount = parsed.info.tokenAmount;
-                            accounts.push({
-                                mint: parsed.info.mint || 'unknown',
-                                balance: parseFloat(tokenAmount?.uiAmountString || '0'),
-                                decimals: tokenAmount?.decimals || 9
-                            });
-                        }
-                    }
-                } catch (accountError) {
-                    console.warn('Erro ao processar token account:', accountError);
+            const processedAccounts = tokenAccounts.value.map((account, index) => {
+                const accountInfo = account.account.data;
+                const parsedInfo = accountInfo.parsed?.info;
+
+                if (parsedInfo) {
+                    const balance = Number(parsedInfo.tokenAmount?.uiAmount || 0);
+                    const decimals = parsedInfo.tokenAmount?.decimals || 0;
+                    const mint = parsedInfo.mint;
+
+                    // Log detalhado de cada token
+                    console.log(`\n${index + 1}. 🪙 TOKEN ENCONTRADO:`);
+                    console.log(`   📍 Mint: ${mint}`);
+                    console.log(`   💰 Balance: ${balance} tokens`);
+                    console.log(`   🔢 Decimals: ${decimals}`);
+                    console.log(`   📊 Raw Amount: ${parsedInfo.tokenAmount?.amount || '0'}`);
+
+                    // Tentar identificar o tipo de token
+                    this.identifyTokenType(mint, balance, decimals);
+
+                    console.log('─'.repeat(60));
+
+                    return {
+                        mint,
+                        balance,
+                        decimals,
+                        owner: parsedInfo.owner,
+                        rawAmount: parsedInfo.tokenAmount?.amount || '0'
+                    };
                 }
-            }
 
-            return accounts;
+                return null;
+            }).filter(account => account !== null);
+
+            console.log(`\n✅ PROCESSADOS: ${processedAccounts.length} token accounts válidos`);
+            console.log('═'.repeat(80));
+
+            return processedAccounts;
         } catch (error) {
-            console.error('Erro ao buscar token accounts:', error);
-            throw new Error('Falha ao buscar token accounts. Dados simulados removidos conforme CLAUDE.md');
+            console.error('❌ Erro ao buscar token accounts:', error);
+            return [];
+        }
+    }
+
+    private async identifyTokenType(mint: string, balance: number, decimals: number) {
+        // Identificar tokens conhecidos
+        const knownTokens = {
+            'So11111111111111111111111111111111111111112': 'SOL (Wrapped)',
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
+            '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': 'RAY (Raydium)',
+            'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE': 'ORCA',
+            'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN': 'JUP (Jupiter)'
+        };
+
+        const tokenName = knownTokens[mint] || 'Token Desconhecido';
+        console.log(`   🏷️  Tipo: ${tokenName}`);
+
+        // Verificar se pode ser LP token
+        if (this.isPotentialLPToken(mint, balance, decimals, tokenName)) {
+            console.log(`   🔥 POSSÍVEL LP TOKEN DETECTADO!`);
+
+            // Buscar metadata adicional
+            await this.getDetailedTokenInfo(mint);
+        }
+
+        if (balance === 0) {
+            console.log(`   ⚠️  Balance ZERO - token inativo`);
+        }
+    }
+
+    private isPotentialLPToken(mint: string, balance: number, decimals: number, tokenName: string): boolean {
+        // Critérios para identificar LP tokens
+        const criteria = [];
+
+        // 1. Balance > 0
+        if (balance > 0) criteria.push('✅ Balance positivo');
+        else criteria.push('❌ Balance zero');
+
+        // 2. Decimais comuns de LP (6, 8, 9)
+        if ([6, 8, 9].includes(decimals)) criteria.push('✅ Decimais LP típicos');
+        else criteria.push('❌ Decimais atípicos');
+
+        // 3. Nome não é token conhecido
+        if (tokenName === 'Token Desconhecido') criteria.push('✅ Token não-padrão');
+        else criteria.push('❌ Token conhecido');
+
+        // 4. Mint não é dos tokens principais
+        const mainTokens = [
+            'So11111111111111111111111111111111111111112', // SOL
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'  // USDT
+        ];
+
+        if (!mainTokens.includes(mint)) criteria.push('✅ Não é token principal');
+        else criteria.push('❌ É token principal');
+
+        console.log(`   🔍 Análise LP: ${criteria.join(', ')}`);
+
+        return balance > 0 && !mainTokens.includes(mint);
+    }
+
+    private async getDetailedTokenInfo(mint: string) {
+        try {
+            console.log(`   🔍 Buscando metadata detalhada para: ${mint}`);
+
+            // Tentar múltiplas fontes para metadata
+            const metadata = await this.getTokenMetadata(mint);
+
+            if (metadata) {
+                console.log(`   📝 Nome: ${metadata.name || 'N/A'}`);
+                console.log(`   🏷️  Symbol: ${metadata.symbol || 'N/A'}`);
+                console.log(`   📊 Supply: ${metadata.supply || 'N/A'}`);
+                console.log(`   🔗 Descrição: ${metadata.description || 'N/A'}`);
+
+                // Verificar padrões LP no nome/símbolo
+                const name = (metadata.name || '').toLowerCase();
+                const symbol = (metadata.symbol || '').toLowerCase();
+
+                if (name.includes('lp') || name.includes('liquidity') ||
+                    symbol.includes('lp') || symbol.includes('-')) {
+                    console.log(`   🎯 CONFIRMADO: Padrões LP detectados no metadata!`);
+                }
+            } else {
+                console.log(`   ❌ Metadata não encontrada`);
+            }
+        } catch (error) {
+            console.log(`   ❌ Erro ao buscar metadata: ${error.message}`);
         }
     }
 
@@ -424,16 +527,10 @@ export class WalletService {
         try {
             console.log('🔍 Buscando posições REAIS para:', publicKey);
 
-            // Verificar cache primeiro
-            const cachedPositions = this.getCachedWalletData(publicKey, 'positions');
-            if (cachedPositions) {
-                return cachedPositions;
-            }
 
             // Buscar posições REAIS usando APIs externas
             const positions = await this.getRealLPPositions(publicKey);
 
-            this.setCachedWalletData(publicKey, 'positions', positions);
             return positions;
         } catch (error) {
             console.error('Erro ao obter posições REAIS:', error);
@@ -490,6 +587,10 @@ export class WalletService {
             const positions: Position[] = [];
 
             for (const tokenAccount of tokenAccounts) {
+                // Exibir nome do token para debug
+                console.log(`🔍 Analisando token: ${tokenAccount.mint} (Balance: ${tokenAccount.balance})`);
+
+
                 // Verificar se é um LP token (geralmente têm supply baixo e nome específico)
                 if (tokenAccount.balance > 0) {
                     const lpPosition = await this.analyzeLPToken(tokenAccount, publicKey);
@@ -904,5 +1005,181 @@ export class WalletService {
             console.error('Erro ao obter wallet pools REAIS:', error);
             throw new Error('Falha ao obter pools da carteira. Dados simulados removidos conforme CLAUDE.md');
         }
+    }
+
+    async getAllTokensDetailed(publicKey: string) {
+        try {
+            console.log(`\n🔍 BUSCANDO TODOS OS TOKENS DETALHADOS PARA: ${publicKey}`);
+            console.log('═'.repeat(80));
+
+            // Buscar todos os token accounts
+            const tokenAccounts = await this.getTokenAccounts(publicKey);
+
+            const detailedTokens = [];
+
+            for (let i = 0; i < tokenAccounts.length; i++) {
+                const token = tokenAccounts[i];
+
+                console.log(`\n📍 PROCESSANDO TOKEN ${i + 1}/${tokenAccounts.length}:`);
+                console.log(`   🔗 Mint: ${token.mint}`);
+                console.log(`   💰 Balance: ${token.balance}`);
+
+                // Buscar metadata detalhada
+                const metadata = await this.getTokenMetadata(token.mint);
+
+                // Identificar se é LP token
+                const isLPToken = await this.isTokenLP(token.mint, token.balance, token.decimals, metadata);
+
+                // Identificar nome do token
+                const tokenInfo = this.getKnownTokenInfo(token.mint);
+
+                const detailedToken = {
+                    mint: token.mint,
+                    name: metadata?.name || tokenInfo.name || 'Token Desconhecido',
+                    symbol: metadata?.symbol || tokenInfo.symbol || 'UNKNOWN',
+                    balance: token.balance,
+                    decimals: token.decimals,
+                    rawAmount: token.rawAmount,
+                    isLPToken: isLPToken,
+                    metadata: metadata || {},
+                    tokenType: tokenInfo.type,
+                    priceUSD: this.getTokenPrice(token.mint)
+                };
+
+                detailedTokens.push(detailedToken);
+
+                // Log do resultado
+                console.log(`   ✅ Nome: ${detailedToken.name}`);
+                console.log(`   🏷️  Symbol: ${detailedToken.symbol}`);
+                console.log(`   🔥 É LP Token: ${isLPToken ? 'SIM' : 'NÃO'}`);
+                console.log(`   💵 Preço USD: $${detailedToken.priceUSD}`);
+                console.log('─'.repeat(60));
+            }
+
+            // Ordenar por balance (maior primeiro)
+            detailedTokens.sort((a, b) => b.balance - a.balance);
+
+            console.log(`\n🎯 ANÁLISE COMPLETA:`);
+            console.log(`   📊 Total de tokens: ${detailedTokens.length}`);
+            console.log(`   💰 Com balance > 0: ${detailedTokens.filter(t => t.balance > 0).length}`);
+            console.log(`   🔥 LP tokens detectados: ${detailedTokens.filter(t => t.isLPToken).length}`);
+            console.log(`   💎 Tokens conhecidos: ${detailedTokens.filter(t => t.tokenType !== 'unknown').length}`);
+            console.log('═'.repeat(80));
+
+            return detailedTokens;
+
+        } catch (error) {
+            console.error('❌ Erro ao buscar tokens detalhados:', error);
+            throw new Error('Falha ao buscar tokens da carteira');
+        }
+    }
+
+    private async isTokenLP(mint: string, balance: number, decimals: number, metadata: any): Promise<boolean> {
+        // Verificar múltiplos critérios para identificar LP tokens
+        const criteria = [];
+        let score = 0;
+
+        // 1. Balance positivo (necessário)
+        if (balance > 0) {
+            criteria.push('✅ Balance positivo');
+            score += 2;
+        } else {
+            criteria.push('❌ Balance zero');
+            return false; // Se não tem balance, não é posição ativa
+        }
+
+        // 2. Não é token principal conhecido
+        const mainTokens = [
+            'So11111111111111111111111111111111111111112', // SOL
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+            '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', // RAY
+            'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE', // ORCA
+            'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN'  // JUP
+        ];
+
+        if (!mainTokens.includes(mint)) {
+            criteria.push('✅ Não é token principal');
+            score += 3;
+        } else {
+            criteria.push('❌ É token principal');
+        }
+
+        // 3. Verificar metadata para padrões LP
+        if (metadata) {
+            const name = (metadata.name || '').toLowerCase();
+            const symbol = (metadata.symbol || '').toLowerCase();
+
+            if (name.includes('lp') || name.includes('liquidity') || name.includes('pool')) {
+                criteria.push('✅ Nome contém padrão LP');
+                score += 5;
+            }
+
+            if (symbol.includes('lp') || symbol.includes('-') || symbol.includes('_')) {
+                criteria.push('✅ Symbol contém padrão LP');
+                score += 4;
+            }
+
+            // Supply baixo pode indicar LP token
+            if (metadata.supply && metadata.supply < 1000000) {
+                criteria.push('✅ Supply baixo (LP típico)');
+                score += 2;
+            }
+        }
+
+        // 4. Decimais típicos de LP (6, 8, 9)
+        if ([6, 8, 9].includes(decimals)) {
+            criteria.push('✅ Decimais típicos de LP');
+            score += 1;
+        }
+
+        const isLP = score >= 5; // Threshold para considerar LP
+
+        console.log(`   🔍 Análise LP (Score: ${score}/15):`);
+        criteria.forEach(c => console.log(`      ${c}`));
+        console.log(`   🎯 Resultado: ${isLP ? 'PROVÁVEL LP TOKEN' : 'Token regular'}`);
+
+        return isLP;
+    }
+
+    private getKnownTokenInfo(mint: string): { name: string; symbol: string; type: string } {
+        const knownTokens: Record<string, { name: string; symbol: string; type: string }> = {
+            'So11111111111111111111111111111111111111112': {
+                name: 'Wrapped SOL',
+                symbol: 'SOL',
+                type: 'native'
+            },
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': {
+                name: 'USD Coin',
+                symbol: 'USDC',
+                type: 'stablecoin'
+            },
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': {
+                name: 'Tether USD',
+                symbol: 'USDT',
+                type: 'stablecoin'
+            },
+            '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': {
+                name: 'Raydium',
+                symbol: 'RAY',
+                type: 'defi'
+            },
+            'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE': {
+                name: 'Orca',
+                symbol: 'ORCA',
+                type: 'defi'
+            },
+            'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN': {
+                name: 'Jupiter',
+                symbol: 'JUP',
+                type: 'defi'
+            }
+        };
+
+        return knownTokens[mint] || {
+            name: 'Token Desconhecido',
+            symbol: 'UNKNOWN',
+            type: 'unknown'
+        };
     }
 } 
