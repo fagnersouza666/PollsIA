@@ -423,7 +423,7 @@ export class WalletService {
     private async getSolscanTransactionHistory(publicKey: string): Promise<PerformanceData[]> {
         try {
             // Solscan API pública
-            const response = await axios.get(`https://public-api.solscan.io/account/transactions`, {
+            const response = await axios.get(`https://api.solscan.io/account/transactions`, {
                 params: {
                     account: publicKey,
                     limit: 30
@@ -638,7 +638,7 @@ export class WalletService {
             console.log('🔍 ESTRATÉGIA 2: Analisando transações para detectar LPs...');
 
             // Usar Solscan para buscar transações de LP
-            const response = await axios.get(`https://public-api.solscan.io/account/transactions`, {
+            const response = await axios.get(`https://api.solscan.io/account/transactions`, {
                 params: {
                     account: publicKey,
                     limit: 50 // Mais transações para melhor detecção
@@ -768,12 +768,22 @@ export class WalletService {
         try {
             console.log('🔍 ESTRATÉGIA 5: Consultando Solscan Portfolio...');
 
-            const response = await axios.get(`https://public-api.solscan.io/account/tokens`, {
-                params: {
-                    account: publicKey
-                },
-                timeout: 10000
-            });
+            // Tentar endpoint alternativo da Solscan
+            let response;
+            try {
+                response = await axios.get(`https://api.solscan.io/account/tokens`, {
+                    params: { account: publicKey },
+                    timeout: 10000,
+                    headers: { 'User-Agent': 'PollsIA/1.0' }
+                });
+            } catch (error) {
+                // Fallback para pro-api se público falhar
+                response = await axios.get(`https://pro-api.solscan.io/v1.0/account/tokens`, {
+                    params: { account: publicKey },
+                    timeout: 10000,
+                    headers: { 'User-Agent': 'PollsIA/1.0' }
+                });
+            }
 
             const positions: Position[] = [];
             const tokens = response.data || [];
@@ -800,9 +810,10 @@ export class WalletService {
     private async getTokenMetadata(mint: string): Promise<any> {
         try {
             // Buscar metadata do token via Solana RPC ou APIs
-            const response = await axios.get(`https://public-api.solscan.io/token/meta`, {
+            const response = await axios.get(`https://api.solscan.io/token/meta`, {
                 params: { tokenAddress: mint },
-                timeout: 5000
+                timeout: 5000,
+                headers: { 'User-Agent': 'PollsIA/1.0' }
             });
             return response.data;
         } catch (error) {

@@ -63,8 +63,8 @@ export class PoolService {
 
   private async getRealRaydiumPools(): Promise<Pool[]> {
     try {
-      // Buscar dados REAIS da API oficial do Raydium
-      const response = await fetch(`${this.raydiumApiUrl}/sdk/liquidity/mainnet.json`, {
+      // Buscar dados REAIS da API oficial do Raydium (endpoint menor)
+      const response = await fetch(`${this.raydiumApiUrl}/main/pairs`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -77,12 +77,15 @@ export class PoolService {
       }
 
       const data = await response.json();
-      const raydiumPools = data.official || [];
+      const raydiumPools = data.pairs || data.data || data.official || [];
 
-      console.log(`📊 API Raydium retornou ${raydiumPools.length} pools oficiais`);
+      console.log(`📊 API Raydium retornou ${raydiumPools.length} pools`);
+      
+      // Limitar para evitar problemas de memória
+      const limitedPools = raydiumPools.slice(0, 500);
 
       // Converter para formato Pool
-      const pools: Pool[] = raydiumPools
+      const pools: Pool[] = limitedPools
         .filter((_pool: any) => _pool.liquidity > 0 && _pool.volume24h > 0) // API externa
         .map((_pool: any) => ({ // API externa do Raydium
           id: _pool.ammId || _pool.id || `raydium_${Date.now()}_${Math.random()}`,
