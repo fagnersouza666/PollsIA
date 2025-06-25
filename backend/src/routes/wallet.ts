@@ -649,7 +649,7 @@ A carteira pode ser reconectada a qualquer momento usando o endpoint \`/connect\
   });
 
   // Endpoint para listar TODOS os tokens da carteira
-  fastify.get('/wallet/:publicKey/tokens', {
+  fastify.get('/:publicKey/tokens', {
     schema: {
       description: 'Lista TODOS os tokens encontrados na carteira com detalhes completos',
       tags: ['wallet'],
