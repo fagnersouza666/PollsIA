@@ -422,39 +422,8 @@ export class WalletService {
 
     private async getSolscanTransactionHistory(publicKey: string): Promise<PerformanceData[]> {
         try {
-            // Solscan API pública
-            const response = await axios.get(`https://api.solscan.io/account/transactions`, {
-                params: {
-                    account: publicKey,
-                    limit: 30
-                },
-                timeout: 10000
-            });
-
-            const history: PerformanceData[] = [];
-            const transactions = response.data?.data || [];
-
-            for (const tx of transactions) {
-                if (tx.blockTime) {
-                    const date = new Date(tx.blockTime * 1000);
-                    const value = this.calculateValueFromSolscanTransaction(tx);
-
-                    history.push({
-                        date: date.toISOString().split('T')[0],
-                        value: value,
-                        change: 0
-                    });
-                }
-            }
-
-            // Calcular mudanças percentuais
-            for (let i = 1; i < history.length; i++) {
-                const prev = history[i - 1].value;
-                const curr = history[i].value;
-                history[i].change = prev > 0 ? ((curr - prev) / prev) * 100 : 0;
-            }
-
-            return history;
+            console.log('⚠️ Solscan API temporariamente desabilitada devido a bloqueios 403');
+            return [];
         } catch (error) {
             console.warn('Solscan API não disponível:', error);
             return [];
@@ -511,13 +480,6 @@ export class WalletService {
         }
 
         return Math.max(totalValue, 0);
-    }
-
-    private calculateValueFromSolscanTransaction(tx: any): number {
-        // Analisar transação Solscan para calcular valor
-        const amount = tx.amount || 0;
-        const solPrice = this.tokenPrices['sol'] || 0;
-        return amount * solPrice;
     }
 
     async getPositions(publicKey: string): Promise<Position[]> {
@@ -635,28 +597,20 @@ export class WalletService {
     // ESTRATÉGIA 2: Análise de Transações Recentes
     private async detectLPFromTransactions(publicKey: string): Promise<Position[]> {
         try {
-            console.log('🔍 ESTRATÉGIA 2: Analisando transações para detectar LPs...');
+            console.log('🔍 ESTRATÉGIA 2: Analisando transações via Solana RPC...');
 
-            // Usar Solscan para buscar transações de LP
-            const response = await axios.get(`https://api.solscan.io/account/transactions`, {
-                params: {
-                    account: publicKey,
-                    limit: 50 // Mais transações para melhor detecção
-                },
-                timeout: 15000
-            });
-
-            const transactions = response.data?.data || [];
+            // Usar apenas Solana RPC em vez de Solscan
+            const signatures = await this.getRecentSignatures(publicKey);
             const positions: Position[] = [];
 
-            for (const tx of transactions) {
-                const lpPosition = await this.extractLPFromTransaction(tx, publicKey);
+            for (const sig of signatures.slice(0, 10)) { // Limitar para 10 transações
+                const lpPosition = await this.extractLPFromSolanaTransaction(sig, publicKey);
                 if (lpPosition) {
                     positions.push(lpPosition);
                 }
             }
 
-            console.log(`✅ ESTRATÉGIA 2: Encontradas ${positions.length} posições via transações`);
+            console.log(`✅ ESTRATÉGIA 2: Encontradas ${positions.length} posições via RPC`);
             return positions;
         } catch (error) {
             console.warn('ESTRATÉGIA 2 falhou:', error);
@@ -664,19 +618,91 @@ export class WalletService {
         }
     }
 
-    private async extractLPFromTransaction(tx: any, publicKey: string): Promise<Position | null> {
+    private async getRecentSignatures(publicKey: string): Promise<string[]> {
         try {
-            // Procurar por padrões de transações LP (addLiquidity, removeLiquidity, etc.)
-            const instructions = tx.instructions || [];
+            await this.throttleRpcCall();
 
-            for (const instruction of instructions) {
-                if (this.isLPInstruction(instruction)) {
-                    const position = await this.buildPositionFromInstruction(instruction, tx, publicKey);
-                    if (position) return position;
-                }
+            const response = await fetch(this.getRpcUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'getSignaturesForAddress',
+                    params: [publicKey, { limit: 20 }]
+                }),
+                signal: AbortSignal.timeout(15000)
+            });
+
+            const data = await response.json();
+            return (data.result || []).map((tx: any) => tx.signature);
+        } catch (error) {
+            console.warn('Erro ao buscar signatures:', error);
+            return [];
+        }
+    }
+
+    private async extractLPFromSolanaTransaction(signature: string, publicKey: string): Promise<Position | null> {
+        try {
+            await this.throttleRpcCall();
+
+            const response = await fetch(this.getRpcUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'getTransaction',
+                    params: [signature, { encoding: 'jsonParsed' }]
+                }),
+                signal: AbortSignal.timeout(10000)
+            });
+
+            const data = await response.json();
+            const transaction = data.result;
+
+            if (transaction && this.isLPTransaction(transaction)) {
+                return this.buildPositionFromSolanaTransaction(transaction, publicKey);
             }
 
             return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    private isLPTransaction(transaction: any): boolean {
+        // Verificar se é transação LP baseada nos programas envolvidos
+        const instructions = transaction.transaction?.message?.instructions || [];
+
+        for (const instruction of instructions) {
+            const programId = instruction.programId;
+            if (programId && (
+                programId.includes('RVKd61ztZW9GUwhRbbLoYVRE5Xf1B2tVscKqwZqXgEr') || // Raydium
+                programId.includes('9KEPoZmtHUrBbhWN1v1KWLMkkvwY6WLtAVUCPRtRjP4z') || // Orca
+                programId.includes('srmqPiDkJkU7vdD4c7LrXJXKHKCfvWcDGzQmCHkXBmV') || // Serum
+                programId.includes('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')   // SPL Token
+            )) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private buildPositionFromSolanaTransaction(transaction: any, publicKey: string): Position | null {
+        try {
+            const blockTime = transaction.blockTime;
+            const signature = transaction.transaction?.signatures?.[0];
+
+            return {
+                poolId: `rpc_${signature}`,
+                tokenA: 'SOL',
+                tokenB: 'USDC',
+                liquidity: 0,
+                value: 0,
+                apy: 0,
+                entryDate: blockTime ? new Date(blockTime * 1000).toISOString() : new Date().toISOString()
+            };
         } catch (error) {
             return null;
         }
@@ -763,74 +789,102 @@ export class WalletService {
         }
     }
 
-    // ESTRATÉGIA 5: Solscan Portfolio API
+    // ESTRATÉGIA 5: Alternativa ao Solscan usando Jupiter API
     private async getSolscanPositions(publicKey: string): Promise<Position[]> {
         try {
-            console.log('🔍 ESTRATÉGIA 5: Consultando Solscan Portfolio...');
+            console.log('🔍 ESTRATÉGIA 5: Usando Jupiter API em vez de Solscan...');
 
-            // Tentar endpoint alternativo da Solscan
-            let response;
-            try {
-                response = await axios.get(`https://api.solscan.io/account/tokens`, {
-                    params: { account: publicKey },
-                    timeout: 10000,
-                    headers: { 'User-Agent': 'PollsIA/1.0' }
-                });
-            } catch (error) {
-                // Fallback para pro-api se público falhar
-                response = await axios.get(`https://pro-api.solscan.io/v1.0/account/tokens`, {
-                    params: { account: publicKey },
-                    timeout: 10000,
-                    headers: { 'User-Agent': 'PollsIA/1.0' }
-                });
-            }
+            // Usar Jupiter API para obter informações de tokens
+            const response = await axios.get(`https://quote-api.jup.ag/v6/tokens`, {
+                timeout: 10000,
+                headers: { 'User-Agent': 'PollsIA/1.0' }
+            });
 
+            const allTokens = response.data || {};
             const positions: Position[] = [];
-            const tokens = response.data || [];
 
-            for (const token of tokens) {
-                // Verificar se é um LP token baseado em padrões
-                if (this.isLPTokenFromSolscan(token)) {
-                    const position = await this.buildPositionFromSolscanToken(token, publicKey);
+            // Buscar tokens da wallet via RPC
+            const walletTokens = await this.getTokenAccounts(publicKey);
+
+            for (const token of walletTokens.slice(0, 10)) { // Limitar para performance
+                if (token.balance > 0 && this.isPotentialLPToken(token.mint, token.balance, token.decimals, '')) {
+                    const position = await this.buildPositionFromJupiterToken(token, allTokens);
                     if (position) {
                         positions.push(position);
                     }
                 }
             }
 
-            console.log(`✅ ESTRATÉGIA 5: Solscan encontrou ${positions.length} posições`);
+            console.log(`✅ ESTRATÉGIA 5: Jupiter encontrou ${positions.length} posições`);
             return positions;
         } catch (error) {
-            console.warn('ESTRATÉGIA 5 (Solscan) falhou:', error);
+            console.warn('ESTRATÉGIA 5 (Jupiter) falhou:', error);
             return [];
+        }
+    }
+
+    private async buildPositionFromJupiterToken(token: any, allTokens: any): Promise<Position | null> {
+        try {
+            const tokenInfo = allTokens[token.mint];
+            const value = token.balance * (this.getTokenPrice(token.mint) || 0);
+
+            if (value > 0) {
+                return {
+                    poolId: `jupiter_${token.mint}`,
+                    tokenA: tokenInfo?.symbol || 'Unknown',
+                    tokenB: 'SOL',
+                    liquidity: token.balance,
+                    value: value,
+                    apy: 0,
+                    entryDate: new Date().toISOString()
+                };
+            }
+
+            return null;
+        } catch (error) {
+            return null;
         }
     }
 
     // Métodos auxiliares para análise
     private async getTokenMetadata(mint: string): Promise<any> {
         try {
-            // Buscar metadata do token via Solana RPC ou APIs
-            const response = await axios.get(`https://api.solscan.io/token/meta`, {
-                params: { tokenAddress: mint },
+            // Usar Jupiter API em vez de Solscan
+            const response = await axios.get(`https://quote-api.jup.ag/v6/tokens`, {
                 timeout: 5000,
                 headers: { 'User-Agent': 'PollsIA/1.0' }
             });
-            return response.data;
+
+            const tokens = response.data || {};
+            return tokens[mint] || null;
         } catch (error) {
+            console.warn('Erro ao buscar metadata via Jupiter:', error);
             return null;
         }
     }
 
+    private getRpcUrl(): string {
+        const rpcEndpoints = [
+            'https://api.mainnet-beta.solana.com',
+            'https://rpc.ankr.com/solana',
+            'https://solana-api.projectserum.com'
+        ];
+
+        // Rodar entre endpoints para distribuir carga
+        const index = this.rpcRequestCount % rpcEndpoints.length;
+        return rpcEndpoints[index];
+    }
+
     private isLPToken(metadata: any): boolean {
         // Verificar se é LP token baseado em metadata
-        const name = metadata.name?.toLowerCase() || '';
-        const symbol = metadata.symbol?.toLowerCase() || '';
+        const name = metadata?.name?.toLowerCase() || '';
+        const symbol = metadata?.symbol?.toLowerCase() || '';
 
         return name.includes('lp') ||
             name.includes('liquidity') ||
             symbol.includes('lp') ||
             symbol.includes('-') || // Padrão TOKEN1-TOKEN2
-            metadata.supply < 1000000; // LP tokens geralmente têm supply baixo
+            (metadata?.supply && metadata.supply < 1000000); // LP tokens geralmente têm supply baixo
     }
 
     private async calculateLPValue(tokenAccount: any, metadata: any): Promise<number> {
@@ -844,67 +898,6 @@ export class WalletService {
         }
     }
 
-    private isLPInstruction(instruction: any): boolean {
-        // Verificar se a instrução é relacionada a LP
-        const programId = instruction.programId || '';
-        const data = instruction.data || '';
-
-        return programId.includes('raydium') ||
-            programId.includes('orca') ||
-            data.includes('addLiquidity') ||
-            data.includes('removeLiquidity');
-    }
-
-    private async buildPositionFromInstruction(_instruction: any, tx: any, _publicKey: string): Promise<Position | null> {
-        try {
-            // Construir posição baseada na instrução de transação
-            return {
-                poolId: `tx_${tx.signature}`,
-                tokenA: 'Unknown',
-                tokenB: 'Unknown',
-                liquidity: 0,
-                value: 0,
-                apy: 0,
-                entryDate: new Date(tx.blockTime * 1000).toISOString()
-            };
-        } catch (error) {
-            return null;
-        }
-    }
-
-    private isLPTokenFromSolscan(token: any): boolean {
-        // Verificar se o token do Solscan é LP
-        const symbol = token.tokenSymbol?.toLowerCase() || '';
-        const name = token.tokenName?.toLowerCase() || '';
-
-        return symbol.includes('lp') ||
-            symbol.includes('-') ||
-            name.includes('liquidity') ||
-            token.tokenAmount?.decimals === 6; // Muitos LP tokens têm 6 decimais
-    }
-
-    private async buildPositionFromSolscanToken(token: any, _publicKey: string): Promise<Position | null> {
-        try {
-            const value = (token.tokenAmount?.uiAmount || 0) * (token.priceUsdt || 0);
-
-            if (value > 0) {
-                return {
-                    poolId: `solscan_${token.tokenAddress}`,
-                    tokenA: this.extractTokenFromSymbol(token.tokenSymbol, 0),
-                    tokenB: this.extractTokenFromSymbol(token.tokenSymbol, 1),
-                    liquidity: token.tokenAmount?.uiAmount || 0,
-                    value: value,
-                    apy: 0, // Não disponível via Solscan
-                    entryDate: new Date().toISOString()
-                };
-            }
-
-            return null;
-        } catch (error) {
-            return null;
-        }
-    }
-
     private extractTokenFromSymbol(symbol: string, index: number): string {
         // Extrair tokens de símbolos como "SOL-USDC" ou "RAY-SOL"
         if (symbol && symbol.includes('-')) {
@@ -912,6 +905,13 @@ export class WalletService {
             return parts[index] || 'Unknown';
         }
         return 'Unknown';
+    }
+
+    private calculateValueFromSolscanTransaction(tx: any): number {
+        // Método mantido para compatibilidade, mas não usa mais Solscan
+        const amount = tx.amount || 0;
+        const solPrice = this.tokenPrices['sol'] || 0;
+        return amount * solPrice;
     }
 
     private async updateTokenPrices() {
