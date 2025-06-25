@@ -13,6 +13,10 @@ const envSchema = z.object({
   SOLANA_RPC_URL: z.string().default('https://api.mainnet-beta.solana.com'),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').default('dev-secret-key-change-in-production-12345678'),
+
+  // APIs Externas para detecção de LP positions
+  HELIUS_API_KEY: z.string().optional(),
+  BIRDEYE_API_KEY: z.string().optional(),
 });
 
 export const config = envSchema.parse(process.env);

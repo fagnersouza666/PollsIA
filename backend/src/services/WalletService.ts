@@ -498,15 +498,16 @@ export class WalletService {
     private async getHeliusTransactionHistory(publicKey: string): Promise<PerformanceData[]> {
         try {
             // Helius API para histórico detalhado (requer API key)
-            if (!process.env.HELIUS_API_KEY) {
-                console.log('HELIUS_API_KEY não configurada');
+            if (!config.HELIUS_API_KEY) {
+                console.log('HELIUS_API_KEY não configurada no .env');
                 return [];
             }
 
+            console.log('🔍 Usando Helius API para histórico de transações...');
             const response = await axios.get(`https://api.helius.xyz/v0/addresses/${publicKey}/transactions`, {
                 timeout: 10000,
                 headers: {
-                    'Authorization': `Bearer ${process.env.HELIUS_API_KEY}`
+                    'Authorization': `Bearer ${config.HELIUS_API_KEY}`
                 }
             });
 
@@ -867,17 +868,18 @@ export class WalletService {
         try {
             console.log('🔍 ESTRATÉGIA 4: Consultando Birdeye...');
 
-            if (!process.env.BIRDEYE_API_KEY) {
-                console.log('BIRDEYE_API_KEY não configurada');
+            if (!config.BIRDEYE_API_KEY) {
+                console.log('BIRDEYE_API_KEY não configurada no .env');
                 return [];
             }
 
+            console.log('🔍 Usando Birdeye API para posições LP...');
             const response = await axios.get(`https://public-api.birdeye.so/v1/wallet/portfolio`, {
                 params: {
                     wallet: publicKey
                 },
                 headers: {
-                    'X-API-KEY': process.env.BIRDEYE_API_KEY
+                    'X-API-KEY': config.BIRDEYE_API_KEY
                 },
                 timeout: 10000
             });
