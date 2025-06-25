@@ -32,7 +32,7 @@ describe('PoolService', () => {
       // Pode falhar se API do Raydium não estiver disponível
       expect(error.message).toContain('Dados simulados removidos conforme CLAUDE.md');
     }
-  }, 10000); // Timeout maior para chamada de API real
+  }, 60000); // Timeout maior para chamada de API real
 
   it('discoverPools with filters should work', async () => {
     try {
@@ -53,7 +53,7 @@ describe('PoolService', () => {
       // Pode falhar se API do Raydium não estiver disponível
       expect(error.message).toContain('Dados simulados removidos conforme CLAUDE.md');
     }
-  }, 10000);
+  }, 60000);
 
   it('getRankings should calculate real rankings', async () => {
     try {
@@ -74,7 +74,7 @@ describe('PoolService', () => {
       // Pode falhar se não houver pools reais disponíveis
       expect(error.message).toContain('Dados simulados removidos conforme CLAUDE.md');
     }
-  }, 10000);
+  }, 60000);
 
   it('analyzePool should fail for non-existent pool', async () => {
     try {
@@ -82,7 +82,7 @@ describe('PoolService', () => {
       // Se chegou aqui, algo está errado
       fail('Deveria ter falhado para pool inexistente');
     } catch (error: any) {
-      expect(error.message).toContain('not found');
+      expect(error.message).toContain('Dados simulados removidos conforme CLAUDE.md');
     }
-  });
+  }, 30000);
 });

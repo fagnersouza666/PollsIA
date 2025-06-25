@@ -2,15 +2,15 @@ import { Pool, PoolRanking, PoolAnalysis } from '../types/pool';
 import { PoolDiscoveryQuery, PoolAnalysisQuery } from '../schemas/pool';
 import { createSolanaRpc } from '@solana/rpc';
 
-interface RaydiumPool {
-  name: string;
-  ammId: string;
-  baseMint: string;
-  quoteMint: string;
-  liquidity: number;
-  volume24h: number;
-  apr24h: number;
-}
+// interface RaydiumPool {
+//   name: string;
+//   ammId: string;
+//   baseMint: string;
+//   quoteMint: string;
+//   liquidity: number;
+//   volume24h: number;
+//   apr24h: number;
+// }
 
 export class PoolService {
   private raydiumApiUrl = 'https://api.raydium.io/v2';

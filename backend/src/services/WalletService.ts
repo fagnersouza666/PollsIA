@@ -193,11 +193,11 @@ export class WalletService {
         try {
             await this.throttleRpcCall();
 
-            const publicKeyAddress = address(publicKey) as Address<string>;
+            const publicKeyAddress = address(publicKey);
 
             const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
-                publicKeyAddress,
-                { programId: TOKEN_PROGRAM_ADDRESS },
+                publicKeyAddress as any,
+                { programId: TOKEN_PROGRAM_ADDRESS as any },
                 { encoding: 'jsonParsed' }
             ).send();
 
@@ -207,7 +207,7 @@ export class WalletService {
 
             const processedAccounts = tokenAccounts.value.map((account, index) => {
                 const accountInfo = account.account.data;
-                const parsedInfo = accountInfo.parsed?.info;
+                const parsedInfo = (accountInfo as any).parsed?.info;
 
                 if (parsedInfo) {
                     const balance = Number(parsedInfo.tokenAmount?.uiAmount || 0);
@@ -259,7 +259,7 @@ export class WalletService {
             'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN': 'JUP (Jupiter)'
         };
 
-        const tokenName = knownTokens[mint] || 'Token Desconhecido';
+        const tokenName = (knownTokens as Record<string, string>)[mint] || 'Token Desconhecido';
         console.log(`   🏷️  Tipo: ${tokenName}`);
 
         // Verificar se pode ser LP token
@@ -311,7 +311,7 @@ export class WalletService {
             console.log(`   🔍 Buscando metadata detalhada para: ${mint}`);
 
             // Tentar múltiplas fontes para metadata
-            const metadata = await this.getTokenMetadata(mint);
+            const _metadata = await this.getTokenMetadata(mint);
 
             if (metadata) {
                 console.log(`   📝 Nome: ${metadata.name || 'N/A'}`);
@@ -331,7 +331,7 @@ export class WalletService {
                 console.log(`   ❌ Metadata não encontrada`);
             }
         } catch (error) {
-            console.log(`   ❌ Erro ao buscar metadata: ${error.message}`);
+            console.log(`   ❌ Erro ao buscar metadata: ${(error as Error).message}`);
         }
     }
 
@@ -464,9 +464,6 @@ export class WalletService {
     private async getSolanaRpcHistory(publicKey: string, currentValue: number): Promise<PerformanceData[]> {
         try {
             await this.throttleRpcCall();
-
-            // Usar getSignaturesForAddress se disponível
-            const pubkeyAddress = address(publicKey);
 
             // Método alternativo usando getAccountInfo com diferentes commitment levels
             const history: PerformanceData[] = [];
@@ -608,7 +605,7 @@ export class WalletService {
         }
     }
 
-    private async analyzeLPToken(tokenAccount: any, publicKey: string): Promise<Position | null> {
+    private async analyzeLPToken(tokenAccount: any, _publicKey: string): Promise<Position | null> {
         try {
             // Buscar metadata do token para verificar se é LP
             const mintInfo = await this.getTokenMetadata(tokenAccount.mint);
@@ -847,7 +844,7 @@ export class WalletService {
             data.includes('removeLiquidity');
     }
 
-    private async buildPositionFromInstruction(instruction: any, tx: any, publicKey: string): Promise<Position | null> {
+    private async buildPositionFromInstruction(_instruction: any, tx: any, _publicKey: string): Promise<Position | null> {
         try {
             // Construir posição baseada na instrução de transação
             return {
@@ -875,7 +872,7 @@ export class WalletService {
             token.tokenAmount?.decimals === 6; // Muitos LP tokens têm 6 decimais
     }
 
-    private async buildPositionFromSolscanToken(token: any, publicKey: string): Promise<Position | null> {
+    private async buildPositionFromSolscanToken(token: any, _publicKey: string): Promise<Position | null> {
         try {
             const value = (token.tokenAmount?.uiAmount || 0) * (token.priceUsdt || 0);
 
