@@ -61,6 +61,13 @@ export interface Position {
   entryDate: string;
 }
 
+export interface WalletToken {
+  symbol: string;
+  balance: number;
+  usdValue: number;
+  address: string;
+}
+
 export interface WalletPool {
   id: string;
   tokenA: string;

@@ -35,3 +35,25 @@ export interface Opportunity {
   confidence: number;
   reason: string;
 }
+
+export interface OverviewStats {
+  totalValueLocked: number;
+  totalPools: number;
+  dailyVolume: number;
+  tvlChange: number;
+  volumeChange: number;
+  topPerformingPools: Array<{
+    id: string;
+    tokenA: string;
+    tokenB: string;
+    apy: number;
+    tvl: number;
+    volume24h: number;
+    change24h: number;
+  }>;
+  protocolDistribution: Array<{
+    protocol: string;
+    percentage: number;
+    tvl: number;
+  }>;
+}
