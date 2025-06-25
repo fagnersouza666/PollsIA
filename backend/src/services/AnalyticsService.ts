@@ -143,10 +143,10 @@ export class AnalyticsService {
         console.log('========================');
       }
 
-      // Se não temos dados reais, usar valores de fallback
+      // Se não temos dados reais, lançar erro conforme CLAUDE.md
       if (totalTvl === 0 || pools.length === 0) {
-        console.log('Usando dados de fallback completo');
-        return this.getFallbackMarketOverview();
+        console.log('❌ Nenhum pool real encontrado');
+        throw new Error('Nenhum pool real encontrado. Dados simulados removidos conforme CLAUDE.md');
       }
 
       // Group by protocol
@@ -179,40 +179,20 @@ export class AnalyticsService {
       const result = {
         totalTvl: Number(totalTvl.toFixed(0)),
         averageApy: Number(averageApy.toFixed(1)),
-        topPools: topPools.length > 0 ? topPools : this.getDefaultTopPools(),
+        topPools: topPools.length > 0 ? topPools : [],
         marketTrends
       };
 
       console.log('Market overview result final:', JSON.stringify(result, null, 2));
       return result;
     } catch (error) {
-      console.error('Error getting market overview:', error);
-      return this.getFallbackMarketOverview();
+      console.error('❌ Erro ao obter market overview REAL:', error);
+      throw new Error('Falha ao obter dados de mercado. Dados simulados removidos conforme CLAUDE.md');
     }
   }
 
-  private getDefaultTopPools() {
-    return [
-      { protocol: 'Raydium', tvl: 1500000000, pools: 250 },
-      { protocol: 'Orca', tvl: 800000000, pools: 180 },
-      { protocol: 'Jupiter', tvl: 400000000, pools: 120 },
-      { protocol: 'Meteora', tvl: 200000000, pools: 80 },
-      { protocol: 'Saber', tvl: 150000000, pools: 60 }
-    ];
-  }
-
-  private getFallbackMarketOverview() {
-    return {
-      totalTvl: 3050000000, // 3.05B TVL total
-      averageApy: 12.8,
-      topPools: this.getDefaultTopPools(),
-      marketTrends: {
-        tvlChange24h: 2.3,
-        volumeChange24h: -1.8,
-        newPools24h: 4
-      }
-    };
-  }
+  // REMOVIDO: getDefaultTopPools() - Dados simulados removidos conforme CLAUDE.md
+  // REMOVIDO: getFallbackMarketOverview() - Dados simulados removidos conforme CLAUDE.md
 
   async getOpportunities(riskLevel?: string) {
     try {

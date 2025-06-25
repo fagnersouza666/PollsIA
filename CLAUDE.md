@@ -2,6 +2,8 @@
 
 Este arquivo fornece orientações para o Claude Code (claude.ai/code) ao trabalhar com código neste repositório.
 
+JAMAIS UTILIZE DADOS SIMULADOS. USE SOMENTE DADOS REAIS
+
 ## Visão Geral do Projeto
 
 PollsIA - Sistema automatizado de gestão e otimização de pools de liquidez na blockchain Solana, maximizando retornos através de rebalanceamento inteligente e gestão automatizada de posições com dados em tempo real do Raydium DEX.

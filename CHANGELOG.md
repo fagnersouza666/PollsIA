@@ -204,6 +204,58 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **Atualizado**:
   - Todas as dependências Solana para versões 2.0-preview.4
 
+## v1.0.7 - 2025-06-25 🚨 **DADOS SIMULADOS REMOVIDOS CONFORME CLAUDE.md**
+
+### 🎯 **IMPLEMENTAÇÃO COMPLETA DO CLAUDE.MD**
+- **REMOVIDOS TODOS OS DADOS SIMULADOS/MOCKADOS/FIXOS**
+- Sistema agora usa **SOMENTE dados reais** de APIs externas
+- Implementação rigorosa das diretrizes do **CLAUDE.md**
+
+### ❌ **Dados Simulados Removidos:**
+1. **WalletService.ts**:
+   - ❌ `generateFallbackPositions()` - Posições simuladas
+   - ❌ `generateSimpleHash()` - Hash simulado
+   - ✅ Mantidos apenas métodos que buscam dados reais
+
+2. **PoolService.ts**:
+   - ❌ `getFallbackPools()` - Pools simulados
+   - ✅ Implementado `getRealRaydiumPools()` - API oficial do Raydium
+   - ✅ Sistema falha se API não disponível (sem fallback simulado)
+
+3. **AnalyticsService.ts**:
+   - ❌ `getFallbackMarketOverview()` - Dados de mercado simulados
+   - ❌ `getDefaultTopPools()` - Top pools simulados
+   - ✅ Sistema falha se não há dados reais (conforme CLAUDE.md)
+
+### ✅ **APIs Reais Implementadas:**
+- **Jupiter API**: Preços de tokens em tempo real
+- **Raydium API**: Pools oficiais do protocolo
+- **Solana RPC**: Dados blockchain reais
+- **Helius API**: Histórico de transações (quando configurado)
+- **Solscan API**: Backup para histórico de transações
+
+### 🧪 **Testes Atualizados:**
+- **26 de 27 testes passando**
+- Testes agora verificam comportamento com dados reais
+- Falhas esperadas quando APIs externas não disponíveis
+- Mensagens de erro corretas: "Dados simulados removidos conforme CLAUDE.md"
+
+### 📊 **Comportamento Atual:**
+- ✅ **WalletService**: Obtém preços reais (SOL: $146.38, USDC: $0.9999, etc.)
+- ✅ **AnalyticsService**: Calcula métricas baseadas em dados reais
+- ⚠️ **PoolService**: Falha corretamente quando Raydium API retorna 429 (rate limit)
+- ✅ **Frontend**: Continua funcionando, mas mostra erros quando APIs falham
+
+### 🚨 **Mudança de Comportamento:**
+- **ANTES**: Sistema usava dados simulados como fallback
+- **AGORA**: Sistema falha se não conseguir dados reais
+- **CONFORME**: Diretrizes rigorosas do **CLAUDE.md**
+
+### 🔧 **Próximos Passos Sugeridos:**
+1. Configurar API keys para Birdeye, DexScreener
+2. Implementar rate limiting mais inteligente para Raydium
+3. Considerar cache mais longo para reduzir chamadas de API
+
 ---
 
 ## Formato das Mudanças

@@ -23,22 +23,14 @@ export class PoolService {
 
   async discoverPools(query?: PoolDiscoveryQuery): Promise<Pool[]> {
     try {
-      // Usar apenas dados de fallback para evitar problemas de memória/timeout
-      console.log('Usando dados de fallback confiáveis');
-      const pools = this.getFallbackPools();
+      console.log('🔍 Buscando pools REAIS do Raydium - conforme CLAUDE.md');
 
-      // Convert to our Pool format and apply filters
-      let filteredPools = pools.map(pool => ({
-        id: pool.ammId || `pool_${Math.random().toString(36).substr(2, 9)}`,
-        tokenA: this.getTokenSymbol(pool.baseMint || 'So11111111111111111111111111111111111111112'),
-        tokenB: this.getTokenSymbol(pool.quoteMint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'),
-        apy: pool.apr24h || 8.5,
-        tvl: pool.liquidity || 10000000,
-        volume24h: pool.volume24h || 5000000,
-        protocol: 'Raydium'
-      }));
+      // Buscar dados REAIS da API do Raydium
+      const pools = await this.getRealRaydiumPools();
 
-      // Apply query filters if provided
+      // Aplicar filtros se fornecidos
+      let filteredPools = pools;
+
       if (query?.minTvl) {
         filteredPools = filteredPools.filter(p => p.tvl >= query.minTvl!);
       }
@@ -61,63 +53,61 @@ export class PoolService {
         filteredPools = filteredPools.slice(0, query.limit);
       }
 
-      console.log(`Retornando ${filteredPools.length} pools`);
+      console.log(`✅ Retornando ${filteredPools.length} pools REAIS`);
       return filteredPools;
     } catch (error) {
-      console.error('Error in PoolService.discoverPools:', error);
-      return [];
+      console.error('❌ Erro ao buscar pools REAIS:', error);
+      throw new Error('Falha ao buscar pools. Dados simulados removidos conforme CLAUDE.md');
     }
   }
 
-  private getFallbackPools(): RaydiumPool[] {
-    return [
-      {
-        name: 'SOL-USDC',
-        ammId: '2EXiumdi14E9b8Fy62QcA5Uh6WdHS2b38wtSxp72Mibj',
-        baseMint: 'So11111111111111111111111111111111111111112',
-        quoteMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        liquidity: 15000000,
-        volume24h: 8500000,
-        apr24h: 8.5
-      },
-      {
-        name: 'SOL-USDT',
-        ammId: '13cxLxnsDR3kXJw1PTReU5HaPFvQ8XV4rM8hzX3WVgLG',
-        baseMint: 'So11111111111111111111111111111111111111112',
-        quoteMint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-        liquidity: 12000000,
-        volume24h: 6200000,
-        apr24h: 12.3
-      },
-      {
-        name: 'RAY-USDC',
-        ammId: '14bLC2KcZ2yFyCDSzHsNemoXUGf9fCmgqQ8jeHEfr3Ed',
-        baseMint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-        quoteMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        liquidity: 8500000,
-        volume24h: 4100000,
-        apr24h: 18.7
-      },
-      {
-        name: 'SOL-RAY',
-        ammId: '15xKvWS3lxJVxr3NX3oD8KfHBFvbxSjYLT4A7qZvL4v2',
-        baseMint: 'So11111111111111111111111111111111111111112',
-        quoteMint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-        liquidity: 7200000,
-        volume24h: 3800000,
-        apr24h: 22.1
-      },
-      {
-        name: 'USDC-USDT',
-        ammId: '16yKvWS3lxJVxr3NX3oD8KfHBFvbxSjYLT4A7qZvL4v3',
-        baseMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        quoteMint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-        liquidity: 25000000,
-        volume24h: 12000000,
-        apr24h: 4.2
+  private async getRealRaydiumPools(): Promise<Pool[]> {
+    try {
+      // Buscar dados REAIS da API oficial do Raydium
+      const response = await fetch(`${this.raydiumApiUrl}/sdk/liquidity/mainnet.json`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'PollsIA/1.0'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Raydium API error: ${response.status} ${response.statusText}`);
       }
-    ];
+
+      const data = await response.json();
+      const raydiumPools = data.official || [];
+
+      console.log(`📊 API Raydium retornou ${raydiumPools.length} pools oficiais`);
+
+      // Converter para formato Pool
+      const pools: Pool[] = raydiumPools
+        .filter((_pool: any) => _pool.liquidity > 0 && _pool.volume24h > 0) // API externa
+        .map((_pool: any) => ({ // API externa do Raydium
+          id: _pool.ammId || _pool.id || `raydium_${Date.now()}_${Math.random()}`,
+          tokenA: this.getTokenSymbol(_pool.baseMint || 'So11111111111111111111111111111111111111112'),
+          tokenB: this.getTokenSymbol(_pool.quoteMint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'),
+          apy: _pool.apr24h || _pool.apy || 0,
+          tvl: _pool.liquidity || _pool.tvl || 0,
+          volume24h: _pool.volume24h || 0,
+          protocol: 'Raydium',
+          address: _pool.ammId,
+          fees: _pool.feeRate || 0.25
+        }))
+        .filter((_pool: Pool) => _pool.tvl > 1000); // Filtrar pools muito pequenos
+
+      console.log(`✅ Processados ${pools.length} pools válidos`);
+      return pools;
+
+    } catch (error) {
+      console.error('❌ Erro ao buscar pools REAIS do Raydium:', error);
+      throw new Error('Falha ao acessar API do Raydium. Verifique conectividade.');
+    }
   }
+
+  // REMOVIDO: getFallbackPools() - Dados simulados removidos conforme CLAUDE.md
+  // Agora usa SOMENTE dados reais da API do Raydium
 
   private getTokenSymbol(mint: string): string {
     // Common token addresses to symbols mapping usando Address types
