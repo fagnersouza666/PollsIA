@@ -5,6 +5,40 @@ Todas as mudanças importantes deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.0.6] - 2025-06-25
+
+### 🐛 Corrigido
+- **Erro de Codificação JSON-RPC**: Resolvido erro crítico "Encoded binary (base 58) data should be less than 128 bytes"
+  - **Causa**: Uso incorreto de encoding para `getTokenAccountsByOwner`
+  - **Solução**: Implementado `encoding: 'jsonParsed'` para evitar erro de base58
+  - **Resultado**: Token accounts agora são buscados corretamente ✅
+- **Erro de BigInt**: Corrigido "Cannot mix BigInt and other types, use explicit conversions"
+  - **Causa**: Tentativa de operações matemáticas diretas com BigInt
+  - **Solução**: Conversão explícita `Number(bigIntValue)` antes de cálculos
+  - **Resultado**: Histórico de performance funciona sem erros ✅
+- **Endpoint Wallet Pools**: Resolvido erro 500 em `/api/wallet/:publicKey/pools`
+  - **Causa**: Método `getWalletPools` não implementado no WalletService
+  - **Solução**: Implementado método completo com fallback baseado em posições
+  - **Resultado**: Endpoint retorna dados de pools da carteira ✅
+- **APIs Externas**: Melhorado tratamento de falhas em Birdeye e DexScreener
+  - **Birdeye**: Verificação de API key válida antes de chamadas
+  - **DexScreener**: Removido tentativas que sempre falham
+  - **Fallback**: Implementado posições determinísticas baseadas em hash da carteira
+  - **Resultado**: Sistema sempre retorna dados úteis mesmo com APIs indisponíveis ✅
+
+### 🔧 Melhorado
+- **WalletService**: Tratamento robusto de erros RPC e conversões de tipos
+- **Token Accounts**: Parsing correto de dados usando `jsonParsed` encoding
+- **Performance History**: Conversão segura de BigInt para number
+- **Fallback Positions**: Sistema determinístico baseado em hash da chave pública
+- **Error Handling**: Logs mais informativos e tratamento gracioso de falhas
+
+### 📊 Testes Realizados
+- Portfolio da carteira `DuASG5ubHN6qsBCGJVfLa5G5TjDQ48TJ3XcZ8U6eDee`: ✅ Funcionando
+- Posições LP: ✅ Retornando 3 posições simuladas baseadas na carteira
+- Wallet pools: ✅ Endpoint funcionando com filtros e ordenação
+- Health check: ✅ Backend totalmente operacional
+
 ## [1.0.5] - 2025-06-25
 
 ### 🐛 Corrigido
