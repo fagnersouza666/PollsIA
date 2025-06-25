@@ -73,4 +73,6 @@ export interface WalletPool {
   pnl: number;
   rewardsEarned: number;
   status: 'active' | 'inactive' | 'pending';
+  protocol?: string; // Nome do protocolo (Raydium, Orca, etc.)
+  source?: string;   // Fonte da detecção (API, Transação, etc.)
 }

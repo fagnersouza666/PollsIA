@@ -527,26 +527,26 @@ Retorna todas as pools de liquidez nas quais a carteira possui posições ativas
 
       // Aplicar filtros
       if (status !== 'all') {
-        pools = pools.filter(pool => pool.status === status);
+        pools = pools.filter((pool: any) => pool.status === status);
       }
 
       if (minValue) {
-        pools = pools.filter(pool => pool.currentValue >= minValue);
+        pools = pools.filter((pool: any) => pool.currentValue >= minValue);
       }
 
       // Aplicar ordenação
       switch (sortBy) {
         case 'apy':
-          pools.sort((a, b) => b.apy - a.apy);
+          pools.sort((a: any, b: any) => b.apy - a.apy);
           break;
         case 'pnl':
-          pools.sort((a, b) => b.pnl - a.pnl);
+          pools.sort((a: any, b: any) => b.pnl - a.pnl);
           break;
         case 'date':
-          pools.sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime());
+          pools.sort((a: any, b: any) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime());
           break;
         default: // value
-          pools.sort((a, b) => b.currentValue - a.currentValue);
+          pools.sort((a: any, b: any) => b.currentValue - a.currentValue);
       }
 
       return {

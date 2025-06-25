@@ -16,6 +16,8 @@ interface WalletPool {
   pnl: number
   rewardsEarned: number
   status: 'active' | 'inactive' | 'pending'
+  protocol?: string
+  source?: string
 }
 
 interface WalletPoolsProps {
@@ -38,7 +40,6 @@ export function WalletPools({ walletAddress }: WalletPoolsProps) {
       
       setPools(Array.isArray(poolsData) ? poolsData : [])
     } catch (err: any) {
-      console.error('Erro ao carregar pools:', err)
       setError('Erro ao carregar pools da carteira')
       setPools([])
     } finally {
@@ -203,7 +204,7 @@ export function WalletPools({ walletAddress }: WalletPoolsProps) {
             </p>
             <div className="text-sm text-blue-600 space-y-2">
               <p>• Isso é normal se você ainda não participa de liquidity mining</p>
-              <p>• Para criar posições, visite pools disponíveis na seção "Explorar Pools"</p>
+              <p>• Para criar posições, visite pools disponíveis na seção &ldquo;Explorar Pools&rdquo;</p>
               <p>• O sistema verifica LP tokens reais da blockchain Solana</p>
             </div>
             <button
@@ -250,6 +251,16 @@ export function WalletPools({ walletAddress }: WalletPoolsProps) {
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(pool.status)}`}>
                     {getStatusText(pool.status)}
                   </span>
+                  {pool.protocol && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                      {pool.protocol}
+                    </span>
+                  )}
+                  {pool.source && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                      {pool.source}
+                    </span>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">APY</p>
