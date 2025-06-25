@@ -5,6 +5,27 @@ Todas as mudanças importantes deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.0.11] - 2025-01-27 🔧 **Configuração APIs Externas**
+
+### 🔧 **Fixed**
+- **Configuração HELIUS_API_KEY**: Adicionado ao schema de validação `env.ts`
+- **Configuração BIRDEYE_API_KEY**: Adicionado ao schema de validação `env.ts`
+- **WalletService**: Atualizado para usar `config.HELIUS_API_KEY` em vez de `process.env` direto
+- **Logs melhorados**: Debug detalhado para APIs externas
+
+### ✅ **Testes Realizados**
+- **HELIUS API**: ✅ **Funcionando perfeitamente** - retorna transações reais da blockchain
+- **BIRDEYE API**: ⚠️ **Chave suspensa/sem permissões** - necessário upgrade do plano
+- **Sistema de configuração**: ✅ **Totalmente funcional** - variáveis acessadas corretamente
+
+### 📋 **Status das APIs**
+| API | Status | Observações |
+|-----|--------|-------------|
+| HELIUS | ✅ Ativa | Transações detalhadas funcionando |
+| BIRDEYE | ⚠️ Limitada | Necessário upgrade do plano |
+| Jupiter | ✅ Ativa | API pública sem limitações |
+| Solana RPC | ✅ Ativa | Rate limiting implementado |
+
 ## [1.0.10] - 2025-01-27 🚨 **CORREÇÃO CRÍTICA: Rate Limiting e Performance**
 
 ### 🎯 **PROBLEMA CRÍTICO RESOLVIDO: CPU 99.3% + Loops Infinitos**
