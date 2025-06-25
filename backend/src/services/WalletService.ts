@@ -313,15 +313,15 @@ export class WalletService {
             // Tentar múltiplas fontes para metadata
             const _metadata = await this.getTokenMetadata(mint);
 
-            if (metadata) {
-                console.log(`   📝 Nome: ${metadata.name || 'N/A'}`);
-                console.log(`   🏷️  Symbol: ${metadata.symbol || 'N/A'}`);
-                console.log(`   📊 Supply: ${metadata.supply || 'N/A'}`);
-                console.log(`   🔗 Descrição: ${metadata.description || 'N/A'}`);
+            if (_metadata) {
+                console.log(`   📝 Nome: ${_metadata?.name || 'N/A'}`);
+                console.log(`   🏷️  Symbol: ${_metadata?.symbol || 'N/A'}`);
+                console.log(`   📊 Supply: ${_metadata?.supply || 'N/A'}`);
+                console.log(`   🔗 Descrição: ${_metadata?.description || 'N/A'}`);
 
                 // Verificar padrões LP no nome/símbolo
-                const name = (metadata.name || '').toLowerCase();
-                const symbol = (metadata.symbol || '').toLowerCase();
+                const name = (_metadata?.name || '').toLowerCase();
+                const symbol = (_metadata?.symbol || '').toLowerCase();
 
                 if (name.includes('lp') || name.includes('liquidity') ||
                     symbol.includes('lp') || symbol.includes('-')) {
