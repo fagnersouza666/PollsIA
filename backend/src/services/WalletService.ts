@@ -11,22 +11,62 @@ export class WalletService {
     private lastPriceUpdate = 0;
     private readonly PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
-    // Rate limiting para evitar 429 errors
+    // Rate limiting MUITO mais agressivo para evitar 429
     private lastRpcCall = 0;
-    private readonly RPC_DELAY = 2000; // 2 segundos entre chamadas
+    private readonly RPC_DELAY = 5000; // 5 segundos entre chamadas (aumentado de 2s)
     private rpcRequestCount = 0;
-    private readonly MAX_RPC_REQUESTS_PER_MINUTE = 8; // Muito conservador
+    private readonly MAX_RPC_REQUESTS_PER_MINUTE = 3; // Reduzido de 8 para 3
     private lastMinuteReset = 0;
+
+    // Circuit breaker para prevenir loops
+    private circuitBreakerOpen = false;
+    private circuitBreakerFailures = 0;
+    private readonly MAX_CIRCUIT_FAILURES = 3;
+    private lastCircuitReset = 0;
+    private readonly CIRCUIT_RESET_TIME = 60000; // 1 minuto
 
     // Cache para evitar chamadas repetidas
     private walletCache = new Map<string, any>();
-    private readonly WALLET_CACHE_DURATION = 10 * 60 * 1000; // 10 minutos
+    private readonly WALLET_CACHE_DURATION = 15 * 60 * 1000; // 15 minutos (aumentado)
+
+    // Cache global para evitar múltiplas chamadas simultâneas
+    private activeRequests = new Map<string, Promise<any>>();
 
     constructor() {
         this.rpc = createSolanaRpc(config.SOLANA_RPC_URL);
     }
 
+    private async checkCircuitBreaker(): Promise<void> {
+        const now = Date.now();
+
+        // Reset circuit breaker após timeout
+        if (this.circuitBreakerOpen && (now - this.lastCircuitReset) > this.CIRCUIT_RESET_TIME) {
+            console.log('🔄 Circuit breaker reset - tentando novamente');
+            this.circuitBreakerOpen = false;
+            this.circuitBreakerFailures = 0;
+        }
+
+        if (this.circuitBreakerOpen) {
+            throw new Error('Circuit breaker ativo - muitos erros 429. Aguarde 1 minuto.');
+        }
+    }
+
+    private handleRpcError(error: any): void {
+        if (error.context?.statusCode === 429 || error.message.includes('Too Many Requests')) {
+            this.circuitBreakerFailures++;
+            console.log(`⚠️ Rate limit error #${this.circuitBreakerFailures}/${this.MAX_CIRCUIT_FAILURES}`);
+
+            if (this.circuitBreakerFailures >= this.MAX_CIRCUIT_FAILURES) {
+                this.circuitBreakerOpen = true;
+                this.lastCircuitReset = Date.now();
+                console.log('🚨 Circuit breaker ATIVADO - pausando por 1 minuto');
+            }
+        }
+    }
+
     private async throttleRpcCall() {
+        await this.checkCircuitBreaker();
+
         const now = Date.now();
 
         // Reset counter a cada minuto
@@ -47,11 +87,13 @@ export class WalletService {
         const timeSinceLastCall = now - this.lastRpcCall;
         if (timeSinceLastCall < this.RPC_DELAY) {
             const waitTime = this.RPC_DELAY - timeSinceLastCall;
+            console.log(`⏱️ Aguardando ${waitTime}ms antes da próxima chamada RPC`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
         }
 
         this.lastRpcCall = Date.now();
         this.rpcRequestCount++;
+        console.log(`📡 RPC call ${this.rpcRequestCount}/${this.MAX_RPC_REQUESTS_PER_MINUTE}`);
     }
 
     private getCachedWalletData(publicKey: string, type: string) {
@@ -59,9 +101,11 @@ export class WalletService {
         const cached = this.walletCache.get(cacheKey);
 
         if (cached && (Date.now() - cached.timestamp) < this.WALLET_CACHE_DURATION) {
+            console.log(`💾 Cache HIT para ${cacheKey}`);
             return cached.data;
         }
 
+        console.log(`💾 Cache MISS para ${cacheKey}`);
         return null;
     }
 
@@ -71,6 +115,22 @@ export class WalletService {
             data,
             timestamp: Date.now()
         });
+        console.log(`💾 Cache SET para ${cacheKey}`);
+    }
+
+    // Método para evitar múltiplas chamadas simultâneas
+    private async getOrCreateRequest<T>(key: string, factory: () => Promise<T>): Promise<T> {
+        if (this.activeRequests.has(key)) {
+            console.log(`🔄 Reutilizando request ativa para ${key}`);
+            return this.activeRequests.get(key)!;
+        }
+
+        const promise = factory().finally(() => {
+            this.activeRequests.delete(key);
+        });
+
+        this.activeRequests.set(key, promise);
+        return promise;
     }
 
     async connectWallet(publicKey: string, _signature: string) {
@@ -106,62 +166,122 @@ export class WalletService {
             this.setCachedWalletData(publicKey, 'connection', result);
             return result;
         } catch (error) {
+            this.handleRpcError(error);
             console.error('Erro ao conectar carteira:', error);
             throw new Error('Falha ao conectar carteira. Verifique se a chave pública é válida.');
         }
     }
 
     async getPortfolio(publicKey: string): Promise<Portfolio> {
+        return this.getOrCreateRequest(`portfolio_${publicKey}`, async () => {
+            try {
+                console.log('Obtendo portfólio para:', publicKey);
+
+                // Verificar cache primeiro
+                const cachedPortfolio = this.getCachedWalletData(publicKey, 'portfolio');
+                if (cachedPortfolio) {
+                    return cachedPortfolio;
+                }
+
+                // Atualizar preços de tokens REAIS
+                await this.updateTokenPrices();
+
+                // Obter saldo SOL real
+                const solBalance = await this.getBalance(publicKey);
+                const solPrice = this.tokenPrices['sol'] || 0;
+
+                // Obter token accounts reais COM rate limiting
+                const tokenAccountsData = await this.getTokenAccountsSafe(publicKey);
+                let tokensValue = 0;
+
+                // Calcular valor dos tokens usando preços REAIS
+                for (const tokenAccount of tokenAccountsData) {
+                    const tokenPrice = this.getTokenPrice(tokenAccount.mint);
+                    tokensValue += tokenAccount.balance * tokenPrice;
+                }
+
+                const totalValue = (solBalance * solPrice) + tokensValue;
+
+                // Buscar histórico REAL de transações
+                const performanceHistory = await this.getRealPerformanceHistory(publicKey, totalValue);
+
+                // Calcular mudança 24h baseada no histórico REAL
+                const change24h = performanceHistory.length > 1
+                    ? ((performanceHistory[performanceHistory.length - 1].value - performanceHistory[performanceHistory.length - 2].value) / performanceHistory[performanceHistory.length - 2].value) * 100
+                    : 0;
+
+                const portfolio: Portfolio = {
+                    totalValue: Number(totalValue.toFixed(2)),
+                    solBalance: Number(solBalance.toFixed(6)),
+                    tokenAccounts: tokenAccountsData.length,
+                    change24h: Number(change24h.toFixed(2)),
+                    performance: performanceHistory
+                };
+
+                this.setCachedWalletData(publicKey, 'portfolio', portfolio);
+                return portfolio;
+
+            } catch (error) {
+                this.handleRpcError(error);
+                console.error('Erro ao obter portfólio:', error);
+                throw new Error('Falha ao obter dados do portfólio. Dados simulados foram removidos conforme CLAUDE.md');
+            }
+        });
+    }
+
+    private async getTokenAccountsSafe(publicKey: string) {
         try {
-            console.log('Obtendo portfólio para:', publicKey);
-
             // Verificar cache primeiro
-            const cachedPortfolio = this.getCachedWalletData(publicKey, 'portfolio');
-            if (cachedPortfolio) {
-                return cachedPortfolio;
+            const cachedTokens = this.getCachedWalletData(publicKey, 'token_accounts');
+            if (cachedTokens) {
+                return cachedTokens;
             }
 
-            // Atualizar preços de tokens REAIS
-            await this.updateTokenPrices();
+            await this.throttleRpcCall();
 
-            // Obter saldo SOL real
-            const solBalance = await this.getBalance(publicKey);
-            const solPrice = this.tokenPrices['sol'] || 0;
+            const publicKeyAddress = address(publicKey);
 
-            // Obter token accounts reais
-            const tokenAccountsData = await this.getTokenAccounts(publicKey);
-            let tokensValue = 0;
+            const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
+                publicKeyAddress as any,
+                { programId: TOKEN_PROGRAM_ADDRESS as any },
+                { encoding: 'jsonParsed' }
+            ).send();
 
-            // Calcular valor dos tokens usando preços REAIS
-            for (const tokenAccount of tokenAccountsData) {
-                const tokenPrice = this.getTokenPrice(tokenAccount.mint);
-                tokensValue += tokenAccount.balance * tokenPrice;
-            }
+            console.log(`\n🔍 CARTEIRA: ${publicKey}`);
+            console.log(`📊 TOTAL DE TOKEN ACCOUNTS ENCONTRADOS: ${tokenAccounts.value.length}`);
 
-            const totalValue = (solBalance * solPrice) + tokensValue;
+            const processedAccounts = tokenAccounts.value.map((account, index) => {
+                const accountInfo = account.account.data;
+                const parsedInfo = (accountInfo as any).parsed?.info;
 
-            // Buscar histórico REAL de transações
-            const performanceHistory = await this.getRealPerformanceHistory(publicKey, totalValue);
+                if (parsedInfo) {
+                    const balance = Number(parsedInfo.tokenAmount?.uiAmount || 0);
+                    const decimals = parsedInfo.tokenAmount?.decimals || 0;
+                    const mint = parsedInfo.mint;
 
-            // Calcular mudança 24h baseada no histórico REAL
-            const change24h = performanceHistory.length > 1
-                ? ((performanceHistory[performanceHistory.length - 1].value - performanceHistory[performanceHistory.length - 2].value) / performanceHistory[performanceHistory.length - 2].value) * 100
-                : 0;
+                    console.log(`${index + 1}. Token: ${mint.slice(0, 8)}... Balance: ${balance}`);
 
-            const portfolio: Portfolio = {
-                totalValue: Number(totalValue.toFixed(2)),
-                solBalance: Number(solBalance.toFixed(6)),
-                tokenAccounts: tokenAccountsData.length,
-                change24h: Number(change24h.toFixed(2)),
-                performance: performanceHistory
-            };
+                    return {
+                        mint,
+                        balance,
+                        decimals,
+                        owner: parsedInfo.owner,
+                        rawAmount: parsedInfo.tokenAmount?.amount || '0'
+                    };
+                }
 
-            this.setCachedWalletData(publicKey, 'portfolio', portfolio);
-            return portfolio;
+                return null;
+            }).filter(account => account !== null);
 
+            // Cache o resultado
+            this.setCachedWalletData(publicKey, 'token_accounts', processedAccounts);
+
+            console.log(`✅ PROCESSADOS: ${processedAccounts.length} token accounts válidos`);
+            return processedAccounts;
         } catch (error) {
-            console.error('Erro ao obter portfólio:', error);
-            throw new Error('Falha ao obter dados do portfólio. Dados simulados foram removidos conforme CLAUDE.md');
+            this.handleRpcError(error);
+            console.error('❌ Erro ao buscar token accounts:', error);
+            return [];
         }
     }
 
@@ -483,57 +603,56 @@ export class WalletService {
     }
 
     async getPositions(publicKey: string): Promise<Position[]> {
-        try {
-            console.log('🔍 Buscando posições REAIS para:', publicKey);
+        return this.getOrCreateRequest(`positions_${publicKey}`, async () => {
+            try {
+                console.log('🔍 Buscando posições REAIS para:', publicKey);
 
+                // Verificar cache primeiro
+                const cachedPositions = this.getCachedWalletData(publicKey, 'positions');
+                if (cachedPositions) {
+                    return cachedPositions;
+                }
 
-            // Buscar posições REAIS usando APIs externas
-            const positions = await this.getRealLPPositions(publicKey);
+                // Usar APENAS estratégias que não fazem chamadas RPC
+                const positions = await this.getRealLPPositionsOptimized(publicKey);
 
-            return positions;
-        } catch (error) {
-            console.error('Erro ao obter posições REAIS:', error);
-            throw new Error('Falha ao obter posições. Dados simulados removidos conforme CLAUDE.md');
-        }
+                this.setCachedWalletData(publicKey, 'positions', positions);
+                return positions;
+            } catch (error) {
+                this.handleRpcError(error);
+                console.error('Erro ao obter posições REAIS:', error);
+                throw new Error('Falha ao obter posições. Dados simulados removidos conforme CLAUDE.md');
+            }
+        });
     }
 
-    private async getRealLPPositions(publicKey: string): Promise<Position[]> {
+    private async getRealLPPositionsOptimized(publicKey: string): Promise<Position[]> {
         const positions: Position[] = [];
 
         try {
-            console.log('🔍 Detectando posições LP REAIS usando múltiplas estratégias...');
+            console.log('🔍 Detectando posições LP REAIS (modo otimizado)...');
 
-            // ESTRATÉGIA 1: Análise de Token Accounts (LP Tokens)
+            // ESTRATÉGIA 1: Análise APENAS de tokens já em cache
             const lpTokenPositions = await this.detectLPTokensInWallet(publicKey);
             positions.push(...lpTokenPositions);
 
-            // ESTRATÉGIA 2: Análise de Transações Recentes
-            const transactionPositions = await this.detectLPFromTransactions(publicKey);
-            positions.push(...transactionPositions);
-
-            // ESTRATÉGIA 3: DexScreener API para posições
-            const dexScreenerPositions = await this.getDexScreenerPositions(publicKey);
-            positions.push(...dexScreenerPositions);
-
-            // ESTRATÉGIA 4: Birdeye API para posições
-            const birdeyePositions = await this.getBirdeyePositions(publicKey);
-            positions.push(...birdeyePositions);
-
-            // ESTRATÉGIA 5: Solscan Portfolio API
-            const solscanPositions = await this.getSolscanPositions(publicKey);
-            positions.push(...solscanPositions);
+            // ESTRATÉGIA 2: Análise limitada de transações (sem APIs externas)
+            if (positions.length === 0) {
+                const transactionPositions = await this.detectLPFromTransactions(publicKey);
+                positions.push(...transactionPositions);
+            }
 
             // Remover duplicatas baseado no poolId
             const uniquePositions = positions.filter((position, index, self) =>
                 index === self.findIndex(p => p.poolId === position.poolId)
             );
 
-            console.log(`✅ Encontradas ${uniquePositions.length} posições LP REAIS usando ${positions.length} detecções`);
+            console.log(`✅ Encontradas ${uniquePositions.length} posições LP REAIS (otimizado)`);
             return uniquePositions;
 
         } catch (error) {
             console.error('Erro ao buscar posições REAIS:', error);
-            throw new Error('Falha ao buscar posições de liquidez reais');
+            return []; // Retornar array vazio em vez de erro
         }
     }
 
