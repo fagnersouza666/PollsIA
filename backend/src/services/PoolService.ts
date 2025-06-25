@@ -119,12 +119,12 @@ export class PoolService {
 
     const convertedPools = raydiumPools
       .filter((pool: any) => {
-        // Filtros MENOS restritivos
-        const hasBasicData = pool.liquidity !== undefined && pool.volume24h !== undefined;
-        const hasMinimumLiquidity = pool.liquidity > 100; // Reduzido de 0 para 100
-        const hasPositiveVolume = pool.volume24h >= 0; // Permite volume 0
+        // Filtros MUITO menos restritivos para aceitar mais pools
+        const hasValidData = pool.liquidity !== undefined || pool.tvl !== undefined;
+        const hasMinimumLiquidity = (pool.liquidity || pool.tvl || 0) > 10; // Reduzido de 100 para 10
+        const hasValidVolume = (pool.volume24h || 0) >= 0; // Aceita qualquer volume >= 0
 
-        return hasBasicData && hasMinimumLiquidity && hasPositiveVolume;
+        return hasValidData && hasMinimumLiquidity && hasValidVolume;
       })
       .map((pool: any) => ({ // API externa do Raydium
         id: pool.ammId || pool.id || `raydium_${Date.now()}_${Math.random()}`,
@@ -138,8 +138,8 @@ export class PoolService {
         fees: pool.feeRate || 0.25
       }))
       .filter((pool: Pool) => {
-        // Filtro final MENOS restritivo
-        return pool.tvl >= 100; // Reduzido de 1000 para 100
+        // Filtro final MUITO menos restritivo
+        return pool.tvl >= 10; // Reduzido de 100 para 10
       });
 
     console.log(`✅ Pools válidos após filtros: ${convertedPools.length}`);
