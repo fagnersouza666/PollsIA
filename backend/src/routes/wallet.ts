@@ -520,12 +520,9 @@ Retorna todas as pools de liquidez nas quais a carteira possui posições ativas
       
       let pools = await walletService.getWalletPools(publicKey);
 
-      if (!pools || pools.length === 0) {
-        return reply.status(404).send({
-          success: false,
-          error: 'Nenhuma pool encontrada na carteira',
-          timestamp: new Date().toISOString()
-        });
+      // Não retornar erro 404 para array vazio - isso é um estado válido
+      if (!pools) {
+        pools = [];
       }
 
       // Aplicar filtros

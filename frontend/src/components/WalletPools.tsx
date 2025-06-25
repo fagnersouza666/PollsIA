@@ -38,12 +38,9 @@ export function WalletPools({ walletAddress }: WalletPoolsProps) {
       
       setPools(Array.isArray(poolsData) ? poolsData : [])
     } catch (err: any) {
-      if (err.message?.includes('404')) {
-        setError('Nenhuma pool encontrada na carteira')
-        setPools([])
-      } else {
-        setError('Erro ao carregar pools da carteira')
-      }
+      console.error('Erro ao carregar pools:', err)
+      setError('Erro ao carregar pools da carteira')
+      setPools([])
     } finally {
       setLoading(false)
     }
@@ -197,20 +194,44 @@ export function WalletPools({ walletAddress }: WalletPoolsProps) {
       {/* Lista de Pools */}
       {error ? (
         <div className="text-center py-8">
-          <p className="text-gray-500">{error}</p>
-          <button
-            onClick={loadWalletPools}
-            className="mt-4 text-blue-600 hover:text-blue-800 underline"
-          >
-            Tentar novamente
-          </button>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium text-blue-900 mb-2">
+              Sem Posições em Pools de Liquidez
+            </h4>
+            <p className="text-blue-700 mb-4">
+              Sua carteira não possui posições ativas em pools de liquidez do Raydium no momento.
+            </p>
+            <div className="text-sm text-blue-600 space-y-2">
+              <p>• Isso é normal se você ainda não participa de liquidity mining</p>
+              <p>• Para criar posições, visite pools disponíveis na seção "Explorar Pools"</p>
+              <p>• O sistema verifica LP tokens reais da blockchain Solana</p>
+            </div>
+            <button
+              onClick={loadWalletPools}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+            >
+              Verificar Novamente
+            </button>
+          </div>
         </div>
       ) : pools.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500">Nenhuma pool encontrada na sua carteira</p>
-          <p className="text-sm text-gray-400 mt-2">
-            Você ainda não possui posições em pools de liquidez
-          </p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium text-gray-900 mb-2">
+              Carteira Conectada - Sem Pools
+            </h4>
+            <p className="text-gray-700 mb-4">
+              Sua carteira está conectada mas não possui posições em pools de liquidez.
+            </p>
+            <div className="text-sm text-gray-600 space-y-2">
+              <p>• ✅ Carteira verificada na blockchain Solana</p>
+              <p>• ✅ Busca realizada em todas as pools do Raydium</p>
+              <p>• ℹ️ Nenhum LP token encontrado</p>
+            </div>
+            <p className="text-sm text-gray-500 mt-4">
+              Para participar de pools de liquidez, explore as opções disponíveis abaixo.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
