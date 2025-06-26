@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Phantom - Diagnóstico Completo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .test-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .log-container {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .result-success {
+            color: green;
+        }
+
+        .result-error {
+            color: red;
+        }
+
+        .result-warning {
+            color: orange;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Phantom Wallet - Diagnóstico Completo</h1>
+            <p>Investigação detalhada dos problemas de aprovação de transações</p>
+        </div>
+
+        <!-- Informações do Sistema -->
+        <div class="test-card">
+            <h3>🖥️ Informações do Sistema</h3>
+            <div id="system-info">Carregando...</div>
+        </div>
+
+        <!-- Testes Automatizados -->
+        <div class="test-grid">
+            <div class="test-card">
+                <h4>🔌 Detecção do Phantom</h4>
+                <button class="test-button" onclick="testPhantomDetection()">Testar Detecção</button>
+                <div id="detection-result"></div>
+            </div>
+
+            <div class="test-card">
+                <h4>🔗 Conexão com Phantom</h4>
+                <button class="test-button" onclick="testConnection()">Testar Conexão</button>
+                <div id="connection-result"></div>
+            </div>
+
+            <div class="test-card">
+                <h4>🔐 Criação de Transação</h4>
+                <button class="test-button" onclick="testTransactionCreation()">Criar Transação</button>
+                <div id="transaction-result"></div>
+            </div>
+
+            <div class="test-card">
+                <h4>✍️ Assinatura Manual</h4>
+                <button class="test-button" onclick="testManualSigning()" id="manual-sign-btn" disabled>Assinar
+                    Manualmente</button>
+                <div id="manual-sign-result"></div>
+            </div>
+
+            <div class="test-card">
+                <h4>🪟 Teste de Popup</h4>
+                <button class="test-button" onclick="testPopupBlocking()">Testar Popups</button>
+                <div id="popup-result"></div>
+            </div>
+
+            <div class="test-card">
+                <h4>🌐 APIs Backend</h4>
+                <button class="test-button" onclick="testBackendAPIs()">Testar APIs</button>
+                <div id="api-result"></div>
+            </div>
+        </div>
+
+        <!-- Teste Completo -->
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="test-button" onclick="runFullDiagnostic()" style="font-size: 18px; padding: 15px 30px;">
+                🚀 Executar Diagnóstico Completo
+            </button>
+        </div>
+
+        <!-- Log Detalhado -->
+        <div class="test-card">
+            <h3>📝 Log Detalhado</h3>
+            <div class="log-container" id="diagnostic-log">
+                [SISTEMA] Diagnóstico inicializado
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let diagnosticLog = [];
+        let connectedPublicKey = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            diagnosticLog.push(logEntry);
+
+            const logContainer = document.getElementById('diagnostic-log');
+            logContainer.innerHTML = diagnosticLog.join('\n');
+            logContainer.scrollTop = logContainer.scrollHeight;
+
+            console.log(`[DIAGNOSTIC] ${message}`);
+        }
+
+        function updateSystemInfo() {
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                phantomDetected: !!window.solana?.isPhantom,
+                phantomConnected: window.solana?.isConnected || false,
+                phantomVersion: window.solana?._version || 'Desconhecida',
+                url: window.location.href,
+                protocol: window.location.protocol,
+                timestamp: new Date().toISOString()
+            };
+
+            document.getElementById('system-info').innerHTML = `
+                <strong>Browser:</strong> ${info.userAgent.split(' ')[0]}<br>
+                <strong>Plataforma:</strong> ${info.platform}<br>
+                <strong>Phantom Detectado:</strong> ${info.phantomDetected ? '✅ Sim' : '❌ Não'}<br>
+                <strong>Phantom Conectado:</strong> ${info.phantomConnected ? '✅ Sim' : '❌ Não'}<br>
+                <strong>Phantom Versão:</strong> ${info.phantomVersion}<br>
+                <strong>Protocolo:</strong> ${info.protocol}<br>
+                <strong>Online:</strong> ${info.onLine ? '✅' : '❌'}<br>
+                <strong>Última Atualização:</strong> ${new Date().toLocaleTimeString()}
+            `;
+        }
+
+        async function testPhantomDetection() {
+            log('🔍 TESTE 1: Verificando detecção do Phantom...');
+
+            try {
+                if (!window.solana) {
+                    throw new Error('window.solana não está disponível');
+                }
+
+                if (!window.solana.isPhantom) {
+                    throw new Error('isPhantom = false');
+                }
+
+                const requiredMethods = ['connect', 'disconnect', 'signTransaction'];
+                const missingMethods = requiredMethods.filter(method => !window.solana[method]);
+
+                if (missingMethods.length > 0) {
+                    throw new Error(`Métodos ausentes: ${missingMethods.join(', ')}`);
+                }
+
+                document.getElementById('detection-result').innerHTML = `
+                    <div class="result-success">
+                        ✅ Phantom detectado com sucesso<br>
+                        📍 Versão: ${window.solana._version || 'Desconhecida'}<br>
+                        🔗 Status: ${window.solana.isConnected ? 'Conectado' : 'Desconectado'}
+                    </div>
+                `;
+
+                log('✅ TESTE 1 PASSOU: Phantom detectado corretamente');
+                return true;
+
+            } catch (error) {
+                document.getElementById('detection-result').innerHTML = `
+                    <div class="result-error">
+                        ❌ Erro: ${error.message}<br>
+                        💡 Instale a extensão Phantom Wallet
+                    </div>
+                `;
+
+                log(`❌ TESTE 1 FALHOU: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testConnection() {
+            log('🔗 TESTE 2: Testando conexão com Phantom...');
+
+            try {
+                if (!window.solana?.isPhantom) {
+                    throw new Error('Phantom não detectado');
+                }
+
+                log('📡 Solicitando conexão ao Phantom...');
+                const result = await window.solana.connect();
+
+                if (!result || !result.publicKey) {
+                    throw new Error('Conexão retornou resultado inválido');
+                }
+
+                connectedPublicKey = result.publicKey.toString();
+
+                document.getElementById('connection-result').innerHTML = `
+                    <div class="result-success">
+                        ✅ Conexão estabelecida<br>
+                        🔑 Chave: ${connectedPublicKey.substring(0, 8)}...${connectedPublicKey.substring(-8)}<br>
+                        ⏱️ Status: Conectado
+                    </div>
+                `;
+
+                log(`✅ TESTE 2 PASSOU: Conectado - ${connectedPublicKey}`);
+
+                // Habilitar testes que dependem de conexão
+                document.getElementById('manual-sign-btn').disabled = false;
+
+                return true;
+
+            } catch (error) {
+                document.getElementById('connection-result').innerHTML = `
+                    <div class="result-error">
+                        ❌ Erro na conexão: ${error.message}<br>
+                        💡 Verifique se o Phantom está desbloqueado
+                    </div>
+                `;
+
+                log(`❌ TESTE 2 FALHOU: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testTransactionCreation() {
+            log('🔐 TESTE 3: Testando criação de transação...');
+
+            try {
+                if (!connectedPublicKey) {
+                    throw new Error('Phantom não está conectado');
+                }
+
+                log('📡 Criando transação via API do backend...');
+
+                const response = await fetch('http://localhost:3001/api/investment/invest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        poolId: 'diagnostic-test-pool',
+                        userPublicKey: connectedPublicKey,
+                        solAmount: 0.001, // Valor muito baixo para teste
+                        tokenA: 'SOL',
+                        tokenB: 'USDC',
+                        slippage: 1.0
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API retornou ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Falha na criação da transação');
+                }
+
+                document.getElementById('transaction-result').innerHTML = `
+                    <div class="result-success">
+                        ✅ Transação criada com sucesso<br>
+                        📄 Requer assinatura: ${result.requiresSignature ? 'Sim' : 'Não'}<br>
+                        💰 Valor SOL: ${result.actualSolSpent || 'N/A'}<br>
+                        📝 Descrição: ${result.description || 'N/A'}
+                    </div>
+                `;
+
+                log('✅ TESTE 3 PASSOU: Transação criada via API');
+                return result;
+
+            } catch (error) {
+                document.getElementById('transaction-result').innerHTML = `
+                    <div class="result-error">
+                        ❌ Erro na criação: ${error.message}<br>
+                        💡 Verifique se o backend está rodando
+                    </div>
+                `;
+
+                log(`❌ TESTE 3 FALHOU: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testManualSigning() {
+            log('✍️ TESTE 4: Testando assinatura manual...');
+
+            try {
+                if (!window.solana?.isConnected) {
+                    throw new Error('Phantom não está conectado');
+                }
+
+                // Criar uma transação simples para teste
+                log('📝 Criando transação de teste...');
+
+                // Simular uma transação básica (sem valor real)
+                const fakeTransaction = {
+                    feePayer: connectedPublicKey,
+                    instructions: [],
+                    recentBlockhash: 'FAKE_BLOCKHASH_FOR_TESTING'
+                };
+
+                log('🔐 Solicitando assinatura ao Phantom...');
+                log('⚠️ ATENÇÃO: O Phantom deve abrir agora para aprovação!');
+
+                // Criar um botão visível para o usuário clicar
+                const signButton = document.createElement('button');
+                signButton.textContent = '🔐 CLIQUE AQUI PARA ASSINAR';
+                signButton.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    z-index: 10000;
+                    padding: 20px 40px;
+                    background: linear-gradient(45deg, #ff6b35, #f7931e);
+                    color: white;
+                    border: none;
+                    border-radius: 15px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                    animation: pulse 2s infinite;
+                `;
+
+                // Adicionar animação
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes pulse {
+                        0% { transform: translate(-50%, -50%) scale(1); }
+                        50% { transform: translate(-50%, -50%) scale(1.05); }
+                        100% { transform: translate(-50%, -50%) scale(1); }
+                    }
+                `;
+                document.head.appendChild(style);
+
+                document.body.appendChild(signButton);
+
+                const signResult = await new Promise((resolve, reject) => {
+                    let timeoutId;
+
+                    signButton.onclick = async () => {
+                        try {
+                            log('🔄 Iniciando processo de assinatura...');
+
+                            // Tentar diferentes métodos de assinatura
+                            let signedTransaction;
+
+                            if (window.solana.signTransaction) {
+                                log('📝 Usando signTransaction...');
+                                signedTransaction = await window.solana.signTransaction(fakeTransaction);
+                            } else if (window.solana.request) {
+                                log('📝 Usando request method...');
+                                signedTransaction = await window.solana.request({
+                                    method: 'signTransaction',
+                                    params: { transaction: fakeTransaction }
+                                });
+                            } else {
+                                throw new Error('Nenhum método de assinatura disponível');
+                            }
+
+                            clearTimeout(timeoutId);
+                            document.body.removeChild(signButton);
+                            document.head.removeChild(style);
+                            resolve(signedTransaction);
+
+                        } catch (error) {
+                            clearTimeout(timeoutId);
+                            document.body.removeChild(signButton);
+                            document.head.removeChild(style);
+                            reject(error);
+                        }
+                    };
+
+                    // Timeout de 60 segundos
+                    timeoutId = setTimeout(() => {
+                        if (document.body.contains(signButton)) {
+                            document.body.removeChild(signButton);
+                            document.head.removeChild(style);
+                        }
+                        reject(new Error('Timeout - usuário não clicou em 60 segundos'));
+                    }, 60000);
+                });
+
+                document.getElementById('manual-sign-result').innerHTML = `
+                    <div class="result-success">
+                        ✅ Transação assinada com sucesso!<br>
+                        🎉 O Phantom abriu e funcionou corretamente<br>
+                        📝 Método: Assinatura manual
+                    </div>
+                `;
+
+                log('✅ TESTE 4 PASSOU: Transação assinada com sucesso');
+                return true;
+
+            } catch (error) {
+                document.getElementById('manual-sign-result').innerHTML = `
+                    <div class="result-error">
+                        ❌ Erro na assinatura: ${error.message}<br>
+                        💡 Possíveis causas:<br>
+                        • Popup blocker ativo<br>
+                        • Phantom travado<br>
+                        • Extensão desabilitada<br>
+                        • Timeout na aprovação
+                    </div>
+                `;
+
+                log(`❌ TESTE 4 FALHOU: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testPopupBlocking() {
+            log('🪟 TESTE 5: Verificando bloqueio de popups...');
+
+            try {
+                // Testar abertura de popup simples
+                const popup = window.open('', '_blank', 'width=400,height=300,scrollbars=yes,resizable=yes');
+
+                if (!popup) {
+                    throw new Error('Popup bloqueado pelo browser');
+                }
+
+                popup.document.write(`
+                    <html>
+                        <head><title>Teste de Popup</title></head>
+                        <body style="font-family: Arial; padding: 20px; text-align: center;">
+                            <h2>✅ Popup Funcionando!</h2>
+                            <p>Este popup foi aberto com sucesso.</p>
+                            <button onclick="window.close()">Fechar</button>
+                        </body>
+                    </html>
+                `);
+
+                // Fechar automaticamente após 3 segundos
+                setTimeout(() => {
+                    if (!popup.closed) {
+                        popup.close();
+                    }
+                }, 3000);
+
+                document.getElementById('popup-result').innerHTML = `
+                    <div class="result-success">
+                        ✅ Popups funcionando normalmente<br>
+                        🪟 Popup de teste aberto com sucesso<br>
+                        💡 Phantom deve conseguir abrir popups
+                    </div>
+                `;
+
+                log('✅ TESTE 5 PASSOU: Popups funcionando');
+                return true;
+
+            } catch (error) {
+                document.getElementById('popup-result').innerHTML = `
+                    <div class="result-error">
+                        ❌ Popups bloqueados: ${error.message}<br>
+                        💡 Configure seu browser para permitir popups<br>
+                        🔧 Isso pode estar impedindo o Phantom de abrir
+                    </div>
+                `;
+
+                log(`❌ TESTE 5 FALHOU: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testBackendAPIs() {
+            log('🌐 TESTE 6: Testando APIs do backend...');
+
+            try {
+                const apis = [
+                    {
+                        name: 'Health Check',
+                        url: 'http://localhost:3001/api/health',
+                        timeout: 5000
+                    },
+                    {
+                        name: 'Pool Discovery',
+                        url: 'http://localhost:3001/api/pools/discover?limit=1',
+                        timeout: 10000
+                    },
+                    {
+                        name: 'Investment Status',
+                        url: 'http://localhost:3001/api/investment/status',
+                        timeout: 5000
+                    }
+                ];
+
+                const results = [];
+
+                for (const api of apis) {
+                    try {
+                        log(`📡 Testando ${api.name}...`);
+
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), api.timeout);
+
+                        const response = await fetch(api.url, {
+                            signal: controller.signal
+                        });
+
+                        clearTimeout(timeoutId);
+
+                        results.push({
+                            name: api.name,
+                            status: response.ok ? 'OK' : `${response.status}`,
+                            success: response.ok
+                        });
+
+                    } catch (error) {
+                        results.push({
+                            name: api.name,
+                            status: error.name === 'AbortError' ? 'TIMEOUT' : 'ERROR',
+                            success: false
+                        });
+                    }
+                }
+
+                const successCount = results.filter(r => r.success).length;
+                const resultHtml = results.map(r =>
+                    `${r.success ? '✅' : '❌'} ${r.name}: ${r.status}`
+                ).join('<br>');
+
+                document.getElementById('api-result').innerHTML = `
+                    <div class="${successCount === results.length ? 'result-success' : 'result-warning'}">
+                        📊 Resultados (${successCount}/${results.length}):<br>
+                        ${resultHtml}
+                    </div>
+                `;
+
+                log(`✅ TESTE 6 CONCLUÍDO: ${successCount}/${results.length} APIs funcionando`);
+                return results;
+
+            } catch (error) {
+                document.getElementById('api-result').innerHTML = `
+                    <div class="result-error">
+                        ❌ Erro no teste de APIs: ${error.message}
+                    </div>
+                `;
+
+                log(`❌ TESTE 6 FALHOU: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function runFullDiagnostic() {
+            log('🚀 INICIANDO DIAGNÓSTICO COMPLETO...');
+
+            const tests = [
+                { name: 'Detecção Phantom', fn: testPhantomDetection },
+                { name: 'Conexão', fn: testConnection },
+                { name: 'Criação Transação', fn: testTransactionCreation },
+                { name: 'Teste Popup', fn: testPopupBlocking },
+                { name: 'APIs Backend', fn: testBackendAPIs }
+            ];
+
+            const results = [];
+
+            for (const test of tests) {
+                try {
+                    log(`🔄 Executando: ${test.name}...`);
+                    const result = await test.fn();
+                    results.push({ name: test.name, success: !!result });
+
+                    // Pausa entre testes
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                } catch (error) {
+                    log(`❌ Erro em ${test.name}: ${error.message}`);
+                    results.push({ name: test.name, success: false });
+                }
+            }
+
+            const successCount = results.filter(r => r.success).length;
+
+            log(`🎯 DIAGNÓSTICO CONCLUÍDO: ${successCount}/${tests.length} testes passaram`);
+
+            // Relatório final
+            const reportHtml = results.map(r =>
+                `${r.success ? '✅' : '❌'} ${r.name}`
+            ).join('<br>');
+
+            const finalReport = document.createElement('div');
+            finalReport.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border: 2px solid #4CAF50;
+                border-radius: 10px;
+                padding: 20px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                z-index: 10000;
+                max-width: 300px;
+            `;
+
+            finalReport.innerHTML = `
+                <h3>📊 Relatório Final</h3>
+                <p><strong>Sucessos:</strong> ${successCount}/${tests.length}</p>
+                ${reportHtml}
+                <br>
+                <button onclick="this.parentElement.remove()" style="padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Fechar
+                </button>
+            `;
+
+            document.body.appendChild(finalReport);
+
+            if (successCount === tests.length) {
+                log('🎉 SISTEMA FUNCIONANDO PERFEITAMENTE!');
+            } else if (successCount >= tests.length * 0.8) {
+                log('⚠️ SISTEMA COM PEQUENOS PROBLEMAS');
+            } else {
+                log('❌ SISTEMA COM PROBLEMAS GRAVES');
+            }
+        }
+
+        // Inicializar ao carregar a página
+        window.addEventListener('load', () => {
+            updateSystemInfo();
+            log('🎯 Sistema de diagnóstico carregado e pronto');
+
+            // Atualizar informações a cada 5 segundos
+            setInterval(updateSystemInfo, 5000);
+        });
+
+        // Detectar mudanças no Phantom
+        if (window.solana) {
+            window.solana.on('connect', () => {
+                log('🔗 Phantom conectado automaticamente');
+                updateSystemInfo();
+            });
+
+            window.solana.on('disconnect', () => {
+                log('🔌 Phantom desconectado');
+                updateSystemInfo();
+            });
+        }
+    </script>
+</body>
+
+</html>
