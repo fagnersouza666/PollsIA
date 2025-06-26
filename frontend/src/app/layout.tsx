@@ -17,6 +17,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js" async></script>
+      </head>
       <body className={inter.className}>
         <Providers>
           {children}

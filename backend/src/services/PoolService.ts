@@ -33,15 +33,30 @@ export class PoolService {
   private readonly MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB máximo de cache
   private currentCacheSize = 0;
 
+  private cacheCleanupTimer?: NodeJS.Timeout;
+  private memoryMonitorTimer?: NodeJS.Timeout;
+
   constructor() {
     // Conexão RPC moderna usando @solana/kit
     this.rpc = createSolanaRpc(config.SOLANA_RPC_URL);
 
     // ADICIONADO: Limpeza automática do cache a cada 5 minutos
-    setInterval(() => this.cleanupCache(), 5 * 60 * 1000);
+    this.cacheCleanupTimer = setInterval(() => this.cleanupCache(), 5 * 60 * 1000);
 
     // ADICIONADO: Monitoramento de memória a cada minuto
-    setInterval(() => this.monitorMemory(), 60 * 1000);
+    this.memoryMonitorTimer = setInterval(() => this.monitorMemory(), 60 * 1000);
+  }
+
+  // ADICIONADO: Método para limpar timers (importante para testes)
+  destroy() {
+    if (this.cacheCleanupTimer) {
+      clearInterval(this.cacheCleanupTimer);
+    }
+    if (this.memoryMonitorTimer) {
+      clearInterval(this.memoryMonitorTimer);
+    }
+    this.cache.clear();
+    this.currentCacheSize = 0;
   }
 
   async discoverPools(query?: PoolDiscoveryQuery): Promise<Pool[]> {

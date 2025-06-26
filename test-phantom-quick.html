@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Rápido - Phantom Abertura</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+</head>
+<body>
+    <h1>🔍 Teste Rápido: Por que Phantom não abre?</h1>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="testPhantomOpening()" style="padding: 15px 30px; font-size: 16px; background: purple; color: white; border: none; border-radius: 5px;">
+            TESTAR ABERTURA DO PHANTOM
+        </button>
+    </div>
+    
+    <div id="results" style="background: #f0f0f0; padding: 20px; margin: 20px 0; font-family: monospace; max-height: 400px; overflow-y: scroll;"></div>
+
+    <script>
+        function log(msg) {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            results.innerHTML += `[${timestamp}] ${msg}\n`;
+            console.log(msg);
+        }
+
+        async function testPhantomOpening() {
+            log('🧪 INICIANDO TESTE DE ABERTURA DO PHANTOM');
+            log('='.repeat(50));
+            
+            try {
+                // 1. Verificar Phantom
+                log('1️⃣ Verificando Phantom...');
+                if (!window.solana) {
+                    log('❌ ERRO: window.solana não encontrado');
+                    return;
+                }
+                if (!window.solana.isPhantom) {
+                    log('❌ ERRO: Não é Phantom válido');
+                    return;
+                }
+                log('✅ Phantom detectado');
+
+                // 2. Conectar
+                log('2️⃣ Conectando...');
+                if (!window.solana.isConnected) {
+                    const response = await window.solana.connect();
+                    log(`✅ Conectado: ${response.publicKey.toString()}`);
+                } else {
+                    log('✅ Já conectado');
+                }
+
+                // 3. Criar transação simples
+                log('3️⃣ Criando transação de teste...');
+                const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+                const { blockhash } = await connection.getLatestBlockhash();
+                
+                const transaction = new solanaWeb3.Transaction({
+                    feePayer: window.solana.publicKey,
+                    blockhash: blockhash,
+                });
+
+                // Instrução de memo simples
+                transaction.add(
+                    new solanaWeb3.TransactionInstruction({
+                        keys: [],
+                        programId: new solanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+                        data: Buffer.from('Teste PollsIA', 'utf8'),
+                    })
+                );
+
+                log('✅ Transação criada');
+
+                // 4. MOMENTO CRÍTICO: Assinar transação
+                log('4️⃣ ATENÇÃO: Solicitando assinatura...');
+                log('🚨 O PHANTOM DEVE ABRIR AGORA!');
+                log('⏰ Aguardando resposta do usuário...');
+                
+                const signedTransaction = await window.solana.signTransaction(transaction);
+                
+                log('🎉 SUCESSO! Phantom abriu e usuário assinou!');
+                log(`📝 Transação assinada: ${signedTransaction.signatures.length} assinatura(s)`);
+                
+            } catch (error) {
+                log(`❌ ERRO: ${error.message}`);
+                log(`🔍 Código: ${error.code || 'N/A'}`);
+                log(`🔍 Nome: ${error.constructor.name}`);
+                
+                if (error.code === 4001 || error.message.includes('rejected') || error.message.includes('cancelled')) {
+                    log('ℹ️ DIAGNÓSTICO: Phantom abriu, mas usuário cancelou/rejeitou');
+                    log('✅ RESOLUÇÃO: O Phantom ESTÁ abrindo corretamente!');
+                } else {
+                    log('⚠️ DIAGNÓSTICO: Possível problema técnico');
+                }
+            }
+            
+            log('='.repeat(50));
+            log('🔚 TESTE CONCLUÍDO');
+        }
+
+        // Auto-verificar
+        window.addEventListener('load', () => {
+            log('📱 Página carregada');
+            log('🔍 Verificação automática:');
+            
+            if (window.solana) {
+                if (window.solana.isPhantom) {
+                    log('✅ Phantom detectado e pronto');
+                    log('👆 Clique no botão para testar abertura');
+                } else {
+                    log('❌ Solana object encontrado mas não é Phantom');
+                }
+            } else {
+                log('❌ Phantom não instalado');
+                log('📥 Instale em: https://phantom.app');
+            }
+        });
+    </script>
+</body>
+</html>

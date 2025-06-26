@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Search, TrendingUp, X, DollarSign, ArrowRight, AlertCircle, Shield, ShieldAlert, ShieldX, Info } from 'lucide-react'
 import { useState } from 'react'
+import { phantomWallet } from '../utils/phantom-wallet'
 
 async function fetchPools() {
   const response = await fetch('http://localhost:3001/api/pools/discover')
@@ -218,6 +219,7 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
   const [solAmount, setSolAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
 
   // Preços simulados para conversão (em produção, buscar de API)
   const solPrice = 180 // USD
@@ -246,34 +248,33 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
 
     setIsLoading(true)
     setError('')
+    setStatus('Verificando conexão Phantom...')
 
     try {
+      // Verificar se Phantom está conectado
+      if (!phantomWallet.isConnected()) {
+        setStatus('Conectando Phantom...')
+        await phantomWallet.connect()
+      }
+
+      const userPublicKey = phantomWallet.getPublicKey()
+      if (!userPublicKey) {
+        throw new Error('Phantom não está conectado')
+      }
+
+      setStatus('Preparando transação de investimento...')
+
       // Preparar dados do investimento
       const investmentData = {
         poolId: pool.id,
-        userPublicKey: 'DuASG5ubHN6qsBCGJVfLa5G5TjDQ48TJ3XcZ8U6eDee', // TODO: Obter da carteira conectada
+        userPublicKey,
         solAmount: parseFloat(solAmount),
         tokenA: pool.tokenA,
         tokenB: pool.tokenB,
         slippage: 0.5
       }
 
-      // Log para debug (será removido em produção)
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log('Executando investimento real:', investmentData)
-      }
-
-      // Primeiro, verificar se o serviço está configurado
-      const statusResponse = await fetch('http://localhost:3001/api/investment/status')
-      const statusData = await statusResponse.json()
-
-      if (!statusData.configured) {
-        setError('Serviço de investimento não configurado. Configure SOLANA_PRIVATE_KEY no backend.')
-        return
-      }
-
-      // Executar investimento real
+      // 1. Preparar transação no backend
       const response = await fetch('http://localhost:3001/api/investment/invest', {
         method: 'POST',
         headers: {
@@ -284,15 +285,104 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
 
       const result = await response.json()
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Falha na execução do investimento')
+      if (!result.success) {
+        throw new Error(result.error || 'Falha ao preparar investimento')
       }
 
-      // Sucesso! Mostrar detalhes da transação
-      const message = `🎉 Investimento executado com sucesso!
+      // Se não requer assinatura, investimento já foi processado
+      if (!result.requiresSignature) {
+        setStatus('Investimento processado com sucesso!')
+        const message = `🎉 Investimento executado com sucesso!
 
 📝 Assinatura: ${result.data.signature}
 💰 SOL Investido: ${result.data.actualSolSpent}
+🪙 ${pool.tokenA}: ${result.data.tokenAAmount?.toFixed(4)}
+🪙 ${pool.tokenB}: ${result.data.tokenBAmount?.toFixed(4)}
+
+🔗 Verifique no Solana Explorer ou Raydium!`
+        alert(message)
+        onClose()
+        return
+      }
+
+      // 2. Solicitar assinatura via Phantom
+      setStatus('Aguardando assinatura no Phantom...')
+      
+      if (!result.data.transactionData) {
+        throw new Error('Dados da transação não encontrados')
+      }
+
+      // Verificar novamente a conexão antes de assinar
+      if (!phantomWallet.isConnected()) {
+        setStatus('Reconectando Phantom...')
+        await phantomWallet.connect()
+      }
+
+      // Deserializar transação para assinatura (método mais robusto)
+      let transaction
+      try {
+        // Importar dinamicamente se necessário
+        const { Transaction } = await import('@solana/web3.js')
+        
+        // Converter base64 para buffer mais cuidadosamente
+        const transactionBuffer = Buffer.from(result.data.transactionData, 'base64')
+        transaction = Transaction.from(transactionBuffer)
+        
+        console.log('🔄 Transação deserializada com sucesso')
+      } catch (deserialError) {
+        console.error('Erro na deserialização:', deserialError)
+        throw new Error('Falha ao processar dados da transação')
+      }
+
+      // Solicitar assinatura via Phantom (com retry)
+      let signedTransaction
+      try {
+        console.log('📝 Solicitando assinatura via Phantom...')
+        signedTransaction = await phantomWallet.signTransaction(transaction)
+        console.log('✅ Transação assinada com sucesso')
+      } catch (signError) {
+        console.error('Erro na assinatura:', signError)
+        throw new Error('Assinatura cancelada ou falhou. Verifique se o Phantom está desbloqueado.')
+      }
+
+      setStatus('Enviando transação assinada...')
+
+      // 3. Enviar transação assinada para o backend processar
+      let serializedTransaction
+      try {
+        // Serializar transação assinada mais cuidadosamente
+        const serialized = signedTransaction.serialize()
+        serializedTransaction = Buffer.from(serialized).toString('base64')
+        console.log('🔄 Transação serializada para envio')
+      } catch (serializError) {
+        console.error('Erro na serialização:', serializError)
+        throw new Error('Falha ao preparar transação para envio')
+      }
+
+      const processResponse = await fetch('http://localhost:3001/api/investment/process-signed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transaction: serializedTransaction,
+          description: result.data.description || `Investimento na pool ${pool.tokenA}/${pool.tokenB}`
+        }),
+      })
+
+      const processResult = await processResponse.json()
+
+      if (!processResult.success) {
+        throw new Error(processResult.error || 'Falha ao processar transação')
+      }
+
+      setStatus('Investimento executado com sucesso!')
+      
+      // Sucesso! Mostrar detalhes da transação
+      const message = `🎉 Investimento executado com sucesso!
+
+📝 Assinatura: ${processResult.data.signature}
+💰 SOL Investido: ${processResult.data.actualSolSpent}
 🪙 ${pool.tokenA}: ${result.data.tokenAAmount?.toFixed(4)}
 🪙 ${pool.tokenB}: ${result.data.tokenBAmount?.toFixed(4)}
 
@@ -304,6 +394,7 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
       setError(`Erro ao processar investimento: ${errorMessage}`)
+      setStatus('')
       
       // Log detalhado para debug
       if (process.env.NODE_ENV === 'development') {
@@ -396,6 +487,14 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
             <div className="text-sm text-yellow-800">
               Valor fora da faixa recomendada. Para melhor performance, mantenha entre {minAmount} e {maxAmount} SOL.
             </div>
+          </div>
+        )}
+
+        {/* Status */}
+        {status && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg flex items-start">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+            <div className="text-sm text-blue-800">{status}</div>
           </div>
         )}
 

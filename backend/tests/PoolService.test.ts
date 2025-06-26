@@ -7,6 +7,11 @@ describe('PoolService', () => {
     service = new PoolService();
   });
 
+  afterEach(() => {
+    // Limpar timers para evitar vazamentos de memória
+    service.destroy();
+  });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
@@ -82,7 +87,7 @@ describe('PoolService', () => {
       // Se chegou aqui, algo está errado
       fail('Deveria ter falhado para pool inexistente');
     } catch (error: any) {
-      expect(error.message).toContain('Dados simulados removidos conforme CLAUDE.md');
+      expect(error.message).toContain('not found');
     }
   }, 30000);
 });

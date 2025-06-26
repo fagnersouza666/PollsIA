@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🧪 Teste: Múltiplas Abordagens Phantom</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 15px 0; }
+        .button { padding: 10px 20px; margin: 5px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .button:hover { background: #2563eb; }
+        .button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .log { background: #1f2937; color: #10b981; padding: 15px; border-radius: 4px; font-family: monospace; max-height: 200px; overflow-y: scroll; margin: 10px 0; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste: Múltiplas Abordagens para Abertura do Phantom</h1>
+    
+    <div class="test-section">
+        <h2>📋 Status Geral</h2>
+        <div id="statusGeral">Aguardando início dos testes...</div>
+    </div>
+
+    <!-- ABORDAGEM 1: Método Padrão -->
+    <div class="test-section">
+        <h2>1️⃣ Abordagem Padrão (signTransaction)</h2>
+        <p>Método tradicional usado no seu código atual.</p>
+        <button class="button" onclick="testeAbordagem1()">Testar Abordagem 1</button>
+        <div class="log" id="log1"></div>
+    </div>
+
+    <!-- ABORDAGEM 2: Com RequestAccounts -->
+    <div class="test-section">
+        <h2>2️⃣ Abordagem com RequestAccounts</h2>
+        <p>Força reconexão antes de assinar.</p>
+        <button class="button" onclick="testeAbordagem2()">Testar Abordagem 2</button>
+        <div class="log" id="log2"></div>
+    </div>
+
+    <!-- ABORDAGEM 3: Com Delay -->
+    <div class="test-section">
+        <h2>3️⃣ Abordagem com Delay</h2>
+        <p>Adiciona pausa entre conexão e assinatura.</p>
+        <button class="button" onclick="testeAbordagem3()">Testar Abordagem 3</button>
+        <div class="log" id="log3"></div>
+    </div>
+
+    <!-- ABORDAGEM 4: Event Driven -->
+    <div class="test-section">
+        <h2>4️⃣ Abordagem Event-Driven</h2>
+        <p>Usa eventos do Phantom para garantir estado.</p>
+        <button class="button" onclick="testeAbordagem4()">Testar Abordagem 4</button>
+        <div class="log" id="log4"></div>
+    </div>
+
+    <!-- ABORDAGEM 5: Force Focus -->
+    <div class="test-section">
+        <h2>5️⃣ Abordagem Force Focus</h2>
+        <p>Força foco na janela antes de assinar.</p>
+        <button class="button" onclick="testeAbordagem5()">Testar Abordagem 5</button>
+        <div class="log" id="log5"></div>
+    </div>
+
+    <script>
+        function log(id, message, type = 'info') {
+            const logDiv = document.getElementById(id);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(message) {
+            document.getElementById('statusGeral').innerHTML = message;
+        }
+
+        async function criarTransacaoTeste() {
+            const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+            const { blockhash } = await connection.getLatestBlockhash();
+            
+            const transaction = new solanaWeb3.Transaction({
+                feePayer: window.solana.publicKey,
+                blockhash: blockhash,
+            });
+
+            transaction.add(
+                new solanaWeb3.TransactionInstruction({
+                    keys: [],
+                    programId: new solanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+                    data: Buffer.from('Teste Abordagem', 'utf8'),
+                })
+            );
+
+            return transaction;
+        }
+
+        // ABORDAGEM 1: Método Padrão
+        async function testeAbordagem1() {
+            const logId = 'log1';
+            log(logId, '🚀 Iniciando Abordagem 1 - Método Padrão');
+            
+            try {
+                if (!window.solana.isConnected) {
+                    log(logId, '🔄 Conectando...', 'warning');
+                    await window.solana.connect();
+                }
+                
+                log(logId, '✅ Conectado, criando transação...');
+                const transaction = await criarTransacaoTeste();
+                
+                log(logId, '🚨 ATENÇÃO: Chamando signTransaction() - Phantom deve abrir!', 'warning');
+                const signed = await window.solana.signTransaction(transaction);
+                
+                log(logId, '🎉 SUCESSO! Transação assinada!', 'success');
+                
+            } catch (error) {
+                log(logId, `❌ ERRO: ${error.message}`, 'error');
+                if (error.code === 4001) {
+                    log(logId, '✅ Phantom abriu mas usuário cancelou!', 'success');
+                }
+            }
+        }
+
+        // ABORDAGEM 2: Com RequestAccounts
+        async function testeAbordagem2() {
+            const logId = 'log2';
+            log(logId, '🚀 Iniciando Abordagem 2 - Com RequestAccounts');
+            
+            try {
+                // Forçar reconexão
+                log(logId, '🔄 Forçando reconexão com requestAccounts...');
+                if (window.solana.request) {
+                    await window.solana.request({ method: 'requestAccounts' });
+                    log(logId, '✅ RequestAccounts realizado');
+                } else {
+                    log(logId, '⚠️ RequestAccounts não disponível, usando connect');
+                    await window.solana.connect();
+                }
+                
+                log(logId, '✅ Reconectado, criando transação...');
+                const transaction = await criarTransacaoTeste();
+                
+                log(logId, '🚨 ATENÇÃO: Chamando signTransaction() - Phantom deve abrir!', 'warning');
+                const signed = await window.solana.signTransaction(transaction);
+                
+                log(logId, '🎉 SUCESSO! Transação assinada!', 'success');
+                
+            } catch (error) {
+                log(logId, `❌ ERRO: ${error.message}`, 'error');
+                if (error.code === 4001) {
+                    log(logId, '✅ Phantom abriu mas usuário cancelou!', 'success');
+                }
+            }
+        }
+
+        // ABORDAGEM 3: Com Delay
+        async function testeAbordagem3() {
+            const logId = 'log3';
+            log(logId, '🚀 Iniciando Abordagem 3 - Com Delay');
+            
+            try {
+                if (!window.solana.isConnected) {
+                    log(logId, '🔄 Conectando...', 'warning');
+                    await window.solana.connect();
+                }
+                
+                log(logId, '✅ Conectado, aguardando 2 segundos...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                log(logId, '✅ Delay concluído, criando transação...');
+                const transaction = await criarTransacaoTeste();
+                
+                log(logId, '⏳ Aguardando mais 1 segundo...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                log(logId, '🚨 ATENÇÃO: Chamando signTransaction() - Phantom deve abrir!', 'warning');
+                const signed = await window.solana.signTransaction(transaction);
+                
+                log(logId, '🎉 SUCESSO! Transação assinada!', 'success');
+                
+            } catch (error) {
+                log(logId, `❌ ERRO: ${error.message}`, 'error');
+                if (error.code === 4001) {
+                    log(logId, '✅ Phantom abriu mas usuário cancelou!', 'success');
+                }
+            }
+        }
+
+        // ABORDAGEM 4: Event Driven
+        async function testeAbordagem4() {
+            const logId = 'log4';
+            log(logId, '🚀 Iniciando Abordagem 4 - Event-Driven');
+            
+            try {
+                return new Promise((resolve, reject) => {
+                    // Configurar listeners
+                    const onConnect = async () => {
+                        try {
+                            log(logId, '✅ Evento connect disparado');
+                            
+                            // Aguardar um pouco após o evento
+                            await new Promise(r => setTimeout(r, 500));
+                            
+                            log(logId, '✅ Criando transação...');
+                            const transaction = await criarTransacaoTeste();
+                            
+                            log(logId, '🚨 ATENÇÃO: Chamando signTransaction() - Phantom deve abrir!', 'warning');
+                            const signed = await window.solana.signTransaction(transaction);
+                            
+                            log(logId, '🎉 SUCESSO! Transação assinada!', 'success');
+                            resolve();
+                            
+                        } catch (error) {
+                            log(logId, `❌ ERRO: ${error.message}`, 'error');
+                            if (error.code === 4001) {
+                                log(logId, '✅ Phantom abriu mas usuário cancelou!', 'success');
+                            }
+                            resolve();
+                        }
+                    };
+
+                    if (window.solana.isConnected) {
+                        log(logId, '✅ Já conectado, executando diretamente...');
+                        onConnect();
+                    } else {
+                        log(logId, '🔄 Configurando listener e conectando...');
+                        window.solana.on('connect', onConnect);
+                        window.solana.connect().catch(reject);
+                    }
+                });
+                
+            } catch (error) {
+                log(logId, `❌ ERRO GERAL: ${error.message}`, 'error');
+            }
+        }
+
+        // ABORDAGEM 5: Force Focus
+        async function testeAbordagem5() {
+            const logId = 'log5';
+            log(logId, '🚀 Iniciando Abordagem 5 - Force Focus');
+            
+            try {
+                if (!window.solana.isConnected) {
+                    log(logId, '🔄 Conectando...', 'warning');
+                    await window.solana.connect();
+                }
+                
+                log(logId, '✅ Conectado, criando transação...');
+                const transaction = await criarTransacaoTeste();
+                
+                // Forçar foco na janela
+                log(logId, '🎯 Forçando foco na janela...');
+                window.focus();
+                
+                // Dispatch de evento personalizado
+                log(logId, '📡 Disparando eventos customizados...');
+                window.dispatchEvent(new Event('focus'));
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                log(logId, '🚨 ATENÇÃO: Chamando signTransaction() - Phantom deve abrir!', 'warning');
+                const signed = await window.solana.signTransaction(transaction);
+                
+                log(logId, '🎉 SUCESSO! Transação assinada!', 'success');
+                
+            } catch (error) {
+                log(logId, `❌ ERRO: ${error.message}`, 'error');
+                if (error.code === 4001) {
+                    log(logId, '✅ Phantom abriu mas usuário cancelou!', 'success');
+                }
+            }
+        }
+
+        // Verificação inicial
+        window.addEventListener('load', () => {
+            if (window.solana && window.solana.isPhantom) {
+                updateStatus('✅ Phantom detectado - Testes prontos para execução');
+            } else {
+                updateStatus('❌ Phantom não detectado - Instale em https://phantom.app');
+            }
+        });
+    </script>
+</body>
+</html>

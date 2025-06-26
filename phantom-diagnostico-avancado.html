@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔍 Diagnóstico Avançado - Por que Phantom não abre?</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 8px; font-family: monospace; max-height: 300px; overflow-y: scroll; }
+        .button { padding: 12px 24px; margin: 8px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        .button:hover { background: #4f46e5; }
+        .button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .error { color: #dc2626; }
+        .success { color: #059669; }
+        .warning { color: #d97706; }
+        .info { color: #2563eb; }
+        .step { background: #e0e7ff; padding: 12px; margin: 8px 0; border-left: 4px solid #6366f1; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnóstico Avançado: Por que Phantom não abre?</h1>
+    
+    <div class="step">
+        <strong>OBJETIVO:</strong> Identificar exatamente por que o Phantom não está abrindo a janela de assinatura.
+    </div>
+    
+    <h2>🧪 Testes Diagnósticos</h2>
+    
+    <button class="button" onclick="testeCompleto()">🚀 EXECUTAR DIAGNÓSTICO COMPLETO</button>
+    <button class="button" onclick="clearLog()">🗑️ Limpar Logs</button>
+    
+    <div id="statusGeral" class="step">
+        Status: Aguardando início do diagnóstico...
+    </div>
+    
+    <div class="log" id="logDiagnostico"></div>
+    
+    <h2>📋 Possíveis Problemas e Soluções</h2>
+    <div id="diagnosticos" style="display: none;">
+        <div class="step">
+            <h3>🔍 Resultados do Diagnóstico:</h3>
+            <ul id="resultadosList"></ul>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('logDiagnostico');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logDiv.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(message) {
+            document.getElementById('statusGeral').innerHTML = `<strong>Status:</strong> ${message}`;
+        }
+
+        function clearLog() {
+            document.getElementById('logDiagnostico').innerHTML = '';
+            document.getElementById('diagnosticos').style.display = 'none';
+        }
+
+        function addDiagnostico(problema, solucao) {
+            const list = document.getElementById('resultadosList');
+            list.innerHTML += `<li><strong>${problema}:</strong> ${solucao}</li>`;
+            document.getElementById('diagnosticos').style.display = 'block';
+        }
+
+        async function testeCompleto() {
+            clearLog();
+            log('🔬 INICIANDO DIAGNÓSTICO AVANÇADO DO PHANTOM', 'info');
+            log('=' * 60, 'info');
+            
+            const problemas = [];
+            let phantomFuncional = false;
+            
+            try {
+                // TESTE 1: Verificação básica do Phantom
+                log('1️⃣ TESTE: Detecção do Phantom', 'info');
+                updateStatus('Verificando instalação do Phantom...');
+                
+                if (!window.solana) {
+                    log('❌ FALHA: window.solana não existe', 'error');
+                    problemas.push('Phantom não instalado');
+                    addDiagnostico('Phantom não instalado', 'Instale a extensão Phantom em https://phantom.app');
+                    return;
+                }
+                
+                if (!window.solana.isPhantom) {
+                    log('❌ FALHA: window.solana.isPhantom é false', 'error');
+                    problemas.push('Solana object inválido');
+                    addDiagnostico('Object Solana inválido', 'Reinstale a extensão Phantom');
+                    return;
+                }
+                
+                log('✅ SUCESSO: Phantom detectado corretamente', 'success');
+                
+                // TESTE 2: Verificação das funções necessárias
+                log('2️⃣ TESTE: Funções disponíveis', 'info');
+                
+                const funcoesNecessarias = ['connect', 'signTransaction', 'signAllTransactions'];
+                for (const funcao of funcoesNecessarias) {
+                    if (typeof window.solana[funcao] === 'function') {
+                        log(`✅ ${funcao}: Disponível`, 'success');
+                    } else {
+                        log(`❌ ${funcao}: NÃO DISPONÍVEL`, 'error');
+                        problemas.push(`Função ${funcao} não disponível`);
+                    }
+                }
+                
+                // TESTE 3: Teste de conexão
+                log('3️⃣ TESTE: Conexão com Phantom', 'info');
+                updateStatus('Testando conexão...');
+                
+                let conectado = false;
+                try {
+                    if (!window.solana.isConnected) {
+                        log('🔄 Solicitando conexão...', 'info');
+                        const response = await window.solana.connect();
+                        log(`✅ CONECTADO: ${response.publicKey.toString()}`, 'success');
+                        conectado = true;
+                    } else {
+                        log(`✅ JÁ CONECTADO: ${window.solana.publicKey.toString()}`, 'success');
+                        conectado = true;
+                    }
+                } catch (connectError) {
+                    log(`❌ ERRO NA CONEXÃO: ${connectError.message}`, 'error');
+                    problemas.push('Falha na conexão');
+                    addDiagnostico('Falha na conexão', 'Verifique se o Phantom está desbloqueado e tente novamente');
+                    return;
+                }
+                
+                // TESTE 4: Verificação de pop-ups
+                log('4️⃣ TESTE: Bloqueador de pop-ups', 'info');
+                
+                try {
+                    const testWindow = window.open('', '_blank', 'width=1,height=1');
+                    if (testWindow) {
+                        testWindow.close();
+                        log('✅ Pop-ups permitidos', 'success');
+                    } else {
+                        log('❌ Pop-ups BLOQUEADOS', 'warning');
+                        problemas.push('Pop-ups bloqueados');
+                        addDiagnostico('Pop-ups bloqueados', 'Permita pop-ups para este site nas configurações do navegador');
+                    }
+                } catch (popupError) {
+                    log('⚠️ Teste de pop-up falhou', 'warning');
+                }
+                
+                // TESTE 5: Teste crítico - Criação e assinatura de transação
+                log('5️⃣ TESTE CRÍTICO: Assinatura de transação', 'info');
+                updateStatus('Preparando transação de teste...');
+                
+                try {
+                    // Criar conexão com Solana
+                    log('🔄 Conectando com rede Solana...', 'info');
+                    const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+                    
+                    // Obter blockhash recente
+                    log('🔄 Obtendo blockhash...', 'info');
+                    const { blockhash } = await connection.getLatestBlockhash();
+                    log(`✅ Blockhash obtido: ${blockhash.slice(0, 8)}...`, 'success');
+                    
+                    // Criar transação
+                    log('🔄 Criando transação de teste...', 'info');
+                    const transaction = new solanaWeb3.Transaction({
+                        feePayer: window.solana.publicKey,
+                        blockhash: blockhash,
+                    });
+                    
+                    // Adicionar instrução memo (mais segura para teste)
+                    transaction.add(
+                        new solanaWeb3.TransactionInstruction({
+                            keys: [],
+                            programId: new solanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+                            data: Buffer.from('PollsIA Phantom Test', 'utf8'),
+                        })
+                    );
+                    
+                    log(`✅ Transação criada com ${transaction.instructions.length} instrução(ões)`, 'success');
+                    
+                    // MOMENTO CRÍTICO: Tentar assinar
+                    log('🚨 MOMENTO CRÍTICO: Solicitando assinatura...', 'warning');
+                    log('⚠️ O PHANTOM DEVE ABRIR UMA JANELA AGORA!', 'warning');
+                    log('⏰ Aguardando interação do usuário...', 'info');
+                    
+                    updateStatus('🚨 AGUARDANDO ASSINATURA NO PHANTOM...');
+                    
+                    const startTime = Date.now();
+                    
+                    try {
+                        const signedTransaction = await window.solana.signTransaction(transaction);
+                        const endTime = Date.now();
+                        const tempoResposta = ((endTime - startTime) / 1000).toFixed(2);
+                        
+                        log(`🎉 SUCESSO TOTAL! Transação assinada em ${tempoResposta}s`, 'success');
+                        log(`📝 Assinaturas: ${signedTransaction.signatures.length}`, 'success');
+                        log(`📋 Primeira assinatura: ${signedTransaction.signatures[0].signature ? 'Válida' : 'Inválida'}`, 'success');
+                        
+                        phantomFuncional = true;
+                        addDiagnostico('✅ Phantom Funcionando', 'O Phantom está funcionando perfeitamente! O problema pode estar no seu código.');
+                        
+                    } catch (signError) {
+                        const endTime = Date.now();
+                        const tempoResposta = ((endTime - startTime) / 1000).toFixed(2);
+                        
+                        log(`❌ FALHA NA ASSINATURA após ${tempoResposta}s`, 'error');
+                        log(`🔍 Erro: ${signError.message}`, 'error');
+                        log(`🔍 Código: ${signError.code || 'N/A'}`, 'error');
+                        log(`🔍 Tipo: ${signError.constructor.name}`, 'error');
+                        
+                        // Análise detalhada do erro
+                        if (signError.code === 4001 || signError.message.includes('rejected') || signError.message.includes('cancelled')) {
+                            log('✅ DIAGNÓSTICO: Phantom ABRIU mas usuário cancelou', 'success');
+                            addDiagnostico('Phantom abre mas usuário cancela', 'O Phantom está funcionando! Certifique-se de aprovar a transação.');
+                            phantomFuncional = true;
+                        } else if (signError.message.includes('timeout')) {
+                            log('⚠️ DIAGNÓSTICO: Timeout na assinatura', 'warning');
+                            addDiagnostico('Timeout na assinatura', 'Phantom pode estar lento. Tente aumentar o timeout.');
+                        } else if (signError.message.includes('popup')) {
+                            log('❌ DIAGNÓSTICO: Problema com pop-up', 'error');
+                            addDiagnostico('Problema com pop-up', 'Phantom não consegue abrir janela. Verifique bloqueadores.');
+                        } else {
+                            log('❌ DIAGNÓSTICO: Erro técnico desconhecido', 'error');
+                            addDiagnostico('Erro técnico', `Erro: ${signError.message}. Tente reinstalar Phantom.`);
+                        }
+                    }
+                    
+                } catch (transactionError) {
+                    log(`❌ ERRO CRÍTICO na preparação: ${transactionError.message}`, 'error');
+                    problemas.push('Falha na criação da transação');
+                    addDiagnostico('Falha técnica', 'Erro na criação da transação. Verifique conexão com Solana.');
+                }
+                
+                // TESTE 6: Verificações finais
+                log('6️⃣ VERIFICAÇÕES FINAIS', 'info');
+                
+                // Verificar versão do Phantom
+                if (window.solana._metadata) {
+                    log(`ℹ️ Versão Phantom: ${JSON.stringify(window.solana._metadata)}`, 'info');
+                }
+                
+                // Verificar eventos
+                if (window.solana.on) {
+                    log('✅ Sistema de eventos disponível', 'success');
+                } else {
+                    log('❌ Sistema de eventos não disponível', 'error');
+                }
+                
+            } catch (erroGeral) {
+                log(`❌ ERRO GERAL: ${erroGeral.message}`, 'error');
+                addDiagnostico('Erro geral', 'Erro inesperado no diagnóstico. Verifique console do navegador.');
+            }
+            
+            // RESUMO FINAL
+            log('=' * 60, 'info');
+            log('📊 RESUMO DO DIAGNÓSTICO:', 'info');
+            
+            if (phantomFuncional) {
+                log('🎉 RESULTADO: Phantom está FUNCIONANDO!', 'success');
+                log('💡 O problema pode estar no seu código de integração.', 'info');
+                updateStatus('✅ Phantom funcionando! Problema pode estar no código.');
+            } else if (problemas.length === 0) {
+                log('⚠️ RESULTADO: Diagnóstico inconclusivo', 'warning');
+                updateStatus('⚠️ Diagnóstico inconclusivo - tente novamente');
+            } else {
+                log(`❌ RESULTADO: ${problemas.length} problema(s) encontrado(s)`, 'error');
+                log(`🔧 Problemas: ${problemas.join(', ')}`, 'error');
+                updateStatus(`❌ ${problemas.length} problemas encontrados`);
+            }
+            
+            log('🔚 DIAGNÓSTICO CONCLUÍDO', 'info');
+        }
+
+        // Auto-check na inicialização
+        window.addEventListener('load', () => {
+            log('🚀 Diagnóstico carregado e pronto', 'info');
+            log('👆 Clique em "EXECUTAR DIAGNÓSTICO COMPLETO" para começar', 'info');
+        });
+    </script>
+</body>
+</html>

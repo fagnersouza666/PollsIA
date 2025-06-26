@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Phantom Wallet Investimento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8">🔍 Debug Phantom Investimento</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Status da Conexão</h2>
+            
+            <div id="phantomStatus" class="mb-4 p-3 rounded bg-gray-100">
+                Verificando Phantom...
+            </div>
+            
+            <div id="walletInfo" class="hidden mb-4 p-3 bg-blue-50 rounded">
+                <p><strong>Endereço:</strong> <span id="walletAddress"></span></p>
+                <p><strong>Conectado:</strong> <span id="connectionStatus"></span></p>
+            </div>
+            
+            <div class="space-y-3">
+                <button 
+                    id="connectBtn" 
+                    onclick="testConnect()" 
+                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                >
+                    1. Conectar Phantom
+                </button>
+                
+                <button 
+                    id="prepareBtn" 
+                    onclick="testPrepareTransaction()" 
+                    disabled
+                    class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                >
+                    2. Preparar Transação (Mock)
+                </button>
+                
+                <button 
+                    id="signBtn" 
+                    onclick="testSignTransaction()" 
+                    disabled
+                    class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                >
+                    3. Assinar Transação (PHANTOM DEVE ABRIR)
+                </button>
+                
+                <button 
+                    onclick="clearLogs()" 
+                    class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                    Limpar Logs
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Logs de Debug</h2>
+            <div id="logs" class="bg-gray-900 text-green-400 p-4 rounded text-sm font-mono max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        let walletConnected = false;
+        let mockTransaction = null;
+
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('phantomStatus');
+            status.textContent = message;
+            status.className = `mb-4 p-3 rounded ${
+                type === 'success' ? 'bg-green-100 text-green-800' :
+                type === 'error' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+            }`;
+        }
+
+        function updateButtons() {
+            document.getElementById('prepareBtn').disabled = !walletConnected;
+            document.getElementById('signBtn').disabled = !walletConnected || !mockTransaction;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testConnect() {
+            try {
+                log('🔄 Testando conexão Phantom...');
+                
+                if (!window.solana) {
+                    throw new Error('Phantom não detectado');
+                }
+
+                if (!window.solana.isPhantom) {
+                    throw new Error('Não é um Phantom válido');
+                }
+
+                log('✅ Phantom detectado, solicitando conexão...');
+                const response = await window.solana.connect();
+                
+                log(`✅ Conectado! Endereço: ${response.publicKey.toString()}`);
+                
+                // Mostrar info da carteira
+                document.getElementById('walletAddress').textContent = 
+                    response.publicKey.toString().slice(0, 4) + '...' + response.publicKey.toString().slice(-4);
+                document.getElementById('connectionStatus').textContent = 'Conectado';
+                document.getElementById('walletInfo').classList.remove('hidden');
+                
+                updateStatus('Phantom conectado com sucesso!', 'success');
+                walletConnected = true;
+                updateButtons();
+
+            } catch (error) {
+                log(`❌ Erro na conexão: ${error.message}`);
+                updateStatus(`Erro: ${error.message}`, 'error');
+                walletConnected = false;
+                updateButtons();
+            }
+        }
+
+        async function testPrepareTransaction() {
+            try {
+                log('🔄 Criando transação mock para teste...');
+                
+                if (!window.solana || !window.solana.publicKey) {
+                    throw new Error('Phantom não conectado');
+                }
+
+                // Criar uma transação simples para teste
+                const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+                const { blockhash } = await connection.getLatestBlockhash();
+                
+                const transaction = new solanaWeb3.Transaction({
+                    feePayer: window.solana.publicKey,
+                    blockhash: blockhash,
+                });
+
+                // Adicionar uma instrução simples (memo)
+                transaction.add(
+                    new solanaWeb3.TransactionInstruction({
+                        keys: [],
+                        programId: new solanaWeb3.PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+                        data: Buffer.from('Teste PollsIA - Phantom Debug', 'utf8'),
+                    })
+                );
+
+                mockTransaction = transaction;
+                log('✅ Transação mock criada com sucesso');
+                log(`📝 Transação tem ${transaction.instructions.length} instrução(ões)`);
+                log(`🔗 Blockhash: ${blockhash}`);
+                
+                updateButtons();
+
+            } catch (error) {
+                log(`❌ Erro ao criar transação: ${error.message}`);
+                mockTransaction = null;
+                updateButtons();
+            }
+        }
+
+        async function testSignTransaction() {
+            try {
+                if (!mockTransaction) {
+                    throw new Error('Nenhuma transação preparada');
+                }
+
+                log('🔄 Iniciando teste de assinatura...');
+                log('⚠️ ATENÇÃO: O Phantom DEVE abrir uma janela agora!');
+                
+                if (!window.solana.isConnected) {
+                    throw new Error('Phantom não está conectado');
+                }
+
+                log('📝 Chamando window.solana.signTransaction()...');
+                
+                // Esta linha DEVE abrir o Phantom
+                const signedTransaction = await window.solana.signTransaction(mockTransaction);
+                
+                log('✅ SUCESSO! Transação assinada pelo Phantom');
+                log(`📝 Assinatura: ${signedTransaction.signatures[0].signature ? 'Presente' : 'Ausente'}`);
+                log(`🔍 Número de assinaturas: ${signedTransaction.signatures.length}`);
+                
+                updateStatus('Transação assinada com sucesso!', 'success');
+
+            } catch (error) {
+                log(`❌ Erro na assinatura: ${error.message}`);
+                log(`🔍 Tipo do erro: ${error.constructor.name}`);
+                log(`🔍 Código do erro: ${error.code || 'N/A'}`);
+                
+                if (error.code === 4001) {
+                    log('ℹ️ Erro 4001 = Usuário rejeitou a assinatura');
+                } else if (error.message.includes('User rejected')) {
+                    log('ℹ️ Usuário rejeitou a assinatura');
+                } else {
+                    log('⚠️ Erro técnico na assinatura');
+                }
+                
+                updateStatus(`Erro na assinatura: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-verificar quando a página carrega
+        window.addEventListener('load', () => {
+            log('🚀 Página carregada - Debug Phantom Investimento');
+            
+            if (window.solana) {
+                if (window.solana.isPhantom) {
+                    log('✅ Phantom detectado automaticamente');
+                    updateStatus('Phantom detectado e pronto!', 'success');
+                    
+                    if (window.solana.isConnected) {
+                        log('✅ Phantom já estava conectado');
+                        walletConnected = true;
+                        updateButtons();
+                    }
+                } else {
+                    log('❌ window.solana existe mas não é Phantom');
+                    updateStatus('Objeto solana detectado mas não é Phantom', 'error');
+                }
+            } else {
+                log('❌ window.solana não encontrado');
+                updateStatus('Phantom não detectado. Instale em https://phantom.app', 'error');
+            }
+        });
+
+        // Detectar eventos do Phantom
+        if (window.solana) {
+            window.solana.on('connect', () => {
+                log('🔗 Evento: Phantom conectado');
+                walletConnected = true;
+                updateButtons();
+            });
+
+            window.solana.on('disconnect', () => {
+                log('🔌 Evento: Phantom desconectado');
+                walletConnected = false;
+                updateButtons();
+            });
+        }
+    </script>
+</body>
+</html>
