@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { InvestmentService, InvestmentRequest } from '../services/InvestmentService';
+import { InvestmentService, InvestmentRequest, TransactionRequest } from '../services/InvestmentService';
 
 export const investmentRoutes: FastifyPluginAsync = async (fastify) => {
   const investmentService = new InvestmentService();
@@ -22,14 +22,15 @@ Executa investimento real em uma pool de liquidez do Raydium.
 4. **Confirmação**: Retorna assinatura da transação
 
 ### Requisitos
-- Carteira conectada com saldo suficiente
-- SOLANA_PRIVATE_KEY configurada no backend
+- Carteira Phantom conectada com saldo suficiente
 - Pool válida no Raydium
+- Transação deve ser assinada no frontend
 
 ### Segurança
-- Transações assinadas na blockchain
+- Transações assinadas via Phantom no frontend
 - Slippage configurável para proteção
 - Validação de valores mínimos/máximos
+- Chaves privadas nunca expostas no backend
       `,
       body: {
         type: 'object',
@@ -72,14 +73,17 @@ Executa investimento real em uma pool de liquidez do Raydium.
       },
       response: {
         200: {
-          description: 'Investimento executado com sucesso',
+          description: 'Transação preparada para assinatura ou investimento executado',
           type: 'object',
           properties: {
             success: { type: 'boolean' },
+            requiresSignature: { type: 'boolean' },
             data: {
               type: 'object',
               properties: {
                 signature: { type: 'string' },
+                transactionData: { type: 'string' },
+                description: { type: 'string' },
                 tokenAAmount: { type: 'number' },
                 tokenBAmount: { type: 'number' },
                 actualSolSpent: { type: 'number' },
@@ -109,7 +113,7 @@ Executa investimento real em uma pool de liquidez do Raydium.
           }
         },
         503: {
-          description: 'Serviço de investimento não configurado',
+          description: 'Serviço de investimento não disponível',
           type: 'object',
           properties: {
             success: { type: 'boolean' },
@@ -121,11 +125,11 @@ Executa investimento real em uma pool de liquidez do Raydium.
     }
   }, async (request, reply) => {
     try {
-      // Verificar se o serviço está configurado
+      // O serviço agora sempre está configurado (usa Phantom)
       if (!investmentService.isConfigured()) {
         return reply.status(503).send({
           success: false,
-          error: 'Serviço de investimento não configurado. Configure SOLANA_PRIVATE_KEY no backend.',
+          error: 'Serviço de investimento não disponível.',
           timestamp: new Date().toISOString()
         });
       }
@@ -164,22 +168,27 @@ Executa investimento real em uma pool de liquidez do Raydium.
       if (!result.success) {
         return reply.status(400).send({
           success: false,
-          error: result.error || 'Falha no investimento',
+          error: result.error || 'Falha na preparação do investimento',
           timestamp: new Date().toISOString()
         });
       }
 
-      // Sucesso
+      // Retornar resultado (pode ser transação para assinatura ou investimento completo)
       return {
         success: true,
+        requiresSignature: result.requiresSignature || false,
         data: {
           signature: result.signature,
+          transactionData: result.transactionData,
+          description: result.description,
           tokenAAmount: result.tokenAAmount,
           tokenBAmount: result.tokenBAmount,
           actualSolSpent: result.actualSolSpent,
           poolId: investmentRequest.poolId
         },
-        message: `Investimento de ${investmentRequest.solAmount} SOL executado com sucesso na pool ${investmentRequest.tokenA}/${investmentRequest.tokenB}`,
+        message: result.requiresSignature 
+          ? `Transação preparada para assinatura: ${result.description}`
+          : `Investimento de ${investmentRequest.solAmount} SOL executado com sucesso na pool ${investmentRequest.tokenA}/${investmentRequest.tokenB}`,
         timestamp: new Date().toISOString()
       };
 
@@ -216,10 +225,117 @@ Executa investimento real em uma pool de liquidez do Raydium.
     return {
       configured: isConfigured,
       message: isConfigured 
-        ? 'Serviço de investimento configurado e pronto'
-        : 'Serviço de investimento não configurado - configure SOLANA_PRIVATE_KEY',
+        ? 'Serviço de investimento configurado e pronto (usando Phantom)'
+        : 'Serviço de investimento não disponível',
       timestamp: new Date().toISOString()
     };
+  });
+
+  // Endpoint para processar transação assinada pelo Phantom
+  fastify.post<{
+    Body: TransactionRequest;
+    Reply: any;
+  }>('/process-signed', {
+    schema: {
+      tags: ['Investment'],
+      summary: 'Processar transação assinada pelo Phantom',
+      description: `
+Processa uma transação de investimento que foi assinada no frontend via Phantom.
+
+### Fluxo
+1. Frontend chama /invest para obter transação serializada
+2. Frontend solicita assinatura via Phantom
+3. Frontend envia transação assinada para este endpoint
+4. Backend processa e confirma na blockchain
+
+### Segurança
+- Transação já foi assinada pelo usuário
+- Validação da assinatura acontece na blockchain
+- Backend apenas retransmite a transação
+      `,
+      body: {
+        type: 'object',
+        required: ['transaction', 'description'],
+        properties: {
+          transaction: {
+            type: 'string',
+            description: 'Transação assinada serializada em base64',
+            minLength: 1
+          },
+          description: {
+            type: 'string',
+            description: 'Descrição da transação para logs',
+            minLength: 1
+          }
+        }
+      },
+      response: {
+        200: {
+          description: 'Transação processada com sucesso',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                signature: { type: 'string' },
+                actualSolSpent: { type: 'number' }
+              }
+            },
+            message: { type: 'string' },
+            timestamp: { type: 'string', format: 'date-time' }
+          }
+        },
+        400: {
+          description: 'Erro ao processar transação',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            error: { type: 'string' },
+            timestamp: { type: 'string', format: 'date-time' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { transaction, description } = request.body;
+
+      fastify.log.info('🔄 Processando transação assinada:', {
+        description,
+        transactionLength: transaction.length
+      });
+
+      // Processar transação assinada
+      const result = await investmentService.processSignedTransaction(transaction);
+
+      if (!result.success) {
+        return reply.status(400).send({
+          success: false,
+          error: result.error || 'Falha ao processar transação',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Sucesso
+      return {
+        success: true,
+        data: {
+          signature: result.signature,
+          actualSolSpent: result.actualSolSpent
+        },
+        message: `Transação processada com sucesso: ${description}`,
+        timestamp: new Date().toISOString()
+      };
+
+    } catch (error) {
+      fastify.log.error('❌ Erro no processamento de transação assinada:', error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Erro interno ao processar transação assinada',
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 
   // Endpoint para simular investimento (teste)

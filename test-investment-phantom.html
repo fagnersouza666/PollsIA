@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Investimento via Phantom</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-8">Teste - Investimento via Phantom</h1>
+            
+            <!-- Status da Conexão -->
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 class="text-xl font-semibold mb-4">Status Phantom</h2>
+                <div id="phantomStatus" class="mb-4 p-3 rounded bg-gray-100">
+                    Verificando Phantom...
+                </div>
+                <div id="walletInfo" class="hidden mb-4 p-3 bg-blue-50 rounded">
+                    <p><strong>Endereço:</strong> <span id="walletAddress"></span></p>
+                    <p><strong>Saldo:</strong> <span id="walletBalance">--</span> SOL</p>
+                </div>
+                <button 
+                    id="connectBtn" 
+                    onclick="connectPhantom()" 
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                    Conectar Phantom
+                </button>
+            </div>
+
+            <!-- Formulário de Investimento -->
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 class="text-xl font-semibold mb-4">Investimento na Pool</h2>
+                
+                <div class="space-y-4">
+                    <!-- Pool Selecionada -->
+                    <div class="bg-gray-50 p-4 rounded">
+                        <h3 class="font-medium mb-2">Pool SOL/USDC</h3>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">TVL:</span>
+                                <span class="ml-2 font-medium">$2,450,000</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">APY:</span>
+                                <span class="ml-2 font-medium text-green-600">12.5%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quantidade SOL -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Quantidade SOL
+                        </label>
+                        <input
+                            type="number"
+                            id="solAmount"
+                            value="0.1"
+                            min="0.001"
+                            step="0.001"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="0.1"
+                        />
+                    </div>
+
+                    <!-- Slippage -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Slippage (%)
+                        </label>
+                        <select 
+                            id="slippage"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        >
+                            <option value="0.1">0.1%</option>
+                            <option value="0.5" selected>0.5%</option>
+                            <option value="1.0">1.0%</option>
+                            <option value="2.0">2.0%</option>
+                            <option value="5.0">5.0%</option>
+                        </select>
+                    </div>
+
+                    <!-- Status do Investimento -->
+                    <div id="investmentStatus" class="hidden p-3 rounded-lg text-sm"></div>
+
+                    <!-- Botão de Investimento -->
+                    <button
+                        id="investBtn"
+                        onclick="investInPool()"
+                        disabled
+                        class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 
+                               text-white font-medium py-3 px-4 rounded-lg transition-colors
+                               disabled:cursor-not-allowed"
+                    >
+                        Conecte o Phantom para Investir
+                    </button>
+
+                    <!-- Informações -->
+                    <div class="text-xs text-gray-500 space-y-1">
+                        <p>• Transação será assinada via Phantom Wallet</p>
+                        <p>• Investimento será dividido 50/50 entre SOL e USDC</p>
+                        <p>• Taxas da rede Solana aplicáveis</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Logs</h2>
+                <div id="logs" class="p-3 bg-gray-50 rounded text-xs font-mono max-h-60 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let connectedWallet = null;
+        
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('phantomStatus');
+            status.textContent = message;
+            status.className = `mb-4 p-3 rounded ${
+                type === 'success' ? 'bg-green-100 text-green-800' :
+                type === 'error' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+            }`;
+        }
+
+        function updateInvestmentStatus(message, type = 'info') {
+            const status = document.getElementById('investmentStatus');
+            status.textContent = message;
+            status.className = `p-3 rounded-lg text-sm ${
+                type === 'success' ? 'bg-green-100 text-green-800' :
+                type === 'error' ? 'bg-red-100 text-red-800' :
+                'bg-blue-100 text-blue-800'
+            }`;
+            status.classList.remove('hidden');
+        }
+
+        async function connectPhantom() {
+            try {
+                log('Conectando Phantom...');
+                updateStatus('Conectando...', 'info');
+                
+                if (!window.solana || !window.solana.isPhantom) {
+                    throw new Error('Phantom wallet não encontrado');
+                }
+
+                const response = await window.solana.connect();
+                connectedWallet = response.publicKey.toString();
+                
+                log(`✅ Conectado: ${connectedWallet}`);
+                updateStatus('Conectado com sucesso!', 'success');
+                
+                // Mostrar informações da carteira
+                document.getElementById('walletAddress').textContent = 
+                    connectedWallet.slice(0, 4) + '...' + connectedWallet.slice(-4);
+                document.getElementById('walletInfo').classList.remove('hidden');
+                document.getElementById('connectBtn').textContent = 'Reconectar';
+                
+                // Habilitar botão de investimento
+                const investBtn = document.getElementById('investBtn');
+                investBtn.disabled = false;
+                investBtn.textContent = 'Investir na Pool';
+                
+                // Buscar saldo
+                await updateBalance();
+                
+            } catch (error) {
+                log(`❌ Erro na conexão: ${error.message}`);
+                updateStatus(`Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateBalance() {
+            try {
+                if (!connectedWallet) return;
+                
+                const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+                const publicKey = new solanaWeb3.PublicKey(connectedWallet);
+                const balance = await connection.getBalance(publicKey);
+                const solBalance = balance / 1e9;
+                
+                document.getElementById('walletBalance').textContent = solBalance.toFixed(4);
+                log(`Saldo atualizado: ${solBalance.toFixed(4)} SOL`);
+                
+            } catch (error) {
+                log(`Erro ao buscar saldo: ${error.message}`);
+            }
+        }
+
+        async function investInPool() {
+            try {
+                if (!connectedWallet) {
+                    throw new Error('Phantom não está conectado');
+                }
+
+                const solAmount = parseFloat(document.getElementById('solAmount').value);
+                const slippage = parseFloat(document.getElementById('slippage').value);
+
+                if (solAmount <= 0) {
+                    throw new Error('Quantidade deve ser maior que zero');
+                }
+
+                log('🔄 Iniciando investimento...');
+                updateInvestmentStatus('Preparando transação...', 'info');
+
+                // 1. Preparar transação no backend
+                const response = await fetch('http://localhost:3001/api/investment/invest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        poolId: 'test-pool-sol-usdc',
+                        userPublicKey: connectedWallet,
+                        solAmount: solAmount,
+                        tokenA: 'SOL',
+                        tokenB: 'USDC',
+                        slippage: slippage
+                    }),
+                });
+
+                const result = await response.json();
+                log(`Backend response: ${JSON.stringify(result)}`);
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Falha ao preparar investimento');
+                }
+
+                // Se não requer assinatura, investimento já foi processado
+                if (!result.requiresSignature) {
+                    log('✅ Investimento processado sem necessidade de assinatura');
+                    updateInvestmentStatus('Investimento processado com sucesso!', 'success');
+                    return;
+                }
+
+                // 2. Solicitar assinatura via Phantom
+                log('📝 Solicitando assinatura no Phantom...');
+                updateInvestmentStatus('Aguardando assinatura no Phantom...', 'info');
+                
+                if (!result.data.transactionData) {
+                    throw new Error('Dados da transação não encontrados');
+                }
+
+                // Deserializar transação
+                const transactionBuffer = Uint8Array.from(atob(result.data.transactionData), c => c.charCodeAt(0));
+                const transaction = solanaWeb3.Transaction.from(transactionBuffer);
+
+                // Solicitar assinatura
+                const signedTransaction = await window.solana.signTransaction(transaction);
+                log('✅ Transação assinada pelo usuário');
+
+                // 3. Enviar transação assinada
+                log('📤 Enviando transação assinada...');
+                updateInvestmentStatus('Enviando transação assinada...', 'info');
+
+                const processResponse = await fetch('http://localhost:3001/api/investment/process-signed', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        transaction: btoa(String.fromCharCode(...signedTransaction.serialize())),
+                        description: result.data.description || `Investimento na pool SOL/USDC`
+                    }),
+                });
+
+                const processResult = await processResponse.json();
+                log(`Process response: ${JSON.stringify(processResult)}`);
+
+                if (!processResult.success) {
+                    throw new Error(processResult.error || 'Falha ao processar transação');
+                }
+
+                log(`✅ Investimento executado! Signature: ${processResult.data.signature}`);
+                updateInvestmentStatus(`Investimento executado com sucesso! Signature: ${processResult.data.signature}`, 'success');
+
+                // Atualizar saldo
+                setTimeout(updateBalance, 2000);
+
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+                log(`❌ Erro no investimento: ${errorMessage}`);
+                updateInvestmentStatus(`Erro: ${errorMessage}`, 'error');
+                console.error('Erro no investimento:', error);
+            }
+        }
+
+        // Auto-verificar quando a página carrega
+        window.addEventListener('load', () => {
+            log('Página carregada');
+            
+            if (window.solana && window.solana.isPhantom) {
+                log('✅ Phantom detectado');
+                updateStatus('Phantom detectado. Clique para conectar.', 'success');
+                
+                // Verificar se já está conectado
+                if (window.solana.isConnected) {
+                    connectedWallet = window.solana.publicKey.toString();
+                    log('✅ Já estava conectado');
+                    updateStatus('Já conectado!', 'success');
+                    
+                    document.getElementById('walletAddress').textContent = 
+                        connectedWallet.slice(0, 4) + '...' + connectedWallet.slice(-4);
+                    document.getElementById('walletInfo').classList.remove('hidden');
+                    
+                    const investBtn = document.getElementById('investBtn');
+                    investBtn.disabled = false;
+                    investBtn.textContent = 'Investir na Pool';
+                    
+                    updateBalance();
+                }
+            } else {
+                log('❌ Phantom não encontrado');
+                updateStatus('Phantom não encontrado. Instale em https://phantom.app', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

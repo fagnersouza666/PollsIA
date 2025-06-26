@@ -1,4 +1,4 @@
-import { Connection, PublicKey, Keypair } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, SystemProgram, VersionedTransaction, TransactionMessage } from '@solana/web3.js';
 import { config } from '../config/env';
 
 export interface InvestmentRequest {
@@ -10,6 +10,11 @@ export interface InvestmentRequest {
     slippage?: number;
 }
 
+export interface TransactionRequest {
+    transaction: string; // Transação serializada em base64
+    description: string;
+}
+
 export interface InvestmentResult {
     success: boolean;
     signature?: string;
@@ -17,50 +22,39 @@ export interface InvestmentResult {
     tokenAAmount?: number;
     tokenBAmount?: number;
     actualSolSpent?: number;
+    requiresSignature?: boolean;
+    transactionData?: string; // Transação serializada para assinatura no frontend
+    description?: string;
 }
 
 export class InvestmentService {
     private connection: Connection;
-    private wallet: Keypair | null = null;
 
     constructor() {
         this.connection = new Connection(config.SOLANA_RPC_URL, 'confirmed');
-        this.initializeWallet();
-    }
-
-    private async initializeWallet() {
-        try {
-            // Verificar se temos chave privada configurada
-            if (!config.SOLANA_PRIVATE_KEY) {
-                console.warn('SOLANA_PRIVATE_KEY não configurada - investimentos reais desabilitados');
-                return;
-            }
-
-            // Converter chave privada para Keypair
-            const privateKeyBytes = JSON.parse(config.SOLANA_PRIVATE_KEY);
-            this.wallet = Keypair.fromSecretKey(new Uint8Array(privateKeyBytes));
-
-            console.log('✅ Wallet inicializada para investimentos reais');
-        } catch (error) {
-            console.error('❌ Erro ao inicializar wallet:', error);
-        }
+        console.log('✅ InvestmentService inicializado - usando assinatura via Phantom');
     }
 
     async investInPool(request: InvestmentRequest): Promise<InvestmentResult> {
-        if (!this.wallet) {
-            return {
-                success: false,
-                error: 'Serviço de investimento não configurado. Configure SOLANA_PRIVATE_KEY.'
-            };
-        }
-
         try {
-            console.log('🔄 Iniciando investimento real na pool:', {
+            console.log('🔄 Preparando transação de investimento:', {
                 poolId: request.poolId,
+                userPublicKey: request.userPublicKey,
                 solAmount: request.solAmount,
                 tokenA: request.tokenA,
                 tokenB: request.tokenB
             });
+
+            // Validar chave pública do usuário
+            let userPublicKey: PublicKey;
+            try {
+                userPublicKey = new PublicKey(request.userPublicKey);
+            } catch (error) {
+                return {
+                    success: false,
+                    error: 'Chave pública do usuário inválida'
+                };
+            }
 
             // Validar entrada
             if (request.solAmount <= 0) {
@@ -70,47 +64,32 @@ export class InvestmentService {
                 };
             }
 
-            // Converter SOL para lamports (1 SOL = 1,000,000,000 lamports)
-            const lamports = Math.floor(request.solAmount * 1e9);
-
-            // Buscar o pool no Raydium
-            const poolInfo = await this.getPoolInfo(request.poolId);
-            if (!poolInfo) {
+            // Verificar saldo do usuário
+            const balance = await this.getSolBalance(request.userPublicKey);
+            if (balance < request.solAmount) {
                 return {
                     success: false,
-                    error: 'Pool não encontrada no Raydium'
+                    error: `Saldo insuficiente. Saldo: ${balance.toFixed(4)} SOL, Necessário: ${request.solAmount} SOL`
                 };
             }
 
-            // Executar swap SOL para tokens usando Jupiter/Raydium
-            const swapResult = await this.executeSwapToPool(
-                lamports,
-                poolInfo.tokenAMint,
-                poolInfo.tokenBMint,
+            // Criar transação de investimento para assinatura no frontend
+            const transactionResult = await this.createInvestmentTransaction(
+                userPublicKey,
+                request.poolId,
+                request.solAmount,
+                request.tokenA,
+                request.tokenB,
                 request.slippage || 0.5
             );
 
-            if (!swapResult.success) {
-                return {
-                    success: false,
-                    error: swapResult.error || 'Falha no swap de tokens'
-                };
-            }
-
-            // Adicionar liquidez na pool do Raydium
-            const liquidityResult = await this.addLiquidityToPool(
-                poolInfo,
-                swapResult.tokenAAmount!,
-                swapResult.tokenBAmount!
-            );
-
-            return liquidityResult;
+            return transactionResult;
 
         } catch (error) {
-            console.error('❌ Erro durante investimento:', error);
+            console.error('❌ Erro durante preparação do investimento:', error);
             return {
                 success: false,
-                error: `Erro durante investimento: ${(error as Error).message}`
+                error: `Erro durante preparação: ${(error as Error).message}`
             };
         }
     }
@@ -131,83 +110,117 @@ export class InvestmentService {
         }
     }
 
-    private async executeSwapToPool(
-        solLamports: number,
-        tokenAMint: string,
-        tokenBMint: string,
+    private async createInvestmentTransaction(
+        userPublicKey: PublicKey,
+        poolId: string,
+        solAmount: number,
+        tokenA: string,
+        tokenB: string,
         slippage: number
     ): Promise<InvestmentResult> {
         try {
-            if (!this.wallet) {
-                throw new Error('Wallet não inicializada');
-            }
+            console.log('🔄 Criando transação para assinatura no Phantom');
+            
+            // Converter SOL para lamports
+            const lamports = Math.floor(solAmount * 1e9);
+            
+            // Obter blockhash recente
+            const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
+            
+            // Por enquanto, criar uma transação simples de transferência como exemplo
+            // Em produção, seria uma instrução complexa do Raydium
+            const transaction = new Transaction({
+                feePayer: userPublicKey,
+                blockhash,
+                lastValidBlockHeight
+            });
 
-            // Calcular valores para split 50/50
-            const halfSol = Math.floor(solLamports / 2);
+            // Adicionar instrução de exemplo (em produção seria instrução do Raydium)
+            // Por enquanto, vamos criar uma transação que precisa ser assinada
+            transaction.add(
+                SystemProgram.transfer({
+                    fromPubkey: userPublicKey,
+                    toPubkey: userPublicKey, // Auto-transferência como exemplo
+                    lamports: 1 // Valor mínimo para teste
+                })
+            );
 
-            // Por enquanto, vamos simular o swap enquanto não temos integração completa
-            // Em produção, aqui seria usado o Jupiter ou método específico do Raydium
-            const tokenAAmount = halfSol / 1e9; // Converter lamports para SOL
-            const tokenBAmount = halfSol / 1e9; // Simplificado
-            const signatureA = 'simulate_swap_' + Date.now();
+            // Serializar transação para envio ao frontend
+            const serializedTransaction = transaction.serialize({
+                requireAllSignatures: false,
+                verifySignatures: false
+            }).toString('base64');
+
+            console.log('✅ Transação criada e serializada para assinatura');
 
             return {
                 success: true,
-                signature: signatureA,
-                tokenAAmount,
-                tokenBAmount,
-                actualSolSpent: solLamports / 1e9
+                requiresSignature: true,
+                transactionData: serializedTransaction,
+                description: `Investimento de ${solAmount} SOL na pool ${tokenA}/${tokenB}`,
+                tokenAAmount: solAmount / 2, // Estimativa
+                tokenBAmount: solAmount / 2, // Estimativa
+                actualSolSpent: solAmount
             };
 
         } catch (error) {
-            console.error('Erro no swap:', error);
+            console.error('Erro ao criar transação:', error);
             return {
                 success: false,
-                error: `Erro no swap: ${(error as Error).message}`
+                error: `Erro ao criar transação: ${(error as Error).message}`
             };
         }
     }
 
-    private async addLiquidityToPool(
-        poolInfo: any,
-        tokenAAmount: number,
-        tokenBAmount: number
-    ): Promise<InvestmentResult> {
+    async processSignedTransaction(signedTransactionData: string): Promise<InvestmentResult> {
         try {
-            if (!this.wallet) {
-                throw new Error('Wallet não inicializada');
+            console.log('🔄 Processando transação assinada');
+            
+            // Deserializar transação assinada
+            const transactionBuffer = Buffer.from(signedTransactionData, 'base64');
+            const transaction = Transaction.from(transactionBuffer);
+            
+            // Enviar transação para a blockchain
+            const signature = await this.connection.sendRawTransaction(
+                transaction.serialize(),
+                {
+                    skipPreflight: false,
+                    preflightCommitment: 'confirmed'
+                }
+            );
+            
+            console.log('📤 Transação enviada:', signature);
+            
+            // Aguardar confirmação
+            const confirmation = await this.connection.confirmTransaction(
+                signature,
+                'confirmed'
+            );
+            
+            if (confirmation.value.err) {
+                throw new Error(`Transação falhou: ${confirmation.value.err}`);
             }
-
-            // Por enquanto, retornar sucesso simulado
-            // Na implementação real, seria usado o método específico do Raydium
-            console.log('📊 Adicionando liquidez à pool:', {
-                poolId: poolInfo.poolId,
-                tokenAAmount,
-                tokenBAmount
-            });
-
-            // Aqui seria implementada a lógica específica do Raydium para adicionar liquidez
-            // Por exemplo, usando instruções específicas do programa Raydium
-
+            
+            console.log('✅ Transação confirmada:', signature);
+            
             return {
                 success: true,
-                signature: 'simulate_liquidity_add_' + Date.now(),
-                tokenAAmount,
-                tokenBAmount,
-                actualSolSpent: (tokenAAmount + tokenBAmount) // Simplificado
+                signature,
+                actualSolSpent: 0.001 // Exemplo, em produção seria calculado
             };
-
+            
         } catch (error) {
-            console.error('Erro ao adicionar liquidez:', error);
+            console.error('❌ Erro ao processar transação assinada:', error);
             return {
                 success: false,
-                error: `Erro ao adicionar liquidez: ${(error as Error).message}`
+                error: `Erro ao processar transação: ${(error as Error).message}`
             };
         }
     }
 
     isConfigured(): boolean {
-        return this.wallet !== null;
+        // Agora o serviço sempre está configurado, pois usa assinatura via Phantom
+        return true;
     }
 
     async getSolBalance(publicKey: string): Promise<number> {
