@@ -28,9 +28,10 @@
     "@solana/rpc": "^2.0.0-preview.4",
     "@solana/rpc-subscriptions": "^2.0.0-preview.4",
     "@solana/signers": "^2.0.0-preview.4",
+    "@solana/spl-token": "^0.4.13",
     "@solana/transaction-messages": "^2.0.0-preview.4",
     "@solana/transactions": "^2.0.0-preview.4",
-    "@solana/web3.js": "^2.0.0-preview.4",
+    "@solana/web3.js": "^1.95.2",
     "@supabase/supabase-js": "^2.50.0",
     "axios": "^1.6.5",
     "bullmq": "^5.1.9",
@@ -38,7 +39,6 @@
     "fastify": "^4.25.2",
     "prisma": "^5.8.1",
     "redis": "^4.6.12",
-    "solana-agent-kit": "^1.1.0",
     "ws": "^8.15.1",
     "zod": "^3.22.4"
   },
@@ -52,5 +52,8 @@
     "ts-jest": "^29.1.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
+  },
+  "resolutions": {
+    "@solana/web3.js": "^1.95.2"
   }
 }

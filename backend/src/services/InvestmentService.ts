@@ -1,4 +1,4 @@
-import { SolanaAgentKit } from 'solana-agent-kit';
+import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { config } from '../config/env';
 
 export interface InvestmentRequest {
@@ -20,13 +20,15 @@ export interface InvestmentResult {
 }
 
 export class InvestmentService {
-    private agent: SolanaAgentKit | null = null;
+    private connection: Connection;
+    private wallet: Keypair | null = null;
 
     constructor() {
-        this.initializeAgent();
+        this.connection = new Connection(config.SOLANA_RPC_URL, 'confirmed');
+        this.initializeWallet();
     }
 
-    private async initializeAgent() {
+    private async initializeWallet() {
         try {
             // Verificar se temos chave privada configurada
             if (!config.SOLANA_PRIVATE_KEY) {
@@ -34,20 +36,18 @@ export class InvestmentService {
                 return;
             }
 
-            this.agent = new SolanaAgentKit(
-                config.SOLANA_PRIVATE_KEY!,
-                config.RPC_URL || config.SOLANA_RPC_URL,
-                'dummy-openai-key' // OPENAI_API_KEY é necessário mas não usado neste contexto
-            );
+            // Converter chave privada para Keypair
+            const privateKeyBytes = JSON.parse(config.SOLANA_PRIVATE_KEY);
+            this.wallet = Keypair.fromSecretKey(new Uint8Array(privateKeyBytes));
 
-            console.log('✅ Solana Agent Kit inicializado para investimentos reais');
+            console.log('✅ Wallet inicializada para investimentos reais');
         } catch (error) {
-            console.error('❌ Erro ao inicializar Solana Agent Kit:', error);
+            console.error('❌ Erro ao inicializar wallet:', error);
         }
     }
 
     async investInPool(request: InvestmentRequest): Promise<InvestmentResult> {
-        if (!this.agent) {
+        if (!this.wallet) {
             return {
                 success: false,
                 error: 'Serviço de investimento não configurado. Configure SOLANA_PRIVATE_KEY.'
@@ -138,8 +138,8 @@ export class InvestmentService {
         slippage: number
     ): Promise<InvestmentResult> {
         try {
-            if (!this.agent) {
-                throw new Error('Agent não inicializado');
+            if (!this.wallet) {
+                throw new Error('Wallet não inicializada');
             }
 
             // Calcular valores para split 50/50
@@ -174,8 +174,8 @@ export class InvestmentService {
         tokenBAmount: number
     ): Promise<InvestmentResult> {
         try {
-            if (!this.agent) {
-                throw new Error('Agent não inicializado');
+            if (!this.wallet) {
+                throw new Error('Wallet não inicializada');
             }
 
             // Por enquanto, retornar sucesso simulado
@@ -206,21 +206,15 @@ export class InvestmentService {
         }
     }
 
-    // Método para verificar se o serviço está configurado
     isConfigured(): boolean {
-        return this.agent !== null;
+        return this.wallet !== null;
     }
 
-    // Método para obter saldo de SOL
     async getSolBalance(publicKey: string): Promise<number> {
         try {
-            if (!this.agent) {
-                throw new Error('Agent não configurado');
-            }
-
-            // Aqui seria implementado usando o agent
-            // Por enquanto retornar 0 como fallback
-            return 0;
+            const pubkey = new PublicKey(publicKey);
+            const balance = await this.connection.getBalance(pubkey);
+            return balance / 1e9; // Converter lamports para SOL
         } catch (error) {
             console.error('Erro ao obter saldo SOL:', error);
             return 0;

@@ -1,6 +1,5 @@
-import { createSolanaRpc } from '@solana/rpc';
-import { address } from '@solana/addresses';
-import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { config } from '../config/env';
 import { Portfolio, Position, PerformanceData, WalletToken } from '../types/wallet';
 import { connectionPool } from '../utils/ConnectionPool';
@@ -8,7 +7,7 @@ import { walletExecutor } from '../utils/ParallelExecutor';
 import { redisCache } from '../utils/RedisCache';
 
 export class WalletService {
-    private rpc: ReturnType<typeof createSolanaRpc>;
+    private connection: Connection;
     private tokenPrices: Record<string, number> = {};
     private lastPriceUpdate = 0;
     private readonly PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
@@ -35,7 +34,7 @@ export class WalletService {
     private activeRequests = new Map<string, Promise<any>>();
 
     constructor() {
-        this.rpc = createSolanaRpc(config.SOLANA_RPC_URL);
+        this.connection = new Connection(config.SOLANA_RPC_URL, 'confirmed');
     }
 
     private async checkCircuitBreaker(): Promise<void> {
@@ -137,7 +136,7 @@ export class WalletService {
 
     async connectWallet(publicKey: string, _signature: string) {
         try {
-            const pubkeyAddress = address(publicKey);
+            const pubkeyAddress = new PublicKey(publicKey);
             console.log('Conectando carteira:', publicKey);
 
             // Verificar cache primeiro
@@ -149,11 +148,9 @@ export class WalletService {
             await this.throttleRpcCall();
 
             // Verificar se a carteira existe na blockchain
-            const accountInfo = await this.rpc.getAccountInfo(pubkeyAddress as any, {
-                commitment: 'confirmed'
-            }).send();
+            const accountInfo = await this.connection.getAccountInfo(pubkeyAddress);
 
-            if (!accountInfo.value) {
+            if (!accountInfo) {
                 throw new Error('Carteira não encontrada na blockchain');
             }
 
@@ -215,7 +212,7 @@ export class WalletService {
                 if (performanceHistory.length > 1) {
                     const currentVal = this.validateNumber(performanceHistory[performanceHistory.length - 1].value);
                     const previousVal = this.validateNumber(performanceHistory[performanceHistory.length - 2].value);
-                    
+
                     if (previousVal > 0) {
                         change24h = ((currentVal - previousVal) / previousVal) * 100;
                         change24h = this.validateNumber(change24h);
@@ -251,13 +248,13 @@ export class WalletService {
 
             await this.throttleRpcCall();
 
-            const publicKeyAddress = address(publicKey);
+            const pubkeyAddress = new PublicKey(publicKey);
 
-            const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
-                publicKeyAddress as any,
-                { programId: TOKEN_PROGRAM_ADDRESS as any },
+            const tokenAccounts = await this.connection.getTokenAccountsByOwner(
+                pubkeyAddress,
+                { programId: TOKEN_PROGRAM_ID },
                 { encoding: 'jsonParsed' }
-            ).send();
+            );
 
             console.log(`\n🔍 CARTEIRA: ${publicKey}`);
             console.log(`📊 TOTAL DE TOKEN ACCOUNTS ENCONTRADOS: ${tokenAccounts.value.length}`);
@@ -305,13 +302,11 @@ export class WalletService {
 
         try {
             await this.throttleRpcCall();
-            const pubkeyAddress = address(publicKey);
-            const balanceResponse = await this.rpc.getBalance(pubkeyAddress as any, {
-                commitment: 'confirmed'
-            }).send();
+            const pubkeyAddress = new PublicKey(publicKey);
+            const balanceResponse = await this.connection.getBalance(pubkeyAddress);
 
             // Converter BigInt para number corretamente
-            const balance = Number(balanceResponse.value) / 1e9; // Converter lamports para SOL
+            const balance = Number(balanceResponse) / 1e9; // Converter lamports para SOL
 
             this.setCachedWalletData(publicKey, 'balance', balance);
             return balance;
@@ -325,13 +320,13 @@ export class WalletService {
         try {
             await this.throttleRpcCall();
 
-            const publicKeyAddress = address(publicKey);
+            const pubkeyAddress = new PublicKey(publicKey);
 
-            const tokenAccounts = await this.rpc.getTokenAccountsByOwner(
-                publicKeyAddress as any,
-                { programId: TOKEN_PROGRAM_ADDRESS as any },
+            const tokenAccounts = await this.connection.getTokenAccountsByOwner(
+                pubkeyAddress,
+                { programId: TOKEN_PROGRAM_ID },
                 { encoding: 'jsonParsed' }
-            ).send();
+            );
 
             console.log(`\n🔍 CARTEIRA: ${publicKey}`);
             console.log(`📊 TOTAL DE TOKEN ACCOUNTS ENCONTRADOS: ${tokenAccounts.value.length}`);
@@ -1088,10 +1083,10 @@ export class WalletService {
                 };
 
                 this.lastPriceUpdate = now;
-                
+
                 // NOVA INTEGRAÇÃO REDIS: Cachear preços atualizados
                 await redisCache.cacheTokenPrices(this.tokenPrices, 5); // Cache por 5 minutos
-                
+
                 console.log('✅ Preços REAIS atualizados:', this.tokenPrices);
             }
         } catch (error) {
