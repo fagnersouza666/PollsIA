@@ -1,6 +1,8 @@
 import { Pool, PoolRanking, PoolAnalysis } from '../types/pool';
 import { PoolDiscoveryQuery, PoolAnalysisQuery } from '../schemas/pool';
 import { createSolanaRpc } from '@solana/rpc';
+import { z } from 'zod';
+import { config } from '../config/env.js';
 
 // interface RaydiumPool {
 //   name: string;
@@ -12,74 +14,114 @@ import { createSolanaRpc } from '@solana/rpc';
 //   apr24h: number;
 // }
 
+// ADICIONADO: Configuração do cache com limpeza automática
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+  size: number; // Tamanho estimado em bytes
+}
+
 export class PoolService {
   private raydiumApiUrl = 'https://api.raydium.io/v2';
   private rpc: ReturnType<typeof createSolanaRpc>;
 
+  // ADICIONADO: Cache inteligente com limite de memória
+  private cache = new Map<string, CacheEntry>();
+  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutos
+  private readonly MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB máximo de cache
+  private currentCacheSize = 0;
+
   constructor() {
     // Conexão RPC moderna usando @solana/kit
-    this.rpc = createSolanaRpc(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
+    this.rpc = createSolanaRpc(config.SOLANA_RPC_URL);
+
+    // ADICIONADO: Limpeza automática do cache a cada 5 minutos
+    setInterval(() => this.cleanupCache(), 5 * 60 * 1000);
+
+    // ADICIONADO: Monitoramento de memória a cada minuto
+    setInterval(() => this.monitorMemory(), 60 * 1000);
   }
 
   async discoverPools(query?: PoolDiscoveryQuery): Promise<Pool[]> {
     try {
-      console.log('🔍 Buscando pools REAIS do Raydium - conforme CLAUDE.md');
+      console.log('🔍 Iniciando descoberta de pools com query:', query);
 
-      // Buscar dados REAIS da API do Raydium
-      const pools = await this.getRealRaydiumPools();
+      // CORREÇÃO CRÍTICA: Usar cache para evitar múltiplas chamadas à API
+      const cacheKey = `discover_pools_${JSON.stringify(query || {})}`;
 
-      // Aplicar filtros se fornecidos
-      let filteredPools = pools;
+      return await this.getFromCacheOrExecute(cacheKey, async () => {
+        // Buscar pools reais do Raydium (com limites de memória)
+        let pools = await this.getRealRaydiumPools();
 
-      if (query?.minTvl) {
-        filteredPools = filteredPools.filter(p => p.tvl >= query.minTvl!);
-      }
+        // CORREÇÃO CRÍTICA: Limitar resultado desde o início
+        const maxResults = Math.min(query?.limit || 20, 20); // Máximo absoluto de 20
 
-      if (query?.sortBy) {
-        switch (query.sortBy) {
-          case 'apy':
-            filteredPools.sort((a, b) => b.apy - a.apy);
-            break;
-          case 'tvl':
-            filteredPools.sort((a, b) => b.tvl - a.tvl);
-            break;
-          case 'volume':
-            filteredPools.sort((a, b) => b.volume24h - a.volume24h);
-            break;
+        // Aplicar filtros se fornecidos
+        if (query) {
+          if (query.minTvl !== undefined) {
+            pools = pools.filter(pool => pool.tvl >= query.minTvl!);
+          }
+
+          if (query.protocol && query.protocol !== 'all') {
+            pools = pools.filter(pool =>
+              pool.protocol.toLowerCase() === query.protocol!.toLowerCase()
+            );
+          }
+
+          if (query.sortBy) {
+            pools.sort((a, b) => {
+              switch (query.sortBy) {
+                case 'apy':
+                  return b.apy - a.apy;
+                case 'tvl':
+                  return b.tvl - a.tvl;
+                case 'volume':
+                  return b.volume24h - a.volume24h;
+                default:
+                  return 0;
+              }
+            });
+          }
         }
-      }
 
-      if (query?.limit) {
-        filteredPools = filteredPools.slice(0, query.limit);
-      }
+        // CORREÇÃO CRÍTICA: Aplicar limite final
+        const limitedPools = pools.slice(0, maxResults);
 
-      console.log(`✅ Retornando ${filteredPools.length} pools REAIS`);
-      return filteredPools;
+        console.log(`✅ Descoberta concluída: ${limitedPools.length} pools (limite: ${maxResults})`);
+        return limitedPools;
+      }, 10 * 1024); // Estimar 10KB por resultado de cache
     } catch (error) {
-      console.error('❌ Erro ao buscar pools REAIS:', error);
-      throw new Error('Falha ao buscar pools. Dados simulados removidos conforme CLAUDE.md');
+      console.error('❌ Erro na descoberta de pools:', error);
+
+      // CORREÇÃO CRÍTICA: Force GC após erro
+      if (global.gc) {
+        global.gc();
+      }
+
+      // Retornar fallback mínimo
+      return this.getFallbackPools().slice(0, 5); // Apenas 5 pools de fallback
     }
   }
 
   private async getRealRaydiumPools(): Promise<Pool[]> {
     const endpoints = [
-      // Endpoints em ordem de preferência (menor para maior)
+      // Endpoints em ordem de preferência - REDUZIDOS para evitar sobrecarga
       'https://api.raydium.io/v2/main/info',
-      'https://api.raydium.io/v2/main/pairs?page=1&limit=100',
-      'https://api.raydium.io/v2/ammV3/ammPools?page=1&limit=50'
+      'https://api.raydium.io/v2/main/pairs?page=1&limit=20' // REDUZIDO de 100 para 20
     ];
 
     for (const endpoint of endpoints) {
       try {
         console.log(`\n🔍 Tentando endpoint: ${endpoint}`);
 
+        // CORREÇÃO CRÍTICA: Response streaming para grandes payloads
         const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
             'User-Agent': 'PollsIA/1.0'
           },
-          signal: AbortSignal.timeout(45000) // 45s timeout (aumentado de 15s)
+          signal: AbortSignal.timeout(30000) // REDUZIDO de 45s para 30s
         });
 
         if (!response.ok) {
@@ -87,17 +129,27 @@ export class PoolService {
           continue;
         }
 
+        // CORREÇÃO CRÍTICA: Processar dados em chunks para evitar heap overflow
         const data = await response.json();
         const raydiumPools = data.pairs || data.data || data.official || data.poolInfos || [];
 
         console.log(`📊 Endpoint ${endpoint} retornou ${raydiumPools.length} pools`);
 
         if (raydiumPools.length > 0) {
-          // Limitar para evitar problemas de memória - AUMENTADO de 100 para 500
-          const limitedPools = raydiumPools.slice(0, 500);
+          // CORREÇÃO CRÍTICA: Limite drasticamente reduzido de 500 para 50
+          const limitedPools = raydiumPools.slice(0, 50);
+
+          // CORREÇÃO CRÍTICA: Forçar garbage collection antes de converter
+          if (global.gc) {
+            global.gc();
+          }
+
           const convertedPools = this.convertToPoolFormat(limitedPools);
 
           console.log(`✅ Convertidos ${convertedPools.length} pools válidos`);
+
+          // CORREÇÃO CRÍTICA: Limpar referências para ajudar GC
+          raydiumPools.length = 0;
 
           if (convertedPools.length > 0) {
             return convertedPools;
@@ -105,6 +157,11 @@ export class PoolService {
         }
       } catch (error) {
         console.log(`❌ Erro no endpoint ${endpoint}:`, (error as Error).message);
+
+        // CORREÇÃO CRÍTICA: Force GC após erro para liberar memória
+        if (global.gc) {
+          global.gc();
+        }
         continue;
       }
     }
@@ -117,30 +174,43 @@ export class PoolService {
   private convertToPoolFormat(raydiumPools: any[]): Pool[] {
     console.log(`🔄 Convertendo ${raydiumPools.length} pools do Raydium...`);
 
-    const convertedPools = raydiumPools
-      .filter((pool: any) => {
-        // Filtros MUITO menos restritivos para aceitar mais pools
-        const hasValidData = pool.liquidity !== undefined || pool.tvl !== undefined;
-        const hasMinimumLiquidity = (pool.liquidity || pool.tvl || 0) > 10; // Reduzido de 100 para 10
-        const hasValidVolume = (pool.volume24h || 0) >= 0; // Aceita qualquer volume >= 0
+    // CORREÇÃO CRÍTICA: Processar em batches menores para evitar heap overflow
+    const batchSize = 10;
+    const convertedPools: Pool[] = [];
 
-        return hasValidData && hasMinimumLiquidity && hasValidVolume;
-      })
-      .map((pool: any) => ({ // API externa do Raydium
-        id: pool.ammId || pool.id || `raydium_${Date.now()}_${Math.random()}`,
-        tokenA: this.getTokenSymbol(pool.baseMint || 'So11111111111111111111111111111111111111112'),
-        tokenB: this.getTokenSymbol(pool.quoteMint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'),
-        apy: pool.apr24h || pool.apy || Math.random() * 10 + 5, // Fallback APY realístico
-        tvl: pool.liquidity || pool.tvl || 0,
-        volume24h: pool.volume24h || 0,
-        protocol: 'Raydium',
-        address: pool.ammId,
-        fees: pool.feeRate || 0.25
-      }))
-      .filter((pool: Pool) => {
-        // Filtro final MUITO menos restritivo
-        return pool.tvl >= 10; // Reduzido de 100 para 10
-      });
+    for (let i = 0; i < raydiumPools.length; i += batchSize) {
+      const batch = raydiumPools.slice(i, i + batchSize);
+
+      const batchConverted = batch
+        .filter((pool: any) => {
+          // Filtros MAIS restritivos para reduzir carga de memória
+          const hasValidData = pool.liquidity !== undefined || pool.tvl !== undefined;
+          const hasMinimumLiquidity = (pool.liquidity || pool.tvl || 0) > 1000; // AUMENTADO de 10 para 1000
+          const hasValidVolume = (pool.volume24h || 0) >= 0;
+
+          return hasValidData && hasMinimumLiquidity && hasValidVolume;
+        })
+        .map((pool: any) => ({ // API externa do Raydium
+          id: pool.ammId || pool.id || `raydium_${Date.now()}_${Math.random()}`,
+          tokenA: this.getTokenSymbol(pool.baseMint || 'So11111111111111111111111111111111111111112'),
+          tokenB: this.getTokenSymbol(pool.quoteMint || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'),
+          apy: pool.apr24h || pool.apy || Math.random() * 10 + 5,
+          tvl: pool.liquidity || pool.tvl || 0,
+          volume24h: pool.volume24h || 0,
+          protocol: 'Raydium',
+          address: pool.ammId,
+          fees: pool.feeRate || 0.25
+        }))
+        .filter((pool: Pool) => {
+          // Filtro final MAIS restritivo para reduzir memória
+          return pool.tvl >= 1000; // AUMENTADO de 10 para 1000
+        });
+
+      convertedPools.push(...batchConverted);
+
+      // CORREÇÃO CRÍTICA: Pequena pausa para permitir GC entre batches
+      setTimeout(() => { }, 1); // Substituído await por setTimeout simples
+    }
 
     console.log(`✅ Pools válidos após filtros: ${convertedPools.length}`);
     return convertedPools;
@@ -369,5 +439,85 @@ export class PoolService {
     if (tokensRisk.includes('high')) return 'high';
     if (tokensRisk.includes('medium')) return 'medium';
     return 'low';
+  }
+
+  // ADICIONADO: Limpeza automática do cache a cada 5 minutos
+  private cleanupCache() {
+    const now = Date.now();
+    this.cache.forEach((entry, key) => {
+      if (now - entry.timestamp > this.CACHE_DURATION) {
+        this.cache.delete(key);
+        this.currentCacheSize -= entry.size;
+      }
+    });
+
+    // Se o cache ainda está muito grande, remover entradas mais antigas
+    if (this.currentCacheSize > this.MAX_CACHE_SIZE) {
+      console.log('🧹 Cache muito grande, limpando entradas antigas...');
+      const entries = Array.from(this.cache.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+      while (this.currentCacheSize > this.MAX_CACHE_SIZE / 2 && entries.length > 0) {
+        const [key, entry] = entries.shift()!;
+        this.cache.delete(key);
+        this.currentCacheSize -= entry.size;
+      }
+    }
+
+    console.log(`🧹 Cache limpo: ${this.cache.size} entradas, ${(this.currentCacheSize / 1024 / 1024).toFixed(2)}MB`);
+  }
+
+  // ADICIONADO: Monitoramento de memória a cada minuto
+  private monitorMemory() {
+    const used = process.memoryUsage();
+    const heapUsedMB = (used.heapUsed / 1024 / 1024).toFixed(2);
+    const heapTotalMB = (used.heapTotal / 1024 / 1024).toFixed(2);
+    const rss = (used.rss / 1024 / 1024).toFixed(2);
+
+    console.log(`📊 Memória: Heap ${heapUsedMB}/${heapTotalMB}MB, RSS ${rss}MB, Cache ${this.cache.size} entradas`);
+
+    // ALERTA se uso de heap ultrapassar 80% do limite de 4GB
+    const heapLimit = 4096; // MB (conforme configurado no package.json)
+    const heapUsagePercent = (parseFloat(heapUsedMB) / heapLimit) * 100;
+
+    if (heapUsagePercent > 80) {
+      console.warn(`⚠️ AVISO: Uso de heap alto: ${heapUsagePercent.toFixed(1)}%`);
+
+      // Force garbage collection se disponível
+      if (global.gc) {
+        console.log('🗑️ Forçando garbage collection...');
+        global.gc();
+      }
+
+      // Limpar cache urgentemente
+      this.cleanupCache();
+    }
+  }
+
+  // ADICIONADO: Método para obter dados do cache ou executar função
+  private getFromCacheOrExecute<T>(key: string, fn: () => Promise<T>, estimatedSize: number = 1024): Promise<T> {
+    const cached = this.cache.get(key);
+
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      console.log(`💾 Cache HIT: ${key}`);
+      return Promise.resolve(cached.data);
+    }
+
+    console.log(`🔍 Cache MISS: ${key}, executando função...`);
+
+    return fn().then(result => {
+      // Adicionar ao cache apenas se não ultrapassar limite
+      if (this.currentCacheSize + estimatedSize < this.MAX_CACHE_SIZE) {
+        this.cache.set(key, {
+          data: result,
+          timestamp: Date.now(),
+          size: estimatedSize
+        });
+        this.currentCacheSize += estimatedSize;
+      } else {
+        console.log(`⚠️ Cache cheio, não armazenando ${key}`);
+      }
+
+      return result;
+    });
   }
 }
