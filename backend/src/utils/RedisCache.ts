@@ -52,8 +52,9 @@ export class RedisCache {
         await this.client.connect();
         this.connected = true;
       } catch (error) {
-        console.error('❌ Erro conectando ao Redis:', error);
+        console.warn('⚠️ Redis não disponível, continuando sem cache:', (error as Error)?.message);
         this.connected = false;
+        // Não falhar se Redis estiver indisponível
       }
     }
   }

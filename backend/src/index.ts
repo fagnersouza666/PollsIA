@@ -16,9 +16,13 @@ const fastify = Fastify({
 
 async function start() {
   try {
-    // Inicializar Redis Cache
+    // Inicializar Redis Cache (não bloquear se falhar)
     console.log('🔄 Inicializando Redis cache...');
-    await redisCache.connect();
+    try {
+      await redisCache.connect();
+    } catch (error) {
+      console.warn('⚠️ Continuando sem Redis cache');
+    }
     
     // Register error handler
     fastify.setErrorHandler(errorHandler);
