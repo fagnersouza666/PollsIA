@@ -250,36 +250,46 @@ export class WalletService {
 
             const pubkeyAddress = new PublicKey(publicKey);
 
+            // Usar configuração mais simples para evitar erros de tipo
             const tokenAccounts = await this.connection.getTokenAccountsByOwner(
                 pubkeyAddress,
-                { programId: TOKEN_PROGRAM_ID },
-                { encoding: 'jsonParsed' }
+                { programId: TOKEN_PROGRAM_ID }
             );
 
             console.log(`\n🔍 CARTEIRA: ${publicKey}`);
             console.log(`📊 TOTAL DE TOKEN ACCOUNTS ENCONTRADOS: ${tokenAccounts.value.length}`);
 
             const processedAccounts = tokenAccounts.value.map((account, index) => {
-                const accountInfo = account.account.data;
-                const parsedInfo = (accountInfo as any).parsed?.info;
+                try {
+                    const accountInfo = account.account.data;
 
-                if (parsedInfo) {
-                    const balance = this.validateNumber(Number(parsedInfo.tokenAmount?.uiAmount || 0));
-                    const decimals = this.validateNumber(parsedInfo.tokenAmount?.decimals || 0);
-                    const mint = parsedInfo.mint;
+                    // Verificar se os dados estão no formato esperado
+                    if (typeof accountInfo === 'object' && accountInfo !== null && 'parsed' in accountInfo) {
+                        const parsedInfo = (accountInfo as any).parsed?.info;
 
-                    console.log(`${index + 1}. Token: ${mint.slice(0, 8)}... Balance: ${balance}`);
+                        if (parsedInfo) {
+                            const balance = this.validateNumber(Number(parsedInfo.tokenAmount?.uiAmount || 0));
+                            const decimals = this.validateNumber(parsedInfo.tokenAmount?.decimals || 0);
+                            const mint = parsedInfo.mint;
 
-                    return {
-                        mint,
-                        balance,
-                        decimals,
-                        owner: parsedInfo.owner,
-                        rawAmount: parsedInfo.tokenAmount?.amount || '0'
-                    };
+                            console.log(`${index + 1}. Token: ${mint.slice(0, 8)}... Balance: ${balance}`);
+
+                            return {
+                                mint,
+                                balance,
+                                decimals,
+                                owner: parsedInfo.owner,
+                                rawAmount: parsedInfo.tokenAmount?.amount || '0'
+                            };
+                        }
+                    }
+
+                    console.log(`⚠️ Token account ${index + 1} com formato inesperado, pulando...`);
+                    return null;
+                } catch (error) {
+                    console.log(`⚠️ Erro ao processar token account ${index + 1}:`, (error as Error).message);
+                    return null;
                 }
-
-                return null;
             }).filter(account => account !== null);
 
             // Cache o resultado
@@ -324,8 +334,7 @@ export class WalletService {
 
             const tokenAccounts = await this.connection.getTokenAccountsByOwner(
                 pubkeyAddress,
-                { programId: TOKEN_PROGRAM_ID },
-                { encoding: 'jsonParsed' }
+                { programId: TOKEN_PROGRAM_ID }
             );
 
             console.log(`\n🔍 CARTEIRA: ${publicKey}`);
@@ -1461,8 +1470,7 @@ export class WalletService {
                             method: 'getTokenAccountsByOwner',
                             params: [
                                 publicKey,
-                                { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' }, // SPL Token Program
-                                { encoding: 'jsonParsed' }
+                                { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' } // SPL Token Program
                             ]
                         }),
                         signal: AbortSignal.timeout(20000) // 20s timeout
