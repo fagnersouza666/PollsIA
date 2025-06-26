@@ -4,12 +4,12 @@
   "description": "Backend API for PollsIA - Automated liquidity pool management on Solana",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "node --max-old-space-size=4096 --expose-gc ./node_modules/.bin/tsx watch src/index.ts",
+    "dev": "node --max-old-space-size=4096 --expose-gc --gc-interval=100 --optimize-for-size ./node_modules/.bin/tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node --max-old-space-size=4096 --expose-gc dist/index.js",
-    "test": "node --max-old-space-size=2048 --expose-gc ./node_modules/.bin/jest",
-    "test:coverage": "node --max-old-space-size=2048 --expose-gc ./node_modules/.bin/jest --coverage",
-    "test:watch": "node --max-old-space-size=2048 --expose-gc ./node_modules/.bin/jest --watch",
+    "start": "node --max-old-space-size=4096 --expose-gc --gc-interval=100 --optimize-for-size --use-largepages=on dist/index.js",
+    "test": "node --max-old-space-size=2048 --expose-gc --gc-interval=50 ./node_modules/.bin/jest",
+    "test:coverage": "node --max-old-space-size=2048 --expose-gc --gc-interval=50 ./node_modules/.bin/jest --coverage",
+    "test:watch": "node --max-old-space-size=2048 --expose-gc --gc-interval=50 ./node_modules/.bin/jest --watch",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },

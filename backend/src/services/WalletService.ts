@@ -3,7 +3,9 @@ import { address } from '@solana/addresses';
 import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
 import { config } from '../config/env';
 import { Portfolio, Position, PerformanceData, WalletToken } from '../types/wallet';
-import axios from 'axios';
+import { connectionPool } from '../utils/ConnectionPool';
+import { walletExecutor } from '../utils/ParallelExecutor';
+import { redisCache } from '../utils/RedisCache';
 
 export class WalletService {
     private rpc: ReturnType<typeof createSolanaRpc>;
@@ -504,12 +506,11 @@ export class WalletService {
             }
 
             console.log('🔍 Usando Helius API para histórico de transações...');
-            const response = await axios.get(`https://api.helius.xyz/v0/addresses/${publicKey}/transactions`, {
-                timeout: 10000,
-                headers: {
-                    'Authorization': `Bearer ${config.HELIUS_API_KEY}`
-                }
-            });
+            const response = await connectionPool.helius(
+                `/v0/addresses/${publicKey}/transactions`,
+                null,
+                config.HELIUS_API_KEY
+            );
 
             const history: PerformanceData[] = [];
             const transactions = response.data?.slice(0, 30) || [];
@@ -834,9 +835,9 @@ export class WalletService {
             console.log('🔍 ESTRATÉGIA 3: Consultando DexScreener...');
 
             // DexScreener tem API para buscar posições de um wallet
-            const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/solana/${publicKey}`, {
-                timeout: 10000
-            });
+            const response = await connectionPool.dexscreener(
+                `/dex/tokens/solana/${publicKey}`
+            );
 
             const positions: Position[] = [];
             const pairs = response.data?.pairs || [];
@@ -874,15 +875,11 @@ export class WalletService {
             }
 
             console.log('🔍 Usando Birdeye API para posições LP...');
-            const response = await axios.get(`https://public-api.birdeye.so/v1/wallet/portfolio`, {
-                params: {
-                    wallet: publicKey
-                },
-                headers: {
-                    'X-API-KEY': config.BIRDEYE_API_KEY
-                },
-                timeout: 10000
-            });
+            const response = await connectionPool.birdeye(
+                '/v1/wallet/portfolio',
+                { wallet: publicKey },
+                config.BIRDEYE_API_KEY
+            );
 
             const positions: Position[] = [];
             const data = response.data?.data || {};
@@ -916,10 +913,7 @@ export class WalletService {
             console.log('🔍 ESTRATÉGIA 5: Usando Jupiter API em vez de Solscan...');
 
             // Usar Jupiter API para obter informações de tokens
-            const response = await axios.get(`https://quote-api.jup.ag/v6/tokens`, {
-                timeout: 10000,
-                headers: { 'User-Agent': 'PollsIA/1.0' }
-            });
+            const response = await connectionPool.jupiter('/tokens');
 
             const allTokens = response.data || {};
             const positions: Position[] = [];
@@ -971,10 +965,7 @@ export class WalletService {
     private async getTokenMetadata(mint: string): Promise<any> {
         try {
             // Usar Jupiter API em vez de Solscan
-            const response = await axios.get(`https://quote-api.jup.ag/v6/tokens`, {
-                timeout: 5000,
-                headers: { 'User-Agent': 'PollsIA/1.0' }
-            });
+            const response = await connectionPool.jupiter('/tokens');
 
             const tokens = response.data || {};
             return tokens[mint] || null;
@@ -1043,13 +1034,18 @@ export class WalletService {
         }
 
         try {
+            // NOVA INTEGRAÇÃO REDIS: Verificar cache primeiro
+            const cachedPrices = await redisCache.getCachedTokenPrices();
+            if (cachedPrices) {
+                this.tokenPrices = cachedPrices;
+                this.lastPriceUpdate = now;
+                return;
+            }
+
             // Usar CoinGecko para preços REAIS
-            const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
-                params: {
-                    ids: 'solana,usd-coin,tether,raydium,orca,jupiter-exchange-solana',
-                    vs_currencies: 'usd'
-                },
-                timeout: 10000
+            const response = await connectionPool.coingecko('/simple/price', {
+                ids: 'solana,usd-coin,tether,raydium,orca,jupiter-exchange-solana',
+                vs_currencies: 'usd'
             });
 
             if (response.data) {
@@ -1063,6 +1059,10 @@ export class WalletService {
                 };
 
                 this.lastPriceUpdate = now;
+                
+                // NOVA INTEGRAÇÃO REDIS: Cachear preços atualizados
+                await redisCache.cacheTokenPrices(this.tokenPrices, 5); // Cache por 5 minutos
+                
                 console.log('✅ Preços REAIS atualizados:', this.tokenPrices);
             }
         } catch (error) {

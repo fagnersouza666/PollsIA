@@ -8,6 +8,7 @@ import { poolRoutes } from './routes/pools';
 import { walletRoutes } from './routes/wallet';
 import { analyticsRoutes } from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
+import { redisCache } from './utils/RedisCache';
 
 const fastify = Fastify({
   logger: true
@@ -15,6 +16,10 @@ const fastify = Fastify({
 
 async function start() {
   try {
+    // Inicializar Redis Cache
+    console.log('🔄 Inicializando Redis cache...');
+    await redisCache.connect();
+    
     // Register error handler
     fastify.setErrorHandler(errorHandler);
 

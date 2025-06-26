@@ -2,7 +2,9 @@ import { Pool, PoolRanking, PoolAnalysis } from '../types/pool';
 import { PoolDiscoveryQuery, PoolAnalysisQuery } from '../schemas/pool';
 import { createSolanaRpc } from '@solana/rpc';
 import { z } from 'zod';
-import { config } from '../config/env.js';
+import { config } from '../config/env';
+import { connectionPool } from '../utils/ConnectionPool';
+import { redisCache } from '../utils/RedisCache';
 
 // interface RaydiumPool {
 //   name: string;
@@ -46,10 +48,18 @@ export class PoolService {
     try {
       console.log('🔍 Iniciando descoberta de pools com query:', query);
 
-      // CORREÇÃO CRÍTICA: Usar cache para evitar múltiplas chamadas à API
-      const cacheKey = `discover_pools_${JSON.stringify(query || {})}`;
+      // NOVA INTEGRAÇÃO REDIS: Verificar cache primeiro
+      const queryString = JSON.stringify(query || {});
+      const cachedPools = await redisCache.getCachedPoolDiscovery(queryString);
+      
+      if (cachedPools) {
+        return cachedPools;
+      }
 
-      return await this.getFromCacheOrExecute(cacheKey, async () => {
+      // CORREÇÃO CRÍTICA: Usar cache para evitar múltiplas chamadas à API
+      const cacheKey = `discover_pools_${queryString}`;
+
+      const result = await this.getFromCacheOrExecute(cacheKey, async () => {
         // Buscar pools reais do Raydium (com limites de memória)
         let pools = await this.getRealRaydiumPools();
 
@@ -90,6 +100,11 @@ export class PoolService {
         console.log(`✅ Descoberta concluída: ${limitedPools.length} pools (limite: ${maxResults})`);
         return limitedPools;
       }, 10 * 1024); // Estimar 10KB por resultado de cache
+
+      // NOVA INTEGRAÇÃO REDIS: Cachear resultado para próximas consultas
+      await redisCache.cachePoolDiscovery(queryString, result, 30); // Cache por 30 minutos
+      
+      return result;
     } catch (error) {
       console.error('❌ Erro na descoberta de pools:', error);
 
@@ -115,22 +130,8 @@ export class PoolService {
         console.log(`\n🔍 Tentando endpoint: ${endpoint}`);
 
         // CORREÇÃO CRÍTICA: Response streaming para grandes payloads
-        const response = await fetch(endpoint, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'PollsIA/1.0'
-          },
-          signal: AbortSignal.timeout(30000) // REDUZIDO de 45s para 30s
-        });
-
-        if (!response.ok) {
-          console.log(`⚠️ Endpoint ${endpoint} retornou: ${response.status}`);
-          continue;
-        }
-
-        // CORREÇÃO CRÍTICA: Processar dados em chunks para evitar heap overflow
-        const data = await response.json();
+        const url = endpoint.replace('https://api.raydium.io/v2', '');
+        const data = await connectionPool.raydium(url);
         const raydiumPools = data.pairs || data.data || data.official || data.poolInfos || [];
 
         console.log(`📊 Endpoint ${endpoint} retornou ${raydiumPools.length} pools`);
