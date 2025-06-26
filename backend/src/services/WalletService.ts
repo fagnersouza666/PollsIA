@@ -189,8 +189,9 @@ export class WalletService {
                 await this.updateTokenPrices();
 
                 // Obter saldo SOL real
-                const solBalance = await this.getBalance(publicKey);
-                const solPrice = this.tokenPrices['sol'] || 0;
+                const rawSolBalance = await this.getBalance(publicKey);
+                const solBalance = this.validateNumber(rawSolBalance);
+                const solPrice = this.validateNumber(this.tokenPrices['sol']);
 
                 // Obter token accounts reais COM rate limiting
                 const tokenAccountsData = await this.getTokenAccountsSafe(publicKey);
@@ -199,24 +200,33 @@ export class WalletService {
                 // Calcular valor dos tokens usando preços REAIS
                 for (const tokenAccount of tokenAccountsData) {
                     const tokenPrice = this.getTokenPrice(tokenAccount.mint);
-                    tokensValue += tokenAccount.balance * tokenPrice;
+                    const balance = this.validateNumber(tokenAccount.balance);
+                    const value = balance * tokenPrice;
+                    tokensValue += this.validateNumber(value);
                 }
 
-                const totalValue = (solBalance * solPrice) + tokensValue;
+                const totalValue = this.validateNumber((solBalance * solPrice) + tokensValue);
 
                 // Buscar histórico REAL de transações
                 const performanceHistory = await this.getRealPerformanceHistory(publicKey, totalValue);
 
                 // Calcular mudança 24h baseada no histórico REAL
-                const change24h = performanceHistory.length > 1
-                    ? ((performanceHistory[performanceHistory.length - 1].value - performanceHistory[performanceHistory.length - 2].value) / performanceHistory[performanceHistory.length - 2].value) * 100
-                    : 0;
+                let change24h = 0;
+                if (performanceHistory.length > 1) {
+                    const currentVal = this.validateNumber(performanceHistory[performanceHistory.length - 1].value);
+                    const previousVal = this.validateNumber(performanceHistory[performanceHistory.length - 2].value);
+                    
+                    if (previousVal > 0) {
+                        change24h = ((currentVal - previousVal) / previousVal) * 100;
+                        change24h = this.validateNumber(change24h);
+                    }
+                }
 
                 const portfolio: Portfolio = {
-                    totalValue: Number(totalValue.toFixed(2)),
-                    solBalance: Number(solBalance.toFixed(6)),
+                    totalValue: this.validateNumber(Number(totalValue.toFixed(2))),
+                    solBalance: this.validateNumber(Number(solBalance.toFixed(6))),
                     tokenAccounts: tokenAccountsData.length,
-                    change24h: Number(change24h.toFixed(2)),
+                    change24h: this.validateNumber(Number(change24h.toFixed(2))),
                     performance: performanceHistory
                 };
 
@@ -257,8 +267,8 @@ export class WalletService {
                 const parsedInfo = (accountInfo as any).parsed?.info;
 
                 if (parsedInfo) {
-                    const balance = Number(parsedInfo.tokenAmount?.uiAmount || 0);
-                    const decimals = parsedInfo.tokenAmount?.decimals || 0;
+                    const balance = this.validateNumber(Number(parsedInfo.tokenAmount?.uiAmount || 0));
+                    const decimals = this.validateNumber(parsedInfo.tokenAmount?.decimals || 0);
                     const mint = parsedInfo.mint;
 
                     console.log(`${index + 1}. Token: ${mint.slice(0, 8)}... Balance: ${balance}`);
@@ -332,8 +342,8 @@ export class WalletService {
                 const parsedInfo = (accountInfo as any).parsed?.info;
 
                 if (parsedInfo) {
-                    const balance = Number(parsedInfo.tokenAmount?.uiAmount || 0);
-                    const decimals = parsedInfo.tokenAmount?.decimals || 0;
+                    const balance = this.validateNumber(Number(parsedInfo.tokenAmount?.uiAmount || 0));
+                    const decimals = this.validateNumber(parsedInfo.tokenAmount?.decimals || 0);
                     const mint = parsedInfo.mint;
 
                     // Log detalhado de cada token
@@ -467,7 +477,16 @@ export class WalletService {
         };
 
         const priceKey = priceMap[mint];
-        return priceKey ? (this.tokenPrices[priceKey] || 0) : 0;
+        const price = priceKey ? (this.tokenPrices[priceKey] || 0) : 0;
+        return this.validateNumber(price);
+    }
+
+    // Função helper para validar e sanitizar números
+    private validateNumber(value: any, defaultValue: number = 0): number {
+        if (typeof value !== 'number' || isNaN(value) || !isFinite(value)) {
+            return defaultValue;
+        }
+        return value;
     }
 
     private async getRealPerformanceHistory(publicKey: string, currentValue: number): Promise<PerformanceData[]> {
@@ -556,6 +575,9 @@ export class WalletService {
         try {
             await this.throttleRpcCall();
 
+            // Validar currentValue para evitar NaN
+            const validCurrentValue = this.validateNumber(currentValue, 0);
+
             // Método alternativo usando getAccountInfo com diferentes commitment levels
             const history: PerformanceData[] = [];
             const today = new Date();
@@ -567,20 +589,25 @@ export class WalletService {
 
                 // Valor estimado baseado no valor atual (método conservador)
                 const variance = (Math.random() - 0.5) * 0.1; // ±5% de variação
-                const estimatedValue = currentValue * (1 + variance);
+                const estimatedValue = validCurrentValue * (1 + variance);
 
                 history.push({
                     date: date.toISOString().split('T')[0],
-                    value: Number(estimatedValue.toFixed(2)),
+                    value: this.validateNumber(Number(estimatedValue.toFixed(2))),
                     change: 0
                 });
             }
 
             // Calcular mudanças percentuais
             for (let i = 1; i < history.length; i++) {
-                const prev = history[i - 1].value;
-                const curr = history[i].value;
-                history[i].change = prev > 0 ? ((curr - prev) / prev) * 100 : 0;
+                const prev = this.validateNumber(history[i - 1].value);
+                const curr = this.validateNumber(history[i].value);
+                if (prev > 0) {
+                    const changeValue = ((curr - prev) / prev) * 100;
+                    history[i].change = this.validateNumber(changeValue);
+                } else {
+                    history[i].change = 0;
+                }
             }
 
             return history;
@@ -941,7 +968,9 @@ export class WalletService {
     private async buildPositionFromJupiterToken(token: any, allTokens: any): Promise<Position | null> {
         try {
             const tokenInfo = allTokens[token.mint];
-            const value = token.balance * (this.getTokenPrice(token.mint) || 0);
+            const balance = this.validateNumber(token.balance);
+            const price = this.getTokenPrice(token.mint);
+            const value = this.validateNumber(balance * price);
 
             if (value > 0) {
                 return {
@@ -1172,7 +1201,7 @@ export class WalletService {
                     isLPToken: isLPToken,
                     metadata: metadata || {},
                     tokenType: tokenInfo.type,
-                    priceUSD: this.getTokenPrice(token.mint)
+                    priceUSD: this.validateNumber(this.getTokenPrice(token.mint))
                 };
 
                 detailedTokens.push(detailedToken);

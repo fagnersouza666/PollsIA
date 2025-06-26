@@ -7,6 +7,7 @@ import { swaggerConfig } from './config/swagger-simple';
 import { poolRoutes } from './routes/pools';
 import { walletRoutes } from './routes/wallet';
 import { analyticsRoutes } from './routes/analytics';
+import { investmentRoutes } from './routes/investment';
 import { errorHandler } from './middleware/errorHandler';
 import { redisCache } from './utils/RedisCache';
 
@@ -43,6 +44,7 @@ async function start() {
     await fastify.register(poolRoutes, { prefix: '/api/pools' });
     await fastify.register(walletRoutes, { prefix: '/api/wallet' });
     await fastify.register(analyticsRoutes, { prefix: '/api/analytics' });
+    await fastify.register(investmentRoutes, { prefix: '/api/investment' });
 
     fastify.get('/health', {
       schema: {

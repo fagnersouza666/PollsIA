@@ -248,26 +248,68 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
     setError('')
 
     try {
-      // Aqui seria implementada a lógica de criação da pool
-      // usando o Solana Agent Kit ou similar
+      // Preparar dados do investimento
+      const investmentData = {
+        poolId: pool.id,
+        userPublicKey: 'DuASG5ubHN6qsBCGJVfLa5G5TjDQ48TJ3XcZ8U6eDee', // TODO: Obter da carteira conectada
+        solAmount: parseFloat(solAmount),
+        tokenA: pool.tokenA,
+        tokenB: pool.tokenB,
+        slippage: 0.5
+      }
+
       // Log para debug (será removido em produção)
       if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
-        console.log('Investindo na pool:', {
-          pool: pool.id,
-          solAmount,
-          tokenAAmount,
-          tokenBAmount
-        })
+        console.log('Executando investimento real:', investmentData)
       }
 
-      // Simular chamada para API
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      alert(`Investimento realizado com sucesso!\n${solAmount} SOL convertidos para ${tokenAAmount.toFixed(4)} ${pool.tokenA} + ${tokenBAmount.toFixed(4)} ${pool.tokenB}`)
+      // Primeiro, verificar se o serviço está configurado
+      const statusResponse = await fetch('http://localhost:3001/api/investment/status')
+      const statusData = await statusResponse.json()
+
+      if (!statusData.configured) {
+        setError('Serviço de investimento não configurado. Configure SOLANA_PRIVATE_KEY no backend.')
+        return
+      }
+
+      // Executar investimento real
+      const response = await fetch('http://localhost:3001/api/investment/invest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(investmentData),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Falha na execução do investimento')
+      }
+
+      // Sucesso! Mostrar detalhes da transação
+      const message = `🎉 Investimento executado com sucesso!
+
+📝 Assinatura: ${result.data.signature}
+💰 SOL Investido: ${result.data.actualSolSpent}
+🪙 ${pool.tokenA}: ${result.data.tokenAAmount?.toFixed(4)}
+🪙 ${pool.tokenB}: ${result.data.tokenBAmount?.toFixed(4)}
+
+🔗 Verifique no Solana Explorer ou Raydium!`
+
+      alert(message)
       onClose()
-    } catch (_err) {
-      setError('Erro ao processar investimento. Tente novamente.')
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
+      setError(`Erro ao processar investimento: ${errorMessage}`)
+      
+      // Log detalhado para debug
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Erro detalhado:', err)
+      }
     } finally {
       setIsLoading(false)
     }

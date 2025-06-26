@@ -17,6 +17,10 @@ const envSchema = z.object({
   // APIs Externas para detecção de LP positions
   HELIUS_API_KEY: z.string().optional(),
   BIRDEYE_API_KEY: z.string().optional(),
+  
+  // Solana Agent Kit
+  SOLANA_PRIVATE_KEY: z.string().optional(),
+  RPC_URL: z.string().optional(),
 });
 
 export const config = envSchema.parse(process.env);
