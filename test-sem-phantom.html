@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Teste Sem Phantom - Verificação do Backend</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .log-container {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .status-card.warning {
+            border-left-color: #ff9800;
+        }
+
+        .status-card.error {
+            border-left-color: #f44336;
+        }
+
+        .result-success {
+            color: green;
+            margin-top: 10px;
+        }
+
+        .result-error {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .result-warning {
+            color: orange;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1>🧪 Teste Sem Phantom</h1>
+            <p>Verificação do Backend e APIs (não requer Phantom Wallet)</p>
+        </div>
+
+        <!-- Status do Phantom -->
+        <div class="status-card" id="phantom-status">
+            <h3>👻 Status do Phantom</h3>
+            <div id="phantom-info">Verificando...</div>
+        </div>
+
+        <!-- Testes do Backend -->
+        <div class="status-card">
+            <h3>🌐 Testes do Backend</h3>
+            <button class="test-button" onclick="testBackendComplete()">Testar Todas as APIs</button>
+            <div id="backend-results"></div>
+        </div>
+
+        <!-- Simulação de Transação -->
+        <div class="status-card">
+            <h3>🔐 Simulação de Transação (Sem Assinatura)</h3>
+            <button class="test-button" onclick="simulateTransaction()">Simular Criação de Transação</button>
+            <div id="transaction-results"></div>
+        </div>
+
+        <!-- Teste de Conectividade -->
+        <div class="status-card">
+            <h3>🔗 Teste de Conectividade</h3>
+            <button class="test-button" onclick="testConnectivity()">Testar Conexões</button>
+            <div id="connectivity-results"></div>
+        </div>
+
+        <!-- Log -->
+        <div class="status-card">
+            <h3>📝 Log Detalhado</h3>
+            <div class="log-container" id="test-log">
+                [INIT] Sistema de teste sem Phantom inicializado
+            </div>
+        </div>
+
+        <!-- Instruções -->
+        <div class="status-card">
+            <h3>📋 Próximos Passos</h3>
+            <div id="next-steps">
+                <p><strong>1.</strong> Execute os testes acima para verificar se o backend está funcionando</p>
+                <p><strong>2.</strong> Se os testes passarem, o problema está no Phantom</p>
+                <p><strong>3.</strong> Instale o Phantom seguindo o guia: <code>INSTALAR_PHANTOM.md</code></p>
+                <p><strong>4.</strong> Após instalar, execute: <code>debug-phantom-completo.html</code></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            const entry = `[${time}] ${msg}`;
+            logs.push(entry);
+
+            document.getElementById('test-log').innerHTML = logs.join('\n');
+            document.getElementById('test-log').scrollTop = document.getElementById('test-log').scrollHeight;
+
+            console.log(entry);
+        }
+
+        function checkPhantomStatus() {
+            const phantom = window.solana;
+            const hasPhantom = !!phantom?.isPhantom;
+            const isConnected = phantom?.isConnected || false;
+
+            const statusCard = document.getElementById('phantom-status');
+            const info = document.getElementById('phantom-info');
+
+            if (hasPhantom) {
+                statusCard.className = 'status-card';
+                info.innerHTML = `
+                    <div class="result-success">
+                        ✅ <strong>Phantom DETECTADO!</strong><br>
+                        🔗 Conectado: ${isConnected ? 'Sim' : 'Não'}<br>
+                        📦 Versão: ${phantom._version || 'Desconhecida'}<br>
+                        🎉 Você pode usar o teste completo: <code>debug-phantom-completo.html</code>
+                    </div>
+                `;
+                log('✅ Phantom detectado no navegador');
+            } else {
+                statusCard.className = 'status-card warning';
+                info.innerHTML = `
+                    <div class="result-warning">
+                        ⚠️ <strong>Phantom NÃO DETECTADO</strong><br>
+                        📝 Isso é normal se você não instalou ainda<br>
+                        💡 Use este teste para verificar se o backend está OK<br>
+                        📋 Depois instale o Phantom seguindo: <code>INSTALAR_PHANTOM.md</code>
+                    </div>
+                `;
+                log('⚠️ Phantom não detectado - isso é esperado');
+            }
+        }
+
+        async function testBackendComplete() {
+            log('🌐 TESTANDO TODAS AS APIS DO BACKEND...');
+
+            const apis = [
+                { name: 'Health Check', url: 'http://localhost:3001/health' },
+                { name: 'Pool Discovery', url: 'http://localhost:3001/api/pools/discover?limit=2' },
+                { name: 'Pool Rankings', url: 'http://localhost:3001/api/pools/rankings' },
+                { name: 'Analytics Overview', url: 'http://localhost:3001/api/analytics/overview' },
+                { name: 'Investment Status', url: 'http://localhost:3001/api/investment/status' }
+            ];
+
+            const results = [];
+
+            for (const api of apis) {
+                try {
+                    log(`📡 Testando ${api.name}...`);
+
+                    const response = await fetch(api.url, {
+                        signal: AbortSignal.timeout(10000)
+                    });
+
+                    const isOk = response.ok;
+                    let data = null;
+
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        data = await response.text();
+                    }
+
+                    results.push({
+                        name: api.name,
+                        status: response.status,
+                        ok: isOk,
+                        data: data
+                    });
+
+                    log(`${isOk ? '✅' : '❌'} ${api.name}: ${response.status}`);
+
+                } catch (error) {
+                    results.push({
+                        name: api.name,
+                        status: 'ERROR',
+                        ok: false,
+                        error: error.message
+                    });
+
+                    log(`❌ ${api.name}: ${error.message}`);
+                }
+            }
+
+            const successCount = results.filter(r => r.ok).length;
+            const resultHtml = results.map(r =>
+                `<div class="${r.ok ? 'result-success' : 'result-error'}">
+                    ${r.ok ? '✅' : '❌'} <strong>${r.name}</strong>: ${r.status}
+                    ${r.error ? `<br>   Erro: ${r.error}` : ''}
+                    ${r.data && typeof r.data === 'object' ? `<br>   Dados: ${JSON.stringify(r.data).substring(0, 100)}...` : ''}
+                </div>`
+            ).join('');
+
+            document.getElementById('backend-results').innerHTML = `
+                <h4>📊 Resultado: ${successCount}/${results.length} APIs funcionando</h4>
+                ${resultHtml}
+                <div style="margin-top: 20px; padding: 15px; background: ${successCount === results.length ? '#d4edda' : successCount > 0 ? '#fff3cd' : '#f8d7da'}; border-radius: 8px;">
+                    <strong>Diagnóstico:</strong><br>
+                    ${successCount === results.length ?
+                    '🎉 BACKEND 100% FUNCIONAL! O problema está no Phantom.' :
+                    successCount > 0 ?
+                        '⚠️ Backend parcialmente funcional. Alguns serviços estão com problema.' :
+                        '❌ Backend com problemas graves. Verifique se está rodando na porta 3001.'
+                }
+                </div>
+            `;
+
+            log(`🎯 RESULTADO FINAL: ${successCount}/${results.length} APIs OK`);
+        }
+
+        async function simulateTransaction() {
+            log('🔐 SIMULANDO CRIAÇÃO DE TRANSAÇÃO...');
+
+            try {
+                // Usar uma chave pública de teste válida
+                const testPublicKey = '11111111111111111111111111111112'; // System Program ID
+
+                log('📝 Enviando requisição de investimento simulado...');
+
+                const response = await fetch('http://localhost:3001/api/investment/invest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        poolId: 'test-simulation-pool',
+                        userPublicKey: testPublicKey,
+                        solAmount: 0.001,
+                        tokenA: 'SOL',
+                        tokenB: 'USDC',
+                        slippage: 1.0
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    document.getElementById('transaction-results').innerHTML = `
+                        <div class="result-success">
+                            ✅ <strong>Transação criada com sucesso!</strong><br>
+                            📄 Requer assinatura: ${result.requiresSignature ? 'SIM' : 'NÃO'}<br>
+                            💰 Valor SOL: ${result.actualSolSpent || 'N/A'}<br>
+                            📝 Mensagem: ${result.message || 'N/A'}<br>
+                            🔧 <strong>Conclusão:</strong> A API de investimento está funcionando!<br>
+                            👻 <strong>Próximo passo:</strong> Instalar Phantom para assinar transações
+                        </div>
+                    `;
+                    log('✅ Simulação de transação bem-sucedida');
+                } else {
+                    throw new Error(result.error || `HTTP ${response.status}`);
+                }
+
+            } catch (error) {
+                document.getElementById('transaction-results').innerHTML = `
+                    <div class="result-error">
+                        ❌ <strong>Erro na simulação:</strong> ${error.message}<br>
+                        🔧 <strong>Possíveis causas:</strong><br>
+                        • Backend não está rodando (porta 3001)<br>
+                        • Problema na API de investimento<br>
+                        • Timeout na requisição
+                    </div>
+                `;
+                log(`❌ Simulação falhou: ${error.message}`);
+            }
+        }
+
+        async function testConnectivity() {
+            log('🔗 TESTANDO CONECTIVIDADE GERAL...');
+
+            const tests = [
+                { name: 'Localhost Backend', url: 'http://localhost:3001/health' },
+                { name: 'Jupiter API (Externa)', url: 'https://quote-api.jup.ag/v6/tokens' },
+                { name: 'Google DNS', url: 'https://dns.google' }
+            ];
+
+            const results = [];
+
+            for (const test of tests) {
+                try {
+                    log(`🔄 Testando ${test.name}...`);
+
+                    const startTime = performance.now();
+                    const response = await fetch(test.url, {
+                        signal: AbortSignal.timeout(8000),
+                        mode: test.url.includes('localhost') ? 'same-origin' : 'no-cors'
+                    });
+                    const endTime = performance.now();
+
+                    results.push({
+                        name: test.name,
+                        success: true,
+                        time: Math.round(endTime - startTime)
+                    });
+
+                } catch (error) {
+                    results.push({
+                        name: test.name,
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+
+            const resultHtml = results.map(r =>
+                `<div class="${r.success ? 'result-success' : 'result-error'}">
+                    ${r.success ? '✅' : '❌'} <strong>${r.name}</strong>
+                    ${r.success ? ` (${r.time}ms)` : `: ${r.error}`}
+                </div>`
+            ).join('');
+
+            document.getElementById('connectivity-results').innerHTML = resultHtml;
+
+            const successCount = results.filter(r => r.success).length;
+            log(`🔗 Conectividade: ${successCount}/${results.length} testes passaram`);
+        }
+
+        // Inicializar ao carregar
+        window.addEventListener('load', () => {
+            checkPhantomStatus();
+            log('🎯 Sistema de teste sem Phantom carregado');
+
+            // Atualizar status do Phantom a cada 5 segundos
+            setInterval(checkPhantomStatus, 5000);
+        });
+    </script>
+</body>
+
+</html>
