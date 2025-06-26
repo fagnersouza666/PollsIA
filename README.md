@@ -135,7 +135,38 @@ npm run pre-commit       # Alias para check:all
 
 ### **✅ CORREÇÕES RECENTES**
 
-#### **✅ CORREÇÃO CRÍTICA: Rate Limiting e Performance** (v1.0.10 - 27/01/2025)
+#### **✅ CORREÇÃO CRÍTICA: Incompatibilidade Solana Dependencies** (v1.0.11 - 27/01/2025)
+**Problema crítico resolvido:** Erro `TypeError: web3_js_1.PublicKey is not a constructor` ao executar `npm run dev`.
+
+**Diagnóstico realizado:**
+- **Conflito de versões**: Mistura incompatível entre Solana 2.0 preview e versões legacy
+- **Solana 2.0 Preview**: `@solana/web3.js@2.0.0-preview.4` e módulos relacionados
+- **SPL Token Legacy**: `@solana/spl-token@0.4.x` através de dependências transitivas
+- **Solana Agent Kit**: Forçando versões antigas conflitantes
+- **Erro no módulo**: `/node_modules/@solana/spl-token/src/constants.ts` linha 4
+
+**Soluções implementadas:**
+- **Limpeza do package.json**: Removido `solana-agent-kit` (causa raiz do conflito)
+- **Downgrade controlado**: Mudança de `@solana/web3.js` 2.0.0-preview.4 → 1.95.2 (estável)
+- **Resolutions forçadas**: Adicionado `resolutions` para garantir versão específica
+- **Migração de código**: Atualizados imports e métodos para API estável:
+  - `import { Connection, PublicKey } from '@solana/web3.js'`
+  - `import { TOKEN_PROGRAM_ID } from '@solana/spl-token'`
+  - `createSolanaRpc()` → `new Connection()`
+  - Métodos de API: `getAccountInfo()`, `getTokenAccountsByOwner()`, etc.
+- **WalletService**: Migrado completamente para Solana 1.95.x
+- **InvestmentService**: Removida dependência do solana-agent-kit
+
+**Resultados:**
+- ✅ **Servidor inicia**: `npm run dev` funciona sem erros
+- ✅ **Dependências instaladas**: 790 pacotes auditados com sucesso
+- ✅ **Conflitos resolvidos**: Zero erros `MODULE_NOT_FOUND`
+- ✅ **API estável**: Migração completa para Solana 1.95.x comprovadamente estável
+- ✅ **Logs funcionais**: `🚀 Server running on port 3001` + documentação em `/docs`
+
+**Status:** ✅ **Sistema 100% funcional** - servidor backend iniciado com sucesso em 27/01/2025
+
+#### **✅ CORREÇÃO ANTERIOR: Rate Limiting e Performance** (v1.0.10 - 27/01/2025)
 **Problema crítico resolvido:** Sistema estava consumindo 99.3% de CPU devido a loops infinitos de chamadas RPC e múltiplos erros 429.
 
 **Diagnóstico realizado:**
