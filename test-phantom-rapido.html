@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 Teste Rápido - Phantom Assinatura</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🚨 Teste Rápido - Problema Phantom</h1>
+        <p>Vamos identificar rapidamente onde está o problema com a assinatura de transações.</p>
+
+        <!-- Status Atual -->
+        <div class="step">
+            <h3>📊 Status Atual</h3>
+            <div id="current-status">Verificando...</div>
+        </div>
+
+        <!-- Testes Rápidos -->
+        <div class="step">
+            <h3>🔧 Testes Rápidos</h3>
+            <button onclick="testarTudo()">🚀 EXECUTAR TODOS OS TESTES</button>
+            <button onclick="testarPhantom()">👻 Testar Phantom</button>
+            <button onclick="testarConexao()">🔗 Testar Conexão</button>
+            <button onclick="testarAssinatura()" id="btn-assinar" disabled>✍️ Testar Assinatura</button>
+        </div>
+
+        <!-- Resultados -->
+        <div id="resultados"></div>
+
+        <!-- Log -->
+        <div class="step">
+            <h3>📝 Log de Diagnóstico</h3>
+            <div class="log" id="log">[INIT] Sistema inicializado</div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        let phantomConectado = false;
+        let chavePublica = null;
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            logs.push(`[${time}] ${msg}`);
+            document.getElementById('log').innerHTML = logs.join('\n');
+            document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+            console.log(`[TESTE] ${msg}`);
+        }
+
+        function mostrarStatus(tipo, titulo, mensagem) {
+            const div = document.createElement('div');
+            div.className = `status ${tipo}`;
+            div.innerHTML = `<strong>${titulo}:</strong> ${mensagem}`;
+
+            const container = document.getElementById('resultados');
+            container.appendChild(div);
+
+            // Scroll para o resultado
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function atualizarStatusAtual() {
+            const phantom = window.solana;
+            let status = '';
+
+            if (!phantom) {
+                status = '❌ Phantom não detectado - INSTALE A EXTENSÃO';
+            } else if (!phantom.isPhantom) {
+                status = '❌ Não é o Phantom Wallet';
+            } else if (!phantom.isConnected) {
+                status = '⚠️ Phantom detectado mas não conectado';
+            } else {
+                status = '✅ Phantom conectado e funcionando';
+                phantomConectado = true;
+                chavePublica = phantom.publicKey?.toString();
+            }
+
+            document.getElementById('current-status').innerHTML = `
+                <strong>Status:</strong> ${status}<br>
+                <strong>Versão:</strong> ${phantom?._version || 'N/A'}<br>
+                <strong>Chave Pública:</strong> ${chavePublica ? chavePublica.substring(0, 20) + '...' : 'N/A'}<br>
+                <strong>Timestamp:</strong> ${new Date().toLocaleString()}
+            `;
+        }
+
+        async function testarPhantom() {
+            log('🔍 TESTANDO DETECÇÃO DO PHANTOM...');
+
+            try {
+                if (!window.solana) {
+                    throw new Error('window.solana não encontrado - Phantom não está instalado');
+                }
+
+                if (!window.solana.isPhantom) {
+                    throw new Error('isPhantom = false - Extensão não é o Phantom');
+                }
+
+                const metodos = ['connect', 'disconnect', 'signTransaction', 'signAllTransactions'];
+                const faltando = metodos.filter(m => !window.solana[m]);
+
+                if (faltando.length > 0) {
+                    throw new Error(`Métodos ausentes: ${faltando.join(', ')}`);
+                }
+
+                mostrarStatus('success', 'PHANTOM DETECTADO',
+                    `✅ Phantom funcionando corretamente<br>
+                     📦 Versão: ${window.solana._version || 'Desconhecida'}<br>
+                     🔧 Todos os métodos disponíveis`);
+
+                log('✅ PHANTOM OK: Detectado e funcional');
+                return true;
+
+            } catch (error) {
+                mostrarStatus('error', 'PHANTOM FALHOU',
+                    `❌ ${error.message}<br>
+                     💡 Solução: Instale a extensão Phantom Wallet`);
+
+                log(`❌ PHANTOM ERRO: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testarConexao() {
+            log('🔗 TESTANDO CONEXÃO COM PHANTOM...');
+
+            try {
+                if (!window.solana?.isPhantom) {
+                    throw new Error('Phantom não detectado');
+                }
+
+                log('📡 Solicitando conexão...');
+                const resultado = await window.solana.connect();
+
+                if (!resultado?.publicKey) {
+                    throw new Error('Conexão retornou resultado inválido');
+                }
+
+                phantomConectado = true;
+                chavePublica = resultado.publicKey.toString();
+
+                mostrarStatus('success', 'CONEXÃO ESTABELECIDA',
+                    `✅ Conectado com sucesso<br>
+                     🔑 Chave: ${chavePublica.substring(0, 15)}...<br>
+                     📊 Status: Ativo`);
+
+                log(`✅ CONEXÃO OK: ${chavePublica}`);
+
+                // Habilitar teste de assinatura
+                document.getElementById('btn-assinar').disabled = false;
+
+                atualizarStatusAtual();
+                return true;
+
+            } catch (error) {
+                mostrarStatus('error', 'CONEXÃO FALHOU',
+                    `❌ ${error.message}<br>
+                     💡 Solução: Desbloqueie o Phantom e tente novamente`);
+
+                log(`❌ CONEXÃO ERRO: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testarAssinatura() {
+            log('✍️ TESTANDO ASSINATURA - CRÍTICO...');
+
+            try {
+                if (!phantomConectado || !chavePublica) {
+                    throw new Error('Phantom não está conectado');
+                }
+
+                log('🚨 INICIANDO TESTE CRÍTICO DE ASSINATURA');
+                log('⚠️ O Phantom DEVE abrir agora!');
+
+                // Criar modal de aviso
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    z-index: 10000;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                `;
+
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        padding: 40px;
+                        border-radius: 20px;
+                        text-align: center;
+                        max-width: 500px;
+                        animation: pulse 2s infinite;
+                    ">
+                        <h2>🔐 TESTE CRÍTICO</h2>
+                        <p style="font-size: 18px; margin: 20px 0;">
+                            <strong>O Phantom deve abrir AGORA para assinatura!</strong>
+                        </p>
+                        <div style="color: red; font-weight: bold;">
+                            Se o Phantom NÃO abrir, esse é o problema!
+                        </div>
+                        <div id="modal-status" style="margin: 20px 0; font-weight: bold;"></div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+
+                // Tentar assinatura
+                const transacaoTeste = {
+                    feePayer: chavePublica,
+                    instructions: [],
+                    recentBlockhash: 'TEST_BLOCKHASH_' + Date.now()
+                };
+
+                document.getElementById('modal-status').textContent = '🔄 Solicitando assinatura...';
+
+                log('📝 Chamando window.solana.signTransaction...');
+                const assinada = await window.solana.signTransaction(transacaoTeste);
+
+                document.body.removeChild(modal);
+
+                mostrarStatus('success', 'ASSINATURA FUNCIONOU!',
+                    `🎉 PHANTOM FUNCIONANDO PERFEITAMENTE!<br>
+                     ✅ Popup abriu corretamente<br>
+                     ✅ Transação assinada com sucesso<br>
+                     🔧 Sistema 100% funcional`);
+
+                log('🎉 ASSINATURA OK: Phantom funcionando perfeitamente!');
+                return true;
+
+            } catch (error) {
+                if (document.body.contains(modal)) {
+                    document.body.removeChild(modal);
+                }
+
+                mostrarStatus('error', 'ASSINATURA FALHOU - PROBLEMA IDENTIFICADO!',
+                    `❌ ERRO CRÍTICO: ${error.message}<br><br>
+                     🚨 <strong>POSSÍVEIS CAUSAS:</strong><br>
+                     • Popup blocker ativado no navegador<br>
+                     • Phantom travado ou com erro interno<br>
+                     • Extensão desabilitada temporariamente<br>
+                     • Timeout na aprovação (usuário demorou muito)<br><br>
+                     🔧 <strong>SOLUÇÕES:</strong><br>
+                     1. Desabilite popup blocker para este site<br>
+                     2. Reinicie a extensão Phantom<br>
+                     3. Recarregue esta página (F5)<br>
+                     4. Teste em modo incógnito<br>
+                     5. Atualize a extensão Phantom`);
+
+                log(`❌ ASSINATURA ERRO: ${error.message}`);
+                log('🚨 PROBLEMA CRÍTICO CONFIRMADO NO PHANTOM!');
+                return false;
+            }
+        }
+
+        async function testarTudo() {
+            log('🚀 EXECUTANDO DIAGNÓSTICO COMPLETO...');
+            document.getElementById('resultados').innerHTML = '';
+
+            const testes = [
+                { nome: 'Phantom', fn: testarPhantom },
+                { nome: 'Conexão', fn: testarConexao },
+                { nome: 'Assinatura', fn: testarAssinatura }
+            ];
+
+            let sucessos = 0;
+
+            for (const teste of testes) {
+                log(`🔄 Executando teste: ${teste.nome}...`);
+
+                try {
+                    const resultado = await teste.fn();
+                    if (resultado) sucessos++;
+
+                    // Pausa entre testes
+                    await new Promise(r => setTimeout(r, 1500));
+
+                } catch (error) {
+                    log(`❌ Erro no teste ${teste.nome}: ${error.message}`);
+                }
+            }
+
+            // Resultado final
+            const status = sucessos === testes.length ? 'success' :
+                sucessos > 0 ? 'warning' : 'error';
+
+            mostrarStatus(status, 'DIAGNÓSTICO COMPLETO',
+                `📊 Resultado: ${sucessos}/${testes.length} testes passaram<br>
+                 ${sucessos === testes.length ?
+                    '🎉 SISTEMA FUNCIONANDO PERFEITAMENTE!' :
+                    sucessos > 0 ?
+                        '⚠️ PROBLEMA PARCIAL - Alguns testes falharam' :
+                        '❌ PROBLEMA GRAVE - Todos os testes falharam'}`);
+
+            log(`🎯 DIAGNÓSTICO FINAL: ${sucessos}/${testes.length} sucessos`);
+        }
+
+        // Inicializar
+        window.addEventListener('load', () => {
+            atualizarStatusAtual();
+            log('🎯 Sistema de teste carregado');
+
+            // Atualizar status a cada 3 segundos
+            setInterval(atualizarStatusAtual, 3000);
+        });
+
+        // Monitorar eventos do Phantom
+        if (window.solana) {
+            window.solana.on('connect', () => {
+                log('🔗 Phantom conectado automaticamente');
+                phantomConectado = true;
+                chavePublica = window.solana.publicKey?.toString();
+                atualizarStatusAtual();
+                document.getElementById('btn-assinar').disabled = false;
+            });
+
+            window.solana.on('disconnect', () => {
+                log('🔌 Phantom desconectado');
+                phantomConectado = false;
+                chavePublica = null;
+                atualizarStatusAtual();
+                document.getElementById('btn-assinar').disabled = true;
+            });
+        }
+    </script>
+</body>
+
+</html>
