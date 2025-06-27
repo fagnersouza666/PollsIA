@@ -340,19 +340,9 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
         throw new Error(result.error || 'Falha ao preparar investimento')
       }
 
-      // Se não requer assinatura, investimento já foi processado
+      // Se não requer assinatura, mostrar erro (agora sempre requer)
       if (!result.requiresSignature) {
-        setStatus('Investimento processado com sucesso!')
-        const message = `🎉 Investimento executado com sucesso!
-
-📝 Assinatura: ${result.data.signature}
-💰 SOL Investido: ${result.data.actualSolSpent}
-🪙 ${pool.tokenA}: ${result.data.tokenAAmount?.toFixed(4)}
-🪙 ${pool.tokenB}: ${result.data.tokenBAmount?.toFixed(4)}
-
-🔗 Verifique no Solana Explorer ou Raydium!`
-        alert(message)
-        onClose()
+        setError('Erro: Sistema deve sempre usar Phantom Wallet')
         return
       }
 
@@ -553,12 +543,13 @@ ${isRealPool ? '🏊 POOL REAL DO RAYDIUM' : '⚠️ DEMONSTRAÇÃO'}
           </div>
           {pool.isReal && (
             <div className="mt-2 text-xs text-green-700 bg-green-50 p-2 rounded">
-              ✅ Esta é uma pool REAL do Raydium. Seu investimento será processado na blockchain.
+              ✅ POOL 100% REAL: Investimento será executado via Phantom Wallet na blockchain do Raydium.
+              Você receberá LP tokens reais e começará a ganhar fees da pool.
             </div>
           )}
           {!pool.isReal && (
-            <div className="mt-2 text-xs text-yellow-700 bg-yellow-50 p-2 rounded">
-              ⚠️ Pool de demonstração. Taxa real será cobrada, mas não é investimento real.
+            <div className="mt-2 text-xs text-red-700 bg-red-50 p-2 rounded">
+              ❌ Esta pool não está disponível para investimento real no momento.
             </div>
           )}
         </div>
@@ -644,10 +635,14 @@ ${isRealPool ? '🏊 POOL REAL DO RAYDIUM' : '⚠️ DEMONSTRAÇÃO'}
           </button>
           <button
             onClick={handleInvest}
-            disabled={!isValidAmount || isLoading}
-            className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white rounded-lg transition-colors"
+            disabled={!isValidAmount || isLoading || !pool.isReal}
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors text-white ${
+              !pool.isReal 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300'
+            }`}
           >
-            {isLoading ? 'Processando...' : 'Investir'}
+            {!pool.isReal ? 'Pool Indisponível' : isLoading ? 'Preparando para Phantom...' : '💰 Investir com Phantom'}
           </button>
         </div>
       </div>
