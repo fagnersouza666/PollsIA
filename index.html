@@ -226,8 +226,15 @@
                 console.log('Carregando pools...');
                 
                 // Load pools
-                const poolsResponse = await fetch('http://localhost:3001/api/pools/discover');
-                console.log('Pools response status:', poolsResponse.status);
+                const poolsUrl = 'http://localhost:3001/api/pools/discover';
+                console.log(`🔗 API Call: [GET] ${poolsUrl}`);
+                const poolsResponse = await fetch(poolsUrl);
+                
+                if (!poolsResponse.ok) {
+                    console.error(`❌ API Error: [GET] ${poolsUrl} - ${poolsResponse.status} ${poolsResponse.statusText}`);
+                } else {
+                    console.log(`✅ API Success: [GET] ${poolsUrl} - ${poolsResponse.status}`);
+                }
                 
                 if (!poolsResponse.ok) {
                     throw new Error(`HTTP ${poolsResponse.status}: ${poolsResponse.statusText}`);
@@ -239,10 +246,16 @@
 
                 // Load rankings
                 try {
-                    const rankingsResponse = await fetch('http://localhost:3001/api/pools/rankings');
+                    const rankingsUrl = 'http://localhost:3001/api/pools/rankings';
+                    console.log(`🔗 API Call: [GET] ${rankingsUrl}`);
+                    const rankingsResponse = await fetch(rankingsUrl);
+                    
                     if (rankingsResponse.ok) {
+                        console.log(`✅ API Success: [GET] ${rankingsUrl} - ${rankingsResponse.status}`);
                         const rankingsData = await rankingsResponse.json();
                         rankings = rankingsData.data || [];
+                    } else {
+                        console.error(`❌ API Error: [GET] ${rankingsUrl} - ${rankingsResponse.status} ${rankingsResponse.statusText}`);
                     }
                 } catch (rankingError) {
                     console.warn('Não foi possível carregar rankings:', rankingError);

@@ -2,7 +2,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/a
 
 class ApiClient {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const fullUrl = `${API_BASE_URL}${endpoint}`
+    const method = options?.method || 'GET'
+    
+    // 🔗 Log da URL do serviço chamado
+    // eslint-disable-next-line no-console
+    console.log(`🔗 API Call: [${method}] ${fullUrl}`)
+    
+    const response = await fetch(fullUrl, {
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers,
@@ -11,9 +18,13 @@ class ApiClient {
     })
 
     if (!response.ok) {
+      // eslint-disable-next-line no-console
+      console.error(`❌ API Error: [${method}] ${fullUrl} - ${response.status} ${response.statusText}`)
       throw new Error(`API error: ${response.statusText}`)
     }
 
+    // eslint-disable-next-line no-console
+    console.log(`✅ API Success: [${method}] ${fullUrl} - ${response.status}`)
     const data = await response.json()
     return data.data
   }

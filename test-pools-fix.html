@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Explorador de Pools Corrigido</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .pool-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+        .pool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .pool-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .pool-apy {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .pool-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            padding: 20px;
+        }
+        .success {
+            color: green;
+            text-align: center;
+            padding: 10px;
+        }
+        .status {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏊 Explorador de Pools - Teste Corrigido</h1>
+        
+        <div id="status" class="status">
+            Inicializando...
+        </div>
+        
+        <div id="pools-container">
+            <div class="loading">
+                🔄 Carregando pools...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadPools() {
+            const statusDiv = document.getElementById('status');
+            const poolsContainer = document.getElementById('pools-container');
+            
+            try {
+                statusDiv.innerHTML = '🔗 Fazendo chamada para o backend...';
+                console.log('🔗 API Call: [GET] http://localhost:3001/api/pools/discover');
+                
+                const response = await fetch('http://localhost:3001/api/pools/discover');
+                
+                if (!response.ok) {
+                    console.error(`❌ API Error: [GET] http://localhost:3001/api/pools/discover - ${response.status} ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                } else {
+                    console.log(`✅ API Success: [GET] http://localhost:3001/api/pools/discover - ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Erro desconhecido');
+                }
+                
+                const pools = data.data || [];
+                
+                statusDiv.innerHTML = `✅ ${pools.length} pools carregadas com sucesso! (Fonte: ${data.source})`;
+                if (data.message) {
+                    statusDiv.innerHTML += `<br>📝 ${data.message}`;
+                }
+                
+                if (pools.length === 0) {
+                    poolsContainer.innerHTML = '<div class="error">Nenhuma pool encontrada</div>';
+                    return;
+                }
+                
+                // Renderizar pools
+                poolsContainer.innerHTML = pools.map(pool => `
+                    <div class="pool-card">
+                        <div class="pool-header">
+                            <div class="pool-title">${pool.tokenA}/${pool.tokenB}</div>
+                            <div class="pool-apy">${pool.apy.toFixed(1)}% APY</div>
+                        </div>
+                        <div class="pool-info">
+                            <div><strong>TVL:</strong> $${pool.tvl.toLocaleString()}</div>
+                            <div><strong>Volume 24h:</strong> $${pool.volume24h.toLocaleString()}</div>
+                            <div><strong>LP Tokens:</strong> ${pool.lpTokens.toLocaleString()}</div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #999;">
+                            ID: ${pool.id} | Protocol: ${pool.protocol}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Erro ao carregar pools:', error);
+                statusDiv.innerHTML = `❌ Erro: ${error.message}`;
+                poolsContainer.innerHTML = `<div class="error">Falha ao carregar pools: ${error.message}</div>`;
+            }
+        }
+        
+        // Carregar pools ao inicializar
+        loadPools();
+        
+        // Recarregar a cada 30 segundos
+        setInterval(loadPools, 30000);
+    </script>
+</body>
+</html>

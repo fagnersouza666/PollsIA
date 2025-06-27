@@ -217,7 +217,9 @@
                 updateInvestmentStatus('Preparando transação...', 'info');
 
                 // 1. Preparar transação no backend
-                const response = await fetch('http://localhost:3001/api/investment/invest', {
+                const investUrl = 'http://localhost:3001/api/investment/invest';
+                console.log(`🔗 API Call: [POST] ${investUrl}`);
+                const response = await fetch(investUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -231,6 +233,12 @@
                         slippage: slippage
                     }),
                 });
+
+                if (!response.ok) {
+                    console.error(`❌ API Error: [POST] ${investUrl} - ${response.status} ${response.statusText}`);
+                } else {
+                    console.log(`✅ API Success: [POST] ${investUrl} - ${response.status}`);
+                }
 
                 const result = await response.json();
                 log(`Backend response: ${JSON.stringify(result)}`);
@@ -266,7 +274,9 @@
                 log('📤 Enviando transação assinada...');
                 updateInvestmentStatus('Enviando transação assinada...', 'info');
 
-                const processResponse = await fetch('http://localhost:3001/api/investment/process-signed', {
+                const processUrl = 'http://localhost:3001/api/investment/process-signed';
+                console.log(`🔗 API Call: [POST] ${processUrl}`);
+                const processResponse = await fetch(processUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -276,6 +286,12 @@
                         description: result.data.description || `Investimento na pool SOL/USDC`
                     }),
                 });
+
+                if (!processResponse.ok) {
+                    console.error(`❌ API Error: [POST] ${processUrl} - ${processResponse.status} ${processResponse.statusText}`);
+                } else {
+                    console.log(`✅ API Success: [POST] ${processUrl} - ${processResponse.status}`);
+                }
 
                 const processResult = await processResponse.json();
                 log(`Process response: ${JSON.stringify(processResult)}`);

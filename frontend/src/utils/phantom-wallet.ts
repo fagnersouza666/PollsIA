@@ -27,10 +27,10 @@ export class PhantomWalletService {
             return response.publicKey.toString() as Address;
         } catch (error) {
             // Erro na conexão
-            if (error.code === 4001) {
+            if (error && typeof error === 'object' && 'code' in error && error.code === 4001) {
                 throw new Error('Conexão rejeitada pelo usuário');
             }
-            throw new Error('Falha ao conectar: ' + error.message);
+            throw new Error('Falha ao conectar: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
         }
     }
 
@@ -66,10 +66,10 @@ export class PhantomWalletService {
             return signedTx;
         } catch (error) {
             // Erro na assinatura
-            if (error.code === 4001) {
+            if (error && typeof error === 'object' && 'code' in error && error.code === 4001) {
                 throw new Error('Assinatura rejeitada pelo usuário');
             }
-            throw new Error('Falha na assinatura: ' + error.message);
+            throw new Error('Falha na assinatura: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
         }
     }
 

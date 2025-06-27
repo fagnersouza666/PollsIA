@@ -6,13 +6,39 @@ import { useState } from 'react'
 import { phantomWallet } from '../utils/phantom-wallet'
 
 async function fetchPools() {
-  const response = await fetch('http://localhost:3001/api/pools/discover')
+  const url = 'http://localhost:3001/api/pools/discover'
+  // eslint-disable-next-line no-console
+  console.log(`🔗 API Call: [GET] ${url}`)
+  
+  const response = await fetch(url)
+  
+  if (!response.ok) {
+    // eslint-disable-next-line no-console
+    console.error(`❌ API Error: [GET] ${url} - ${response.status} ${response.statusText}`)
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(`✅ API Success: [GET] ${url} - ${response.status}`)
+  }
+  
   const data = await response.json()
   return data.data || []
 }
 
 async function fetchRankings() {
-  const response = await fetch('http://localhost:3001/api/pools/rankings')
+  const url = 'http://localhost:3001/api/pools/rankings'
+  // eslint-disable-next-line no-console
+  console.log(`🔗 API Call: [GET] ${url}`)
+  
+  const response = await fetch(url)
+  
+  if (!response.ok) {
+    // eslint-disable-next-line no-console
+    console.error(`❌ API Error: [GET] ${url} - ${response.status} ${response.statusText}`)
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(`✅ API Success: [GET] ${url} - ${response.status}`)
+  }
+  
   const data = await response.json()
   return data.data || []
 }
@@ -277,13 +303,25 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
       }
 
       // 1. Preparar transação no backend
-      const response = await fetch('http://localhost:3001/api/investment/invest', {
+      const investUrl = 'http://localhost:3001/api/investment/invest'
+      // eslint-disable-next-line no-console
+      console.log(`🔗 API Call: [POST] ${investUrl}`)
+      
+      const response = await fetch(investUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(investmentData),
       })
+
+      if (!response.ok) {
+        // eslint-disable-next-line no-console
+        console.error(`❌ API Error: [POST] ${investUrl} - ${response.status} ${response.statusText}`)
+      } else {
+        // eslint-disable-next-line no-console
+        console.log(`✅ API Success: [POST] ${investUrl} - ${response.status}`)
+      }
 
       const result = await response.json()
 
@@ -323,7 +361,8 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
       // Deserializar transação para assinatura via Phantom
       let transaction
       try {
-        const { Transaction } = await import('@solana/web3.js')
+        const solanaWeb3 = await import('@solana/web3.js')
+        const Transaction = (solanaWeb3 as any).Transaction
         
         if (!result.data.transactionData) {
           throw new Error('Dados da transação não fornecidos pelo backend')
@@ -332,18 +371,20 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
         const transactionBuffer = Buffer.from(result.data.transactionData, 'base64')
         transaction = Transaction.from(transactionBuffer)
         
+        // eslint-disable-next-line no-console
         console.log('✅ Transação deserializada com sucesso:', {
           recentBlockhash: transaction.recentBlockhash,
           instructions: transaction.instructions.length,
           feePayer: transaction.feePayer?.toBase58()
         })
       } catch (deserialError) {
+        // eslint-disable-next-line no-console
         console.error('❌ Erro na deserialização:', {
           error: deserialError,
           transactionData: result.data.transactionData?.slice(0, 50) + '...',
           dataLength: result.data.transactionData?.length
         })
-        throw new Error(`Falha ao processar dados da transação: ${deserialError.message}`)
+        throw new Error(`Falha ao processar dados da transação: ${deserialError instanceof Error ? deserialError.message : 'Erro desconhecido'}`)
       }
 
       // Solicitar assinatura via Phantom
@@ -370,7 +411,11 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
         throw new Error('Falha ao preparar transação para envio')
       }
 
-      const processResponse = await fetch('http://localhost:3001/api/investment/process-signed', {
+      const processUrl = 'http://localhost:3001/api/investment/process-signed'
+      // eslint-disable-next-line no-console
+      console.log(`🔗 API Call: [POST] ${processUrl}`)
+      
+      const processResponse = await fetch(processUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -380,6 +425,14 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
           description: result.data.description || `Investimento na pool ${pool.tokenA}/${pool.tokenB}`
         }),
       })
+
+      if (!processResponse.ok) {
+        // eslint-disable-next-line no-console
+        console.error(`❌ API Error: [POST] ${processUrl} - ${processResponse.status} ${processResponse.statusText}`)
+      } else {
+        // eslint-disable-next-line no-console
+        console.log(`✅ API Success: [POST] ${processUrl} - ${processResponse.status}`)
+      }
 
       const processResult = await processResponse.json()
 

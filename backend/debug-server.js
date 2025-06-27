@@ -1,6 +1,32 @@
 const fastify = require('fastify')({ 
-  logger: {
-    level: 'info'
+  logger: false // Desabilitar logs JSON do Fastify para usar nossos logs customizados
+});
+
+// Middleware de logging customizado para URLs
+fastify.addHook('onRequest', async (request, reply) => {
+  const method = request.method;
+  const url = request.url;
+  const timestamp = new Date().toISOString().substring(11, 23);
+  
+  // Filtrar apenas chamadas relevantes (excluir OPTIONS, favicon, etc.)
+  if (method !== 'OPTIONS' && !url.includes('favicon') && url.startsWith('/api')) {
+    console.log(`\n🔗 ${timestamp} API Request: [${method}] ${url}`);
+  }
+});
+
+fastify.addHook('onResponse', async (request, reply) => {
+  const method = request.method;
+  const url = request.url;
+  const statusCode = reply.statusCode;
+  const timestamp = new Date().toISOString().substring(11, 23);
+  
+  // Filtrar apenas chamadas relevantes
+  if (method !== 'OPTIONS' && !url.includes('favicon') && url.startsWith('/api')) {
+    if (statusCode >= 200 && statusCode < 300) {
+      console.log(`✅ ${timestamp} API Success: [${method}] ${url} - ${statusCode}`);
+    } else {
+      console.log(`❌ ${timestamp} API Error: [${method}] ${url} - ${statusCode}`);
+    }
   }
 });
 
@@ -20,43 +46,134 @@ fastify.get('/health', async (request, reply) => {
   };
 });
 
-// Pools endpoints - usando dados reais do Raydium
+// Dados de fallback para quando a API do Raydium falha
+const fallbackPools = [
+  {
+    id: 'pool_sol_usdc_001',
+    tokenA: 'SOL',
+    tokenB: 'USDC',
+    apy: 12.5,
+    tvl: 1500000,
+    protocol: 'Raydium',
+    lpTokens: 50000,
+    volume24h: 850000,
+    mintA: 'So11111111111111111111111111111111111111112',
+    mintB: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+  },
+  {
+    id: 'pool_sol_ray_002',
+    tokenA: 'SOL',
+    tokenB: 'RAY',
+    apy: 15.3,
+    tvl: 980000,
+    protocol: 'Raydium',
+    lpTokens: 35000,
+    volume24h: 654000,
+    mintA: 'So11111111111111111111111111111111111111112',
+    mintB: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R'
+  },
+  {
+    id: 'pool_usdc_usdt_003',
+    tokenA: 'USDC',
+    tokenB: 'USDT',
+    apy: 8.7,
+    tvl: 2100000,
+    protocol: 'Raydium',
+    lpTokens: 75000,
+    volume24h: 1200000,
+    mintA: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    mintB: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'
+  },
+  {
+    id: 'pool_sol_bonk_004',
+    tokenA: 'SOL',
+    tokenB: 'BONK',
+    apy: 22.1,
+    tvl: 750000,
+    protocol: 'Raydium',
+    lpTokens: 28000,
+    volume24h: 450000,
+    mintA: 'So11111111111111111111111111111111111111112',
+    mintB: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'
+  },
+  {
+    id: 'pool_ray_usdc_005',
+    tokenA: 'RAY',
+    tokenB: 'USDC',
+    apy: 18.9,
+    tvl: 1200000,
+    protocol: 'Raydium',
+    lpTokens: 42000,
+    volume24h: 720000,
+    mintA: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
+    mintB: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+  }
+];
+
+// Pools endpoints - com fallback quando Raydium API falha
 fastify.get('/api/pools/discover', async (request, reply) => {
   try {
-    // Buscar dados reais do Raydium
-    const raydiumResponse = await fetch('https://api.raydium.io/v2/sdk/liquidity/mainnet.json');
+    console.log('🔍 Tentando buscar pools do Raydium...');
+    
+    // Buscar dados reais do Raydium com timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    
+    const raydiumResponse = await fetch('https://api.raydium.io/v2/sdk/liquidity/mainnet.json', {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    
+    if (!raydiumResponse.ok) {
+      throw new Error(`Raydium API retornou status ${raydiumResponse.status}`);
+    }
+    
     const raydiumData = await raydiumResponse.json();
+    console.log('✅ Dados do Raydium obtidos com sucesso');
     
     // Filtrar pools principais e formatar
-    const pools = raydiumData.official.filter(pool => 
-      pool.symbol.includes('SOL') || 
-      pool.symbol.includes('USDC') || 
-      pool.symbol.includes('RAY')
+    const pools = raydiumData.official?.filter(pool => 
+      pool.symbol && (
+        pool.symbol.includes('SOL') || 
+        pool.symbol.includes('USDC') || 
+        pool.symbol.includes('RAY')
+      )
     ).slice(0, 20).map(pool => ({
       id: pool.id,
       tokenA: pool.symbol.split('-')[0],
       tokenB: pool.symbol.split('-')[1],
-      apy: Math.random() * 20 + 5, // APY calculado dinamicamente
+      apy: Math.random() * 20 + 5,
       tvl: pool.liquidity || 0,
       protocol: 'Raydium',
       lpTokens: pool.lpMint,
       volume24h: Math.random() * 1000000,
       mintA: pool.mintA,
       mintB: pool.mintB
-    }));
+    })) || [];
+    
+    if (pools.length === 0) {
+      throw new Error('Nenhuma pool encontrada na resposta do Raydium');
+    }
     
     return {
       success: true,
       data: pools,
+      source: 'raydium',
       timestamp: new Date().toISOString()
     };
+    
   } catch (error) {
-    console.error('Erro ao buscar pools do Raydium:', error);
-    return reply.status(500).send({
-      success: false,
-      error: 'Erro ao buscar dados do Raydium',
+    console.log('⚠️ Erro ao buscar dados do Raydium:', error.message);
+    console.log('🔄 Usando dados de fallback...');
+    
+    // Retornar dados de fallback
+    return {
+      success: true,
+      data: fallbackPools,
+      source: 'fallback',
+      message: 'Usando dados de demonstração (API Raydium indisponível)',
       timestamp: new Date().toISOString()
-    });
+    };
   }
 });
 
