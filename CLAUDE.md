@@ -57,13 +57,16 @@ npm run typecheck          # ✅ Tipos ainda OK
 ### 🔙 Backend (Porta 3001)
 ```bash
 cd backend
-npm run dev        # 🔥 Dev server + reload automático
+npm run dev        # 🔥 Debug server (recomendado)
+npm run dev-full   # 🔥 Dev server completo + reload
 npm run build      # 📦 Build TypeScript produção
 npm run lint       # 🧹 ESLint verificação
 npm run typecheck  # 🔍 TypeScript tipos
 npm test           # 🧪 OBRIGATÓRIO: Testes unitários
 npm start          # 🚀 Executar build produção
 ```
+
+**📝 Nota:** Use `npm run dev` para desenvolvimento (debug server estável) ou `npm run dev-full` para o servidor completo com todas as funcionalidades.
 
 ### 🎨 Frontend (Porta 3000)  
 ```bash

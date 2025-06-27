@@ -21,8 +21,9 @@ async function start() {
     console.log('🔄 Inicializando Redis cache...');
     try {
       await redisCache.connect();
+      console.log('✅ Redis cache conectado');
     } catch (error) {
-      console.warn('⚠️ Continuando sem Redis cache');
+      console.warn('⚠️ Continuando sem Redis cache:', error instanceof Error ? error.message : 'Erro desconhecido');
     }
     
     // Register error handler

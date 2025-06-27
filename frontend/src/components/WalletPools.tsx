@@ -264,7 +264,7 @@ export function WalletPools({ walletAddress }: WalletPoolsProps) {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">APY</p>
-                  <p className="font-semibold text-green-600">{pool.apy.toFixed(1)}%</p>
+                  <p className="font-semibold text-green-600">{pool.apy ? pool.apy.toFixed(1) : '0.0'}%</p>
                 </div>
               </div>
 
@@ -285,7 +285,7 @@ export function WalletPools({ walletAddress }: WalletPoolsProps) {
                 </div>
                 <div>
                   <p className="text-gray-500">Liquidez</p>
-                  <p className="font-semibold">{pool.myLiquidity.toFixed(2)}</p>
+                  <p className="font-semibold">{pool.myLiquidity ? pool.myLiquidity.toFixed(2) : '0.00'}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Data Entrada</p>

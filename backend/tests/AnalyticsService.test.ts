@@ -1,10 +1,14 @@
 import { AnalyticsService } from '../src/services/AnalyticsService';
 
+// Mock axios para evitar chamadas reais à API
+jest.mock('axios');
+
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
 
   beforeEach(() => {
     service = new AnalyticsService();
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {

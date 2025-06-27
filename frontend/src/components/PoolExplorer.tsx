@@ -136,7 +136,7 @@ function PoolCard({ pool, ranking, rank, onInvest }: {
             <TrendingUp className="h-4 w-4 mr-1" />
             <span className="font-semibold">{pool.apy}% APY</span>
           </div>
-          {ranking && (
+          {ranking && ranking.score !== undefined && (
             <div className="text-xs text-gray-500">
               Pontuação: {ranking.score.toFixed(1)}
             </div>
@@ -170,21 +170,23 @@ function PoolCard({ pool, ranking, rank, onInvest }: {
           </div>
           <p className="font-medium">
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
-              ranking?.riskScore <= 5 ? 'bg-green-100 text-green-800' :
-              ranking?.riskScore <= 7 ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
+              ranking?.riskScore !== undefined && ranking.riskScore <= 5 ? 'bg-green-100 text-green-800' :
+              ranking?.riskScore !== undefined && ranking.riskScore <= 7 ? 'bg-yellow-100 text-yellow-800' :
+              ranking?.riskScore !== undefined ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
             }`}>
-              {ranking?.riskScore <= 5 ? (
+              {ranking?.riskScore !== undefined && ranking.riskScore <= 5 ? (
                 <Shield className="h-3 w-3" />
-              ) : ranking?.riskScore <= 7 ? (
+              ) : ranking?.riskScore !== undefined && ranking.riskScore <= 7 ? (
                 <ShieldAlert className="h-3 w-3" />
-              ) : (
+              ) : ranking?.riskScore !== undefined ? (
                 <ShieldX className="h-3 w-3" />
-              )}
-              {ranking?.riskScore?.toFixed(1) || 'N/A'}
+              ) : null}
+              {ranking?.riskScore !== undefined ? ranking.riskScore.toFixed(1) : 'N/A'}
               <span className="ml-1 text-xs font-normal">
-                {ranking?.riskScore <= 5 ? 'Baixo' :
-                 ranking?.riskScore <= 7 ? 'Médio' : 'Alto'}
+                {ranking?.riskScore !== undefined ? (
+                  ranking.riskScore <= 5 ? 'Baixo' :
+                  ranking.riskScore <= 7 ? 'Médio' : 'Alto'
+                ) : 'N/A'}
               </span>
             </span>
           </p>
@@ -328,20 +330,20 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
         const transactionBuffer = Buffer.from(result.data.transactionData, 'base64')
         transaction = Transaction.from(transactionBuffer)
         
-        console.log('🔄 Transação deserializada com sucesso')
+        // Transação deserializada com sucesso
       } catch (deserialError) {
-        console.error('Erro na deserialização:', deserialError)
+        // Erro na deserialização
         throw new Error('Falha ao processar dados da transação')
       }
 
       // Solicitar assinatura via Phantom (com retry)
       let signedTransaction
       try {
-        console.log('📝 Solicitando assinatura via Phantom...')
+        // Solicitando assinatura via Phantom
         signedTransaction = await phantomWallet.signTransaction(transaction)
-        console.log('✅ Transação assinada com sucesso')
+        // Transação assinada com sucesso
       } catch (signError) {
-        console.error('Erro na assinatura:', signError)
+        // Erro na assinatura
         throw new Error('Assinatura cancelada ou falhou. Verifique se o Phantom está desbloqueado.')
       }
 
@@ -353,9 +355,9 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
         // Serializar transação assinada mais cuidadosamente
         const serialized = signedTransaction.serialize()
         serializedTransaction = Buffer.from(serialized).toString('base64')
-        console.log('🔄 Transação serializada para envio')
+        // Transação serializada para envio
       } catch (serializError) {
-        console.error('Erro na serialização:', serializError)
+        // Erro na serialização
         throw new Error('Falha ao preparar transação para envio')
       }
 
