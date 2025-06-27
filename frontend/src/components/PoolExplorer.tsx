@@ -320,30 +320,39 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
         await phantomWallet.connect()
       }
 
-      // Deserializar transação para assinatura (método mais robusto)
+      // Deserializar transação para assinatura via Phantom
       let transaction
       try {
-        // Importar dinamicamente se necessário
         const { Transaction } = await import('@solana/web3.js')
         
-        // Converter base64 para buffer mais cuidadosamente
+        if (!result.data.transactionData) {
+          throw new Error('Dados da transação não fornecidos pelo backend')
+        }
+        
         const transactionBuffer = Buffer.from(result.data.transactionData, 'base64')
         transaction = Transaction.from(transactionBuffer)
         
-        // Transação deserializada com sucesso
+        console.log('✅ Transação deserializada com sucesso:', {
+          recentBlockhash: transaction.recentBlockhash,
+          instructions: transaction.instructions.length,
+          feePayer: transaction.feePayer?.toBase58()
+        })
       } catch (deserialError) {
-        // Erro na deserialização
-        throw new Error('Falha ao processar dados da transação')
+        console.error('❌ Erro na deserialização:', {
+          error: deserialError,
+          transactionData: result.data.transactionData?.slice(0, 50) + '...',
+          dataLength: result.data.transactionData?.length
+        })
+        throw new Error(`Falha ao processar dados da transação: ${deserialError.message}`)
       }
 
-      // Solicitar assinatura via Phantom (com retry)
+      // Solicitar assinatura via Phantom
       let signedTransaction
       try {
-        // Solicitando assinatura via Phantom
+        setStatus('Aguardando assinatura no Phantom...')
         signedTransaction = await phantomWallet.signTransaction(transaction)
-        // Transação assinada com sucesso
+        setStatus('Transação assinada com sucesso!')
       } catch (signError) {
-        // Erro na assinatura
         throw new Error('Assinatura cancelada ou falhou. Verifique se o Phantom está desbloqueado.')
       }
 
