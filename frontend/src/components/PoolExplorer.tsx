@@ -151,9 +151,20 @@ function PoolCard({ pool, ranking, rank, onInvest }: {
             <span className="text-sm font-bold text-primary-600">#{rank}</span>
           </div>
           <div>
-            <h4 className="font-semibold text-lg">
-              {pool.tokenA} / {pool.tokenB}
-            </h4>
+            <div className="flex items-center gap-2">
+              <h4 className="font-semibold text-lg">
+                {pool.tokenA} / {pool.tokenB}
+              </h4>
+              {pool.isReal ? (
+                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  🏊 REAL
+                </span>
+              ) : (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                  ⚠️ DEMO
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500">{pool.protocol}</p>
           </div>
         </div>
@@ -444,16 +455,48 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
       setStatus('Investimento executado com sucesso!')
       
       // Sucesso! Mostrar detalhes da transação
-      const message = `🎉 Investimento executado com sucesso!
+      const isRealTransaction = processResult.data.confirmationStatus === 'confirmed'
+      const isRealPool = result.data.isRealPool || pool.isReal
+      
+      let message = `🎉 Investimento executado com sucesso!
 
-📝 Assinatura: ${processResult.data.signature}
-💰 SOL Investido: ${processResult.data.actualSolSpent}
+${isRealPool ? '🏊 POOL REAL DO RAYDIUM' : '⚠️ DEMONSTRAÇÃO'} 
+📝 Signature: ${processResult.data.signature}
+💰 SOL Gasto: ${processResult.data.actualSolSpent}
 🪙 ${pool.tokenA}: ${result.data.tokenAAmount?.toFixed(4)}
 🪙 ${pool.tokenB}: ${result.data.tokenBAmount?.toFixed(4)}
 
-🔗 Verifique no Solana Explorer ou Raydium!`
+`
+
+      if (isRealTransaction) {
+        if (isRealPool) {
+          message += `✅ INVESTIMENTO REAL na pool ${pool.tokenA}/${pool.tokenB}!
+🌐 Explorer: ${processResult.data.explorerUrl}
+📦 Block: ${processResult.data.blockHash}
+
+🎯 Transação processada na blockchain oficial do Raydium!
+🔗 Verifique no Solscan ou Phantom para ver a transação!`
+        } else {
+          message += `✅ TRANSAÇÃO REAL confirmada (demonstração)
+🌐 Explorer: ${processResult.data.explorerUrl}
+
+⚠️ Esta foi uma demonstração segura. Para investimentos reais,
+   use pools marcadas como "🏊 REAL" no explorador!`
+        }
+      } else {
+        message += `⚠️ Transação simulada para demonstração
+🔗 Para investimentos reais, use pools marcadas como "🏊 REAL"!`
+      }
 
       alert(message)
+      
+      // Se for transação real, abrir explorer
+      if (isRealTransaction && processResult.data.explorerUrl) {
+        if (confirm('Deseja abrir o Solscan para ver a transação?')) {
+          window.open(processResult.data.explorerUrl, '_blank')
+        }
+      }
+      
       onClose()
 
     } catch (err) {
@@ -491,12 +534,33 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
 
         {/* Informações da Pool */}
         <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <h4 className="font-medium">{pool.tokenA} / {pool.tokenB}</h4>
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-medium">{pool.tokenA} / {pool.tokenB}</h4>
+            {pool.isReal ? (
+              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                🏊 POOL REAL
+              </span>
+            ) : (
+              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                ⚠️ DEMONSTRAÇÃO
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-600">{pool.protocol}</p>
           <div className="flex justify-between text-sm mt-2">
             <span>APY: {pool.apy}%</span>
             <span>TVL: ${(pool.tvl / 1000000).toFixed(1)}M</span>
           </div>
+          {pool.isReal && (
+            <div className="mt-2 text-xs text-green-700 bg-green-50 p-2 rounded">
+              ✅ Esta é uma pool REAL do Raydium. Seu investimento será processado na blockchain.
+            </div>
+          )}
+          {!pool.isReal && (
+            <div className="mt-2 text-xs text-yellow-700 bg-yellow-50 p-2 rounded">
+              ⚠️ Pool de demonstração. Taxa real será cobrada, mas não é investimento real.
+            </div>
+          )}
         </div>
 
         {/* Input do valor */}

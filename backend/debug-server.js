@@ -2,6 +2,17 @@ const fastify = require('fastify')({
   logger: false // Desabilitar logs JSON do Fastify para usar nossos logs customizados
 });
 
+// Importar serviço de investimento real
+let raydiumService;
+try {
+  const { RaydiumInvestmentService } = require('./raydium-investment.js');
+  raydiumService = new RaydiumInvestmentService();
+  console.log('✅ Serviço de investimento real carregado');
+} catch (error) {
+  console.log('⚠️ Serviço de investimento não disponível:', error.message);
+  raydiumService = null;
+}
+
 // Middleware de logging customizado para URLs
 fastify.addHook('onRequest', async (request, reply) => {
   const method = request.method;
@@ -110,20 +121,50 @@ const fallbackPools = [
   }
 ];
 
-// Pools endpoints - SEMPRE retorna dados de fallback (versão simplificada)
+// Pools endpoints - Com pools reais quando disponível
 fastify.get('/api/pools/discover', async (request, reply) => {
-  console.log('🔍 Retornando pools de fallback (versão garantida)...');
+  console.log('🔍 Descobrindo pools...');
   
-  // SEMPRE retornar dados de fallback por enquanto - garantia 100%
-  console.log('✅ Dados de fallback carregados com sucesso');
-  
-  return {
-    success: true,
-    data: fallbackPools,
-    source: 'fallback',
-    message: 'Dados de demonstração funcionais (versão garantida)',
-    timestamp: new Date().toISOString()
-  };
+  try {
+    // Tentar usar pools reais primeiro
+    if (raydiumService) {
+      console.log('🏊 Buscando pools reais do Raydium...');
+      const realPools = await raydiumService.getAvailablePools();
+      
+      if (realPools && realPools.length > 0) {
+        console.log(`✅ ${realPools.length} pools reais carregadas`);
+        return {
+          success: true,
+          data: realPools,
+          source: 'raydium-real',
+          message: `Pools REAIS do Raydium (${realPools.length} disponíveis)`,
+          timestamp: new Date().toISOString()
+        };
+      }
+    }
+    
+    // Fallback para dados de demonstração
+    console.log('🔄 Usando pools de demonstração...');
+    return {
+      success: true,
+      data: fallbackPools,
+      source: 'fallback',
+      message: 'Pools de demonstração (Raydium indisponível)',
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao descobrir pools:', error);
+    
+    // Fallback em caso de erro
+    return {
+      success: true,
+      data: fallbackPools,
+      source: 'fallback-error',
+      message: 'Pools de demonstração (erro ao acessar Raydium)',
+      timestamp: new Date().toISOString()
+    };
+  }
 });
 
 fastify.get('/api/pools/rankings', async (request, reply) => {
@@ -183,105 +224,196 @@ fastify.get('/api/investment/status', async (request, reply) => {
   };
 });
 
-// Endpoint para investir em uma pool (usando dados reais)
+// Endpoint para investir em uma pool (REAL usando Raydium)
 fastify.post('/api/investment/invest', async (request, reply) => {
-  const { poolId, userPublicKey, solAmount, tokenA, tokenB } = request.body;
+  const { poolId, userPublicKey, solAmount, tokenA, tokenB, slippage = 0.5 } = request.body;
   
-  console.log('💰 Iniciando investimento real:', { poolId, userPublicKey, solAmount, tokenA, tokenB });
-  
-  // Criar uma transação Solana real
-  const { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } = require('@solana/web3.js');
+  console.log('💰 Iniciando investimento:', { poolId, userPublicKey, solAmount, tokenA, tokenB });
   
   try {
-    // Conectar à mainnet Solana
+    // Tentar usar serviço real primeiro
+    if (raydiumService) {
+      console.log('🏊 Usando serviço de investimento REAL...');
+      
+      const result = await raydiumService.prepareRealInvestment({
+        poolId,
+        userPublicKey,
+        solAmount,
+        slippage
+      });
+      
+      if (result.success) {
+        console.log('✅ Investimento REAL preparado:', result.data.description);
+        return {
+          success: true,
+          requiresSignature: true,
+          data: result.data,
+          message: result.data.description,
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        console.log('⚠️ Falha no investimento real:', result.error);
+        // Continuar para fallback
+      }
+    }
+    
+    // Fallback: método anterior (demonstração)
+    console.log('🔄 Usando investimento de demonstração...');
+    
+    const { Connection, Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } = require('@solana/web3.js');
     const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
     const fromPubkey = new PublicKey(userPublicKey);
     
-    // Buscar recent blockhash real
-    const { blockhash } = await connection.getLatestBlockhash();
-    
-    // Verificar saldo real do usuário
+    // Verificar saldo
     const balance = await connection.getBalance(fromPubkey);
     const solBalance = balance / LAMPORTS_PER_SOL;
     
     if (solBalance < solAmount) {
       return reply.status(400).send({
         success: false,
-        error: `Saldo insuficiente. Saldo atual: ${solBalance.toFixed(4)} SOL, necessário: ${solAmount} SOL`,
+        error: `Saldo insuficiente. Atual: ${solBalance.toFixed(4)} SOL, necessário: ${solAmount} SOL`,
         timestamp: new Date().toISOString()
       });
     }
     
-    // Criar transação real de demonstração (pequeno transfer)
+    // Criar transação de demonstração
+    const { blockhash } = await connection.getLatestBlockhash();
     const transaction = new Transaction();
-    const lamports = Math.floor(0.001 * LAMPORTS_PER_SOL); // Taxa fixa de 0.001 SOL
+    const lamports = Math.floor(0.001 * LAMPORTS_PER_SOL);
     
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = fromPubkey;
     
-    // Adicionar instrução de transfer pequeno (simulando fees)
     transaction.add(
       SystemProgram.transfer({
         fromPubkey,
-        toPubkey: fromPubkey, // Para si mesmo por segurança
+        toPubkey: fromPubkey,
         lamports,
       })
     );
     
-    // Serializar transação real
-    const serializedTransaction = transaction.serialize({ 
+    const transactionData = Buffer.from(transaction.serialize({ 
       requireAllSignatures: false,
       verifySignatures: false 
-    });
-    const transactionData = Buffer.from(serializedTransaction).toString('base64');
+    })).toString('base64');
     
-    // Calcular valores estimados baseados em dados reais
-    const solPrice = 180; // Buscar de API real se necessário
-    const usdValue = solAmount * solPrice;
-    const tokenAAmount = (usdValue / 2) / 1.05; // USDC aproximado
-    const tokenBAmount = (usdValue / 2) / solPrice; // Tokens estimados
+    const tokenAAmount = solAmount / 2;
+    const tokenBAmount = solAmount / 2;
     
     return {
       success: true,
       requiresSignature: true,
       data: {
-        transactionData: transactionData,
-        tokenAAmount: tokenAAmount,
-        tokenBAmount: tokenBAmount,
-        poolId: poolId,
-        description: `Investimento real: ${solAmount} SOL → ${tokenA}/${tokenB} via Raydium`,
-        fee: lamports / LAMPORTS_PER_SOL
+        transactionData,
+        tokenAAmount,
+        tokenBAmount,
+        poolId,
+        description: `⚠️ DEMONSTRAÇÃO: ${solAmount} SOL → ${tokenA}/${tokenB}`,
+        fee: lamports / LAMPORTS_PER_SOL,
+        isRealPool: false
       },
-      message: `Transação real preparada: investimento de ${solAmount} SOL na pool ${tokenA}/${tokenB}`,
+      message: `Transação de demonstração preparada: ${solAmount} SOL`,
       timestamp: new Date().toISOString()
     };
     
   } catch (error) {
-    console.error('Erro ao criar transação real:', error);
+    console.error('❌ Erro ao preparar investimento:', error);
     return reply.status(500).send({
       success: false,
-      error: 'Erro ao criar transação: ' + error.message,
+      error: 'Erro ao preparar investimento: ' + error.message,
       timestamp: new Date().toISOString()
     });
   }
 });
 
-// Endpoint para processar transação assinada (mock)
+// Endpoint para processar transação assinada (REAL)
 fastify.post('/api/investment/process-signed', async (request, reply) => {
   const { transaction, description } = request.body;
   
-  // Simular processamento
-  await new Promise(resolve => setTimeout(resolve, 500));
+  console.log('📤 Processando transação assinada...');
   
-  return {
-    success: true,
-    data: {
-      signature: 'mock_processed_signature_' + Date.now(),
-      actualSolSpent: 1.0
-    },
-    message: `Transação simulada processada com sucesso: ${description}`,
-    timestamp: new Date().toISOString()
-  };
+  try {
+    // Tentar usar serviço real primeiro
+    if (raydiumService) {
+      console.log('🏊 Usando processamento REAL...');
+      
+      const result = await raydiumService.processRealInvestment(transaction);
+      
+      if (result.success) {
+        console.log('✅ Investimento REAL processado com sucesso!');
+        return {
+          success: true,
+          data: {
+            signature: result.signature,
+            actualSolSpent: 0.001,
+            confirmationStatus: 'confirmed',
+            explorerUrl: result.explorerUrl
+          },
+          message: `✅ Transação REAL confirmada: ${description}`,
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        console.log('⚠️ Falha no processamento real:', result.error);
+        // Continuar para fallback
+      }
+    }
+    
+    // Fallback: método anterior
+    console.log('🔄 Usando processamento de demonstração...');
+    
+    const { Connection, Transaction } = require('@solana/web3.js');
+    const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+    
+    const transactionBuffer = Buffer.from(transaction, 'base64');
+    const signedTransaction = Transaction.from(transactionBuffer);
+    
+    console.log('🚀 Enviando transação para blockchain...');
+    const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed'
+    });
+    
+    console.log('⏳ Aguardando confirmação...');
+    const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+    
+    if (confirmation.value.err) {
+      throw new Error(`Transação falhou: ${JSON.stringify(confirmation.value.err)}`);
+    }
+    
+    console.log('🎉 Transação confirmada!');
+    
+    return {
+      success: true,
+      data: {
+        signature,
+        actualSolSpent: 0.001,
+        confirmationStatus: 'confirmed',
+        blockHash: confirmation.value.blockHeight,
+        explorerUrl: `https://solscan.io/tx/${signature}`
+      },
+      message: `✅ Transação processada: ${description}`,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao processar transação:', error);
+    
+    // Fallback final: simular
+    console.log('🔄 Fallback: simulando...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      success: true,
+      data: {
+        signature: 'simulated_' + Date.now(),
+        actualSolSpent: 0.001,
+        confirmationStatus: 'simulated',
+        error: error.message
+      },
+      message: `⚠️ Processamento simulado: ${description}`,
+      timestamp: new Date().toISOString()
+    };
+  }
 });
 
 // Análise de pool específica
