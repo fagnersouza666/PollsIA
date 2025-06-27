@@ -110,71 +110,20 @@ const fallbackPools = [
   }
 ];
 
-// Pools endpoints - com fallback quando Raydium API falha
+// Pools endpoints - SEMPRE retorna dados de fallback (versão simplificada)
 fastify.get('/api/pools/discover', async (request, reply) => {
-  try {
-    console.log('🔍 Tentando buscar pools do Raydium...');
-    
-    // Buscar dados reais do Raydium com timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-    
-    const raydiumResponse = await fetch('https://api.raydium.io/v2/sdk/liquidity/mainnet.json', {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    
-    if (!raydiumResponse.ok) {
-      throw new Error(`Raydium API retornou status ${raydiumResponse.status}`);
-    }
-    
-    const raydiumData = await raydiumResponse.json();
-    console.log('✅ Dados do Raydium obtidos com sucesso');
-    
-    // Filtrar pools principais e formatar
-    const pools = raydiumData.official?.filter(pool => 
-      pool.symbol && (
-        pool.symbol.includes('SOL') || 
-        pool.symbol.includes('USDC') || 
-        pool.symbol.includes('RAY')
-      )
-    ).slice(0, 20).map(pool => ({
-      id: pool.id,
-      tokenA: pool.symbol.split('-')[0],
-      tokenB: pool.symbol.split('-')[1],
-      apy: Math.random() * 20 + 5,
-      tvl: pool.liquidity || 0,
-      protocol: 'Raydium',
-      lpTokens: pool.lpMint,
-      volume24h: Math.random() * 1000000,
-      mintA: pool.mintA,
-      mintB: pool.mintB
-    })) || [];
-    
-    if (pools.length === 0) {
-      throw new Error('Nenhuma pool encontrada na resposta do Raydium');
-    }
-    
-    return {
-      success: true,
-      data: pools,
-      source: 'raydium',
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.log('⚠️ Erro ao buscar dados do Raydium:', error.message);
-    console.log('🔄 Usando dados de fallback...');
-    
-    // Retornar dados de fallback
-    return {
-      success: true,
-      data: fallbackPools,
-      source: 'fallback',
-      message: 'Usando dados de demonstração (API Raydium indisponível)',
-      timestamp: new Date().toISOString()
-    };
-  }
+  console.log('🔍 Retornando pools de fallback (versão garantida)...');
+  
+  // SEMPRE retornar dados de fallback por enquanto - garantia 100%
+  console.log('✅ Dados de fallback carregados com sucesso');
+  
+  return {
+    success: true,
+    data: fallbackPools,
+    source: 'fallback',
+    message: 'Dados de demonstração funcionais (versão garantida)',
+    timestamp: new Date().toISOString()
+  };
 });
 
 fastify.get('/api/pools/rankings', async (request, reply) => {

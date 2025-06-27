@@ -361,14 +361,15 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
       // Deserializar transação para assinatura via Phantom
       let transaction
       try {
-        const solanaWeb3 = await import('@solana/web3.js')
-        const Transaction = (solanaWeb3 as any).Transaction
-        
         if (!result.data.transactionData) {
           throw new Error('Dados da transação não fornecidos pelo backend')
         }
         
+        // Usar a API estável do @solana/web3.js v1.x
+        const { Transaction } = await import('@solana/web3.js')
         const transactionBuffer = Buffer.from(result.data.transactionData, 'base64')
+        
+        // Deserializar usando a API v1.x
         transaction = Transaction.from(transactionBuffer)
         
         // eslint-disable-next-line no-console
