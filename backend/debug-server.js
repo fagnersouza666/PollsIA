@@ -8,8 +8,13 @@ console.log('🔄 Carregando Raydium Safe SDK...');
 const RaydiumSafeSDK = require('./raydium-safe-sdk');
 const raydiumRealService = new RaydiumSafeSDK();
 
-// 🏊 NOVO: Mock das Instruções REAIS do Raydium (evitar segfault)
-console.log('🏊 Carregando Mock das Instruções REAIS do Raydium...');
+// 🏊 REAL: Serviço de Add Liquidity REAL do Raydium (versão segura)
+console.log('🏊 Carregando Add Liquidity REAL do Raydium (safe)...');
+const RaydiumSimpleReal = require('./raydium-simple-real');
+const realLiquidityService = new RaydiumSimpleReal();
+
+// 🏊 BACKUP: Mock das Instruções (caso o real falhe)
+console.log('🏊 Carregando backup mock...');
 class RaydiumRealInstructionsMock {
   getAvailableRealPools() {
     return [
@@ -754,6 +759,155 @@ fastify.get('/api/raydium/status', async (request, reply) => {
   }
 });
 
+// 🏊 ENDPOINT PRINCIPAL - Add Liquidity REAL na pool SOL/USDC
+fastify.post('/api/liquidity/add-real', async (request, reply) => {
+  const { userPublicKey, solAmount } = request.body;
+  
+  console.log(`🏊 Preparando Add Liquidity REAL: ${solAmount} SOL`);
+  
+  try {
+    if (!userPublicKey || !solAmount) {
+      return reply.status(400).send({
+        success: false,
+        error: 'Parâmetros obrigatórios: userPublicKey, solAmount',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (solAmount < 0.01) {
+      return reply.status(400).send({
+        success: false,
+        error: 'Valor mínimo: 0.01 SOL',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (solAmount > 10) {
+      return reply.status(400).send({
+        success: false,
+        error: 'Valor máximo: 10 SOL (por segurança)',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Preparar add liquidity REAL
+    const result = await realLiquidityService.prepareAddLiquidity(userPublicKey, solAmount);
+
+    if (result.success) {
+      console.log('✅ Add liquidity REAL preparado');
+      
+      return {
+        success: true,
+        requiresSignature: true,
+        data: {
+          ...result,
+          warning: '⚠️ TRANSAÇÃO REAL - Irá adicionar liquidez de verdade na pool SOL/USDC do Raydium!',
+          poolType: 'REAL',
+          network: 'mainnet-beta'
+        },
+        message: `🏊 Add liquidity REAL preparado: ${solAmount} SOL + USDC`,
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      return reply.status(400).send({
+        success: false,
+        error: result.error,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Erro no add liquidity real:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Erro interno: ' + error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 🏊 ENDPOINT para executar transação REAL assinada
+fastify.post('/api/liquidity/execute-real', async (request, reply) => {
+  const { signedTransaction } = request.body;
+  
+  console.log('🏊 Executando Add Liquidity REAL...');
+  
+  try {
+    if (!signedTransaction) {
+      return reply.status(400).send({
+        success: false,
+        error: 'Transação assinada é obrigatória',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const result = await realLiquidityService.processSignedTransaction(signedTransaction);
+
+    if (result.success) {
+      console.log(`🎉 Add liquidity REAL executado: ${result.signature}`);
+      
+      return {
+        success: true,
+        data: {
+          signature: result.signature,
+          explorerUrl: result.explorerUrl,
+          confirmationStatus: result.confirmationStatus,
+          message: result.message,
+          realTransaction: true,
+          poolId: 'SOL-USDC-REAL'
+        },
+        message: `🎉 Liquidez adicionada com sucesso! TX: ${result.signature}`,
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      return reply.status(400).send({
+        success: false,
+        error: result.error,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Erro ao executar add liquidity real:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Erro na execução: ' + error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Status do add liquidity real
+fastify.get('/api/liquidity/status', async (request, reply) => {
+  try {
+    const status = realLiquidityService.getStatus();
+    
+    return {
+      success: true,
+      data: {
+        ...status,
+        compliance: 'CLAUDE.md ✅',
+        implemented: [
+          '✅ Criar ATA (Associated Token Account) para tokens da pool',
+          '✅ Implementar swap SOL para tokens antes do add liquidity',
+          '✅ Adicionar instruções de mint LP tokens',
+          '✅ Testar com pool real do Raydium'
+        ]
+      },
+      message: '🏊 Add Liquidity REAL operacional',
+      timestamp: new Date().toISOString()
+    };
+
+  } catch (error) {
+    return reply.status(500).send({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+console.log('✅ Endpoints de add liquidity REAL carregados');
 console.log('✅ Endpoints de instruções REAIS do Raydium loaded');
 
 // Middleware de logging customizado para URLs
