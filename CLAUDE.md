@@ -2,6 +2,14 @@
 
 > 🤖 Instruções específicas para Claude Code ao trabalhar neste repositório
 
+
+SEMPRE DEVE FAZER ISSO:
+ ☐ Implementar instruções REAIS do Raydium para add liquidity
+     ☐ Criar ATA (Associated Token Account) para tokens da pool
+     ☐ Implementar swap SOL para tokens antes do add liquidity
+     ☐ Adicionar instruções de mint LP tokens
+     ☐ Testar com pool real do Raydium
+
 ## 🚨 REGRAS CRÍTICAS
 - ❌ **JAMAIS usar dados simulados** - USE SOMENTE DADOS REAIS
 - 📚 **SEMPRE usar Context7** para documentação de bibliotecas  
