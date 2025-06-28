@@ -9,6 +9,7 @@ SEMPRE DEVE FAZER ISSO:
      ☐ Implementar swap SOL para tokens antes do add liquidity
      ☐ Adicionar instruções de mint LP tokens
      ☐ Testar com pool real do Raydium
+     pegue o projeto para ter ideias https://github.com/HasanZaigam/VaraYield-AI.git
 
 ## 🚨 REGRAS CRÍTICAS
 - ❌ **JAMAIS usar dados simulados** - USE SOMENTE DADOS REAIS
