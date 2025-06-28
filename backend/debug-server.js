@@ -19,6 +19,197 @@ raydiumRealService.initialize().then(success => {
 
 console.log('🚀 Serviço REAL carregado com Phantom Wallet');
 
+// Carregar serviços de otimização inspirados no VaraYield-AI
+console.log('🎯 Carregando serviços de otimização VaraYield-AI inspired...');
+
+// Mock implementation dos novos endpoints de otimização
+fastify.post('/api/optimization/optimize', async (request, reply) => {
+  const { userPublicKey, totalAmount, riskProfile } = request.body;
+  
+  console.log(`🎯 One-Click Optimization solicitada para ${userPublicKey} - ${riskProfile}`);
+  
+  try {
+    // Simular otimização inspirada no VaraYield-AI
+    const allocations = [
+      { 
+        poolId: 'SOL-USDC-OPT', 
+        poolName: 'SOL/USDC', 
+        protocol: 'Raydium',
+        percentage: riskProfile === 'conservative' ? 50 : riskProfile === 'moderate' ? 40 : 30,
+        expectedAPY: 8.5,
+        riskLevel: 'low',
+        reasoning: 'Pool estável com alta liquidez'
+      },
+      { 
+        poolId: 'SOL-RAY-OPT', 
+        poolName: 'SOL/RAY', 
+        protocol: 'Raydium',
+        percentage: riskProfile === 'conservative' ? 30 : riskProfile === 'moderate' ? 35 : 45,
+        expectedAPY: 15.8,
+        riskLevel: 'medium',
+        reasoning: 'Bom equilíbrio risco/retorno'
+      },
+      { 
+        poolId: 'SOL-mSOL-OPT', 
+        poolName: 'SOL/mSOL', 
+        protocol: 'Marinade',
+        percentage: riskProfile === 'conservative' ? 20 : riskProfile === 'moderate' ? 25 : 25,
+        expectedAPY: 6.2,
+        riskLevel: 'very-low',
+        reasoning: 'Diversificação conservadora'
+      }
+    ];
+
+    const expectedAPY = allocations.reduce((sum, alloc) => sum + (alloc.expectedAPY * alloc.percentage / 100), 0);
+    
+    return {
+      success: true,
+      data: {
+        optimizationId: `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        strategy: {
+          allocations: allocations.map(alloc => ({
+            ...alloc,
+            amount: (totalAmount * alloc.percentage) / 100
+          })),
+          expectedMetrics: {
+            totalAPY: expectedAPY,
+            riskScore: riskProfile === 'conservative' ? 0.3 : riskProfile === 'moderate' ? 0.6 : 0.9,
+            diversificationScore: 85,
+            liquidityScore: 90,
+            confidence: 0.88
+          },
+          estimatedCosts: {
+            transactionFees: 0.015,
+            slippage: totalAmount * 0.003,
+            total: 0.015 + (totalAmount * 0.003)
+          }
+        },
+        transactions: allocations.map((alloc, index) => ({
+          description: `Adicionar liquidez em ${alloc.poolName}`,
+          type: 'addLiquidity',
+          poolId: alloc.poolId,
+          amount: (totalAmount * alloc.percentage) / 100,
+          estimatedGas: 0.005,
+          transactionData: Buffer.from(JSON.stringify({
+            type: 'add-liquidity-optimized',
+            poolId: alloc.poolId,
+            userPublicKey,
+            percentage: alloc.percentage,
+            riskProfile,
+            timestamp: Date.now()
+          })).toString('base64')
+        })),
+        timeline: allocations.map((alloc, index) => ({
+          step: index + 1,
+          action: `Otimizar posição em ${alloc.poolName}`,
+          status: 'pending',
+          estimatedTime: 45 + (index * 15)
+        })),
+        monitoring: {
+          nextRebalanceCheck: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          trackingEnabled: true,
+          alertsEnabled: true,
+          performanceTarget: expectedAPY
+        }
+      },
+      message: `🎯 Estratégia ${riskProfile} otimizada: ${expectedAPY.toFixed(2)}% APY esperado`,
+      timestamp: new Date().toISOString()
+    };
+
+  } catch (error) {
+    console.error('❌ Erro na otimização:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Erro na otimização',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Endpoint para perfis de risco
+fastify.get('/api/optimization/risk-profiles', async (request, reply) => {
+  return {
+    success: true,
+    data: [
+      {
+        id: 'conservative',
+        name: 'Conservative',
+        description: 'Foco em estabilidade e proteção do capital',
+        minAPY: 3.0,
+        maxRisk: 0.3,
+        colors: { primary: '#10B981', secondary: '#34D399', accent: '#059669' },
+        characteristics: {
+          volatility: 'Baixa',
+          expectedReturn: '5-10%',
+          suitableFor: 'Iniciantes'
+        }
+      },
+      {
+        id: 'moderate',
+        name: 'Moderate',
+        description: 'Equilíbrio entre risco e retorno',
+        minAPY: 6.0,
+        maxRisk: 0.6,
+        colors: { primary: '#3B82F6', secondary: '#60A5FA', accent: '#1D4ED8' },
+        characteristics: {
+          volatility: 'Média',
+          expectedReturn: '10-20%',
+          suitableFor: 'Intermediários'
+        }
+      },
+      {
+        id: 'aggressive',
+        name: 'Aggressive',
+        description: 'Máximo yield possível com alto risco',
+        minAPY: 12.0,
+        maxRisk: 1.0,
+        colors: { primary: '#EF4444', secondary: '#F87171', accent: '#DC2626' },
+        characteristics: {
+          volatility: 'Alta',
+          expectedReturn: '20%+',
+          suitableFor: 'Experientes'
+        }
+      }
+    ],
+    message: '3 perfis de risco disponíveis',
+    timestamp: new Date().toISOString()
+  };
+});
+
+// Endpoint para preview de otimização
+fastify.post('/api/optimization/preview', async (request, reply) => {
+  const { totalAmount, riskProfile } = request.body;
+  
+  const expectedAPY = riskProfile === 'conservative' ? 7.2 : 
+                     riskProfile === 'moderate' ? 11.8 : 18.5;
+  
+  return {
+    success: true,
+    data: {
+      strategy: {
+        expectedAPY,
+        riskScore: riskProfile === 'conservative' ? 0.3 : 
+                  riskProfile === 'moderate' ? 0.6 : 0.9,
+        confidence: 0.88
+      },
+      estimatedCosts: {
+        transactionFees: 0.015,
+        slippage: totalAmount * 0.003,
+        total: 0.015 + (totalAmount * 0.003)
+      },
+      timelineEstimate: {
+        preparationTime: 60,
+        executionTime: 90,
+        totalTime: 150
+      }
+    },
+    message: `📊 Preview gerado para estratégia ${riskProfile}`,
+    timestamp: new Date().toISOString()
+  };
+});
+
+console.log('✅ Serviços de otimização VaraYield-AI loaded');
+
 // Middleware de logging customizado para URLs
 fastify.addHook('onRequest', async (request, reply) => {
   const method = request.method;
