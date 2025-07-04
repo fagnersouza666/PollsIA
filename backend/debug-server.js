@@ -8,8 +8,12 @@ console.log('🔄 Carregando Raydium Safe SDK...');
 const RaydiumSafeSDK = require('./raydium-safe-sdk');
 const raydiumRealService = new RaydiumSafeSDK();
 
-// 🏊 REAL: Serviço de Add Liquidity REAL do Raydium (versão segura)
-console.log('🏊 Carregando Add Liquidity REAL do Raydium (safe)...');
+// 🏊 REAL: Serviço de Add Liquidity REAL do Raydium (versão completa)
+console.log('🏊 Carregando Add Liquidity REAL do Raydium...');
+const { RaydiumRealAddLiquidityService } = require('./raydium-real-add-liquidity');
+const realAddLiquidityService = new RaydiumRealAddLiquidityService();
+
+// 🏊 BACKUP: Serviço anterior (compatibilidade)
 const RaydiumSimpleReal = require('./raydium-simple-real');
 const realLiquidityService = new RaydiumSimpleReal();
 
@@ -1293,6 +1297,166 @@ fastify.post('/api/investment/process-signed', async (request, reply) => {
     return reply.status(500).send({
       success: false,
       error: 'Erro ao processar transação: ' + error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 🏊 NOVO: Endpoint para add liquidity REAL com Raydium SDK
+fastify.post('/api/investment/real-add-liquidity', async (request, reply) => {
+  const { poolId, userPublicKey, solAmount, tokenSymbol } = request.body;
+  
+  console.log('🏊 Iniciando add liquidity REAL no Raydium:', { poolId, userPublicKey, solAmount, tokenSymbol });
+  
+  try {
+    // Inicializar se necessário
+    if (!realAddLiquidityService.isInitialized) {
+      await realAddLiquidityService.initialize();
+    }
+    
+    const result = await realAddLiquidityService.prepareRealAddLiquidity({
+      poolId,
+      userPublicKey,
+      solAmount,
+      tokenSymbol
+    });
+    
+    if (result.success) {
+      console.log('✅ Add liquidity REAL preparada:', result.data.description);
+      
+      return {
+        success: true,
+        requiresSignature: true,
+        data: {
+          transactionData: result.data.transactionData,
+          expectedLpTokens: result.data.expectedLpTokens,
+          tokenAAmount: result.data.tokenAAmount,
+          tokenBAmount: result.data.tokenBAmount,
+          poolInfo: result.data.poolInfo,
+          ataAddresses: result.data.ataAddresses,
+          swapInfo: result.data.swapInfo,
+          description: result.data.description,
+          isRealAddLiquidity: result.data.isRealAddLiquidity
+        },
+        message: result.data.description,
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      console.error('❌ Falha ao preparar add liquidity real:', result.error);
+      return reply.status(400).send({
+        success: false,
+        error: result.error,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao preparar add liquidity real:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Erro ao preparar add liquidity: ' + error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 🏊 NOVO: Endpoint para processar add liquidity assinada
+fastify.post('/api/investment/process-add-liquidity', async (request, reply) => {
+  const { transaction, description } = request.body;
+  
+  console.log('📤 Processando add liquidity REAL assinada...');
+  
+  try {
+    if (!realAddLiquidityService.isInitialized) {
+      await realAddLiquidityService.initialize();
+    }
+    
+    const result = await realAddLiquidityService.processSignedAddLiquidity(transaction);
+    
+    if (result.success) {
+      console.log('✅ Add liquidity processada com sucesso!');
+      return {
+        success: true,
+        data: {
+          signature: result.signature,
+          explorerUrl: result.explorerUrl,
+          confirmationStatus: 'confirmed'
+        },
+        message: result.message,
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      console.error('❌ Falha no processamento da add liquidity:', result.error);
+      return reply.status(400).send({
+        success: false,
+        error: result.error,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao processar add liquidity:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Erro ao processar add liquidity: ' + error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 🏊 NOVO: Endpoint para buscar pools reais do Raydium
+fastify.get('/api/pools/raydium-real', async (request, reply) => {
+  try {
+    console.log('🔍 Buscando pools reais do Raydium...');
+    
+    if (!realAddLiquidityService.isInitialized) {
+      await realAddLiquidityService.initialize();
+    }
+    
+    const realPools = await realAddLiquidityService.getRealRaydiumPools();
+    
+    return {
+      success: true,
+      data: realPools,
+      message: `${realPools.length} pools reais encontradas`,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao buscar pools reais:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Erro ao buscar pools reais: ' + error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 🏊 NOVO: Endpoint para LP tokens do usuário
+fastify.get('/api/wallet/:publicKey/lp-tokens', async (request, reply) => {
+  const { publicKey } = request.params;
+  
+  try {
+    console.log(`🔍 Buscando LP tokens para ${publicKey}...`);
+    
+    if (!realAddLiquidityService.isInitialized) {
+      await realAddLiquidityService.initialize();
+    }
+    
+    const lpTokens = await realAddLiquidityService.getUserLPTokens(publicKey);
+    
+    return {
+      success: true,
+      data: lpTokens,
+      message: `${lpTokens.length} LP tokens encontrados`,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao buscar LP tokens:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Erro ao buscar LP tokens: ' + error.message,
       timestamp: new Date().toISOString()
     });
   }
