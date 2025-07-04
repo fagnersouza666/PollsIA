@@ -14,9 +14,9 @@ export class ExternalServiceError extends BaseError {
   readonly statusCode = 502;
 
   constructor(service: string, originalError: Error) {
-    super(`External service error: ${service}`, { 
-      service, 
-      originalError: originalError.message 
+    super(`External service error: ${service}`, {
+      service,
+      originalError: originalError.message
     });
   }
 }
@@ -65,19 +65,6 @@ export class ConfigurationError extends BaseError {
     super(`Configuration error: ${setting} - ${reason}`, {
       setting,
       reason,
-    });
-  }
-}
-
-export class ValidationError extends BaseError {
-  readonly code = 'VALIDATION_ERROR';
-  readonly statusCode = 400;
-
-  constructor(field: string, reason: string, value?: any) {
-    super(`Validation error: ${field} - ${reason}`, {
-      field,
-      reason,
-      value,
     });
   }
 }

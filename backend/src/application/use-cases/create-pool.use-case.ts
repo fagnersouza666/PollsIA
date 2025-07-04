@@ -5,10 +5,10 @@ import { Logger } from '../../shared/interfaces/logger.interface';
 import { PoolRepository } from '../../domain/repositories/pool.repository';
 import { Pool } from '../../domain/entities/pool.entity';
 import { CreatePoolCommand } from '../commands/create-pool.command';
-import { 
-  PoolAlreadyExistsError, 
+import {
+  PoolAlreadyExistsError,
   ValidationError,
-  InternalServerError 
+  InternalServerError
 } from '../../shared/errors';
 
 @injectable()
@@ -16,7 +16,7 @@ export class CreatePoolUseCase {
   constructor(
     @inject(TYPES.PoolRepository) private poolRepository: PoolRepository,
     @inject(TYPES.Logger) private logger: Logger
-  ) {}
+  ) { }
 
   async execute(command: CreatePoolCommand): Promise<Result<Pool, Error>> {
     this.logger.info('Creating new pool', {
@@ -31,7 +31,7 @@ export class CreatePoolUseCase {
       if (!command.isValid()) {
         const errors = command.validate();
         this.logger.warn('Pool creation validation failed', { errors });
-        return Result.failure(new ValidationError('Invalid pool data', { errors }));
+        return Result.failure(new ValidationError('Invalid pool data', errors));
       }
 
       // Check if pool already exists

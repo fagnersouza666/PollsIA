@@ -84,3 +84,12 @@ export class PositionNotFoundError extends BaseError {
     super(`Position not found: ${positionId}`, { positionId });
   }
 }
+
+export class ValidationError extends BaseError {
+  readonly code = 'VALIDATION_ERROR';
+  readonly statusCode = 400;
+
+  constructor(message: string, errors?: string[]) {
+    super(message, { errors });
+  }
+}

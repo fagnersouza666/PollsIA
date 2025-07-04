@@ -139,8 +139,8 @@ export class AnalyticsService {
   }
 
   private calculatePerformanceGrade(
-    weightedAPY: number, 
-    riskScore: number, 
+    weightedAPY: number,
+    riskScore: number,
     diversificationIndex: number
   ): 'A+' | 'A' | 'B' | 'C' | 'D' | 'F' {
     const score = weightedAPY * (1 - riskScore) + diversificationIndex * 2;
@@ -176,6 +176,96 @@ export class AnalyticsService {
 
   clearCache(): void {
     // Método para compatibilidade
+  }
+
+  /**
+   * Obtém dados de performance do usuário
+   */
+  async getPerformance(publicKey: string, timeframe: string = '30d'): Promise<any> {
+    console.log(`📈 Obtendo performance para ${publicKey} (${timeframe})`);
+
+    // Simular dados de performance
+    return {
+      totalValue: 15000,
+      totalReturn: 2500,
+      returnPercentage: 20.5,
+      timeframe,
+      chartData: this.generatePerformanceChartData(timeframe),
+      metrics: {
+        apy: 35.2,
+        sharpeRatio: 1.8,
+        maxDrawdown: -5.2,
+        winRate: 0.75
+      }
+    };
+  }
+
+  /**
+   * Obtém visão geral do mercado
+   */
+  async getMarketOverview(): Promise<any> {
+    console.log(`🌍 Obtendo visão geral do mercado`);
+
+    return {
+      totalTVL: 2850000000,
+      avgAPY: 18.5,
+      activeUsers: 45230,
+      topPools: [
+        { name: 'SOL/USDC', apy: 42.3, tvl: 85000000 },
+        { name: 'USDC/USDT', apy: 15.8, tvl: 120000000 },
+        { name: 'RAY/SOL', apy: 68.5, tvl: 45000000 }
+      ],
+      marketSentiment: 'bullish',
+      volatility: 0.18
+    };
+  }
+
+  /**
+   * Obtém oportunidades de investimento
+   */
+  async getOpportunities(filters: any = {}): Promise<any> {
+    console.log(`🔍 Buscando oportunidades com filtros:`, filters);
+
+    return {
+      opportunities: [
+        {
+          id: 'pool_1',
+          name: 'SOL/USDC LP',
+          apy: 45.2,
+          tvl: 25000000,
+          riskLevel: 'medium',
+          reason: 'Alta liquidez e APY estável',
+          score: 0.85
+        },
+        {
+          id: 'pool_2',
+          name: 'RAY/SOL LP',
+          apy: 68.5,
+          tvl: 12000000,
+          riskLevel: 'high',
+          reason: 'APY excepcional, volume crescente',
+          score: 0.78
+        }
+      ],
+      totalFound: 2,
+      filters: filters
+    };
+  }
+
+  private generatePerformanceChartData(timeframe: string): any[] {
+    const days = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90;
+    const data = [];
+    let value = 10000;
+
+    for (let i = 0; i < days; i++) {
+      value += (Math.random() - 0.4) * 200;
+      data.push({
+        date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000).toISOString(),
+        value: Math.round(value)
+      });
+    }
+
+    return data;
   }
 }
 

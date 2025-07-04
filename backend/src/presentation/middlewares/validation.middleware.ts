@@ -11,11 +11,11 @@ export const validateRequest = (schema: {
       if (schema.body) {
         request.body = schema.body.parse(request.body);
       }
-      
+
       if (schema.query) {
         request.query = schema.query.parse(request.query);
       }
-      
+
       if (schema.params) {
         request.params = schema.params.parse(request.params);
       }
@@ -24,7 +24,7 @@ export const validateRequest = (schema: {
         const validationErrors = error.errors.map(err => ({
           field: err.path.join('.'),
           message: err.message,
-          value: err.input,
+          code: err.code,
         }));
 
         return reply.status(400).send({
@@ -37,7 +37,7 @@ export const validateRequest = (schema: {
           timestamp: new Date().toISOString(),
         });
       }
-      
+
       throw error;
     }
   };
