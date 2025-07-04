@@ -5,7 +5,7 @@
  * Implementa funcionalidades similares ao VaraYield-AI
  */
 
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import OneClickOptimizerService from '../services/OneClickOptimizerService';
 import RiskManagementService from '../services/RiskManagementService';
 import AutoRebalanceService from '../services/AutoRebalanceService';
@@ -52,7 +52,7 @@ export default async function optimizationRoutes(fastify: FastifyInstance) {
 
   // Endpoint principal - One-Click Optimization (inspirado no VaraYield-AI)
   fastify.post<OptimizeRequest>('/api/optimization/optimize', async (request, reply) => {
-    const { userPublicKey, totalAmount, riskProfile, preferences } = request.body;
+    const { userPublicKey, totalAmount, riskProfile, preferences: _preferences } = request.body;
     
     console.log(`🎯 One-Click Optimization solicitada para ${userPublicKey}`);
     
@@ -77,7 +77,7 @@ export default async function optimizationRoutes(fastify: FastifyInstance) {
         userPublicKey,
         totalAmount,
         riskProfile,
-        preferences
+        preferences: _preferences
       });
 
       if (result.success) {
@@ -333,7 +333,7 @@ export default async function optimizationRoutes(fastify: FastifyInstance) {
 
   // Endpoint para simulação de otimização (preview)
   fastify.post('/api/optimization/preview', async (request: FastifyRequest<OptimizeRequest>, reply) => {
-    const { userPublicKey, totalAmount, riskProfile, preferences } = request.body;
+    const { userPublicKey, totalAmount, riskProfile, preferences: _preferences } = request.body;
     
     console.log(`👁️ Preview de otimização para ${userPublicKey}`);
     
