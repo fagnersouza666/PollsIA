@@ -2,7 +2,7 @@ import { HttpClient, RequestConfig } from '../types/api.types';
 import { NetworkError, ApiError } from '../../utils/errors';
 
 export class FetchHttpClient implements HttpClient {
-  constructor(private baseUrl: string = '') {}
+  constructor(private _baseUrl: string = '') {}
 
   private async request<T>(
     url: string,
@@ -15,7 +15,7 @@ export class FetchHttpClient implements HttpClient {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const fullUrl = this.baseUrl + url;
+      const fullUrl = this._baseUrl + url;
       const response = await fetch(fullUrl, {
         ...options,
         headers: {

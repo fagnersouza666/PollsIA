@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { HttpClient } from './http-client';
-import { ApiResponse, PaginatedResponse } from '../types/api.types';
+import { ApiResponse, PaginatedResponse, HttpClient } from '../types/api.types';
 import { 
   Pool, 
   PoolPosition, 
@@ -28,16 +27,16 @@ const AddLiquiditySchema = z.object({
 });
 
 export interface PoolService {
-  getPools(query?: GetPoolsQuery): Promise<PaginatedResponse<Pool>>;
-  getPoolById(id: string): Promise<Pool>;
-  getUserPositions(userPublicKey: string): Promise<PoolPosition[]>;
-  createPool(data: CreatePoolRequest): Promise<Pool>;
-  addLiquidity(data: AddLiquidityRequest): Promise<PoolPosition>;
-  removeLiquidity(data: RemoveLiquidityRequest): Promise<void>;
+  getPools(_query?: GetPoolsQuery): Promise<PaginatedResponse<Pool>>;
+  getPoolById(_id: string): Promise<Pool>;
+  getUserPositions(_userPublicKey: string): Promise<PoolPosition[]>;
+  createPool(_data: CreatePoolRequest): Promise<Pool>;
+  addLiquidity(_data: AddLiquidityRequest): Promise<PoolPosition>;
+  removeLiquidity(_data: RemoveLiquidityRequest): Promise<void>;
 }
 
 export class HttpPoolService implements PoolService {
-  constructor(private httpClient: HttpClient) {}
+  constructor(private _httpClient: HttpClient) {}
 
   async getPools(query: GetPoolsQuery = {}): Promise<PaginatedResponse<Pool>> {
     const params = new URLSearchParams();
@@ -52,7 +51,7 @@ export class HttpPoolService implements PoolService {
     if (query.minApr) params.append('minApr', query.minApr.toString());
     if (query.maxApr) params.append('maxApr', query.maxApr.toString());
 
-    const response = await this.httpClient.get<ApiResponse<PaginatedResponse<Pool>>>(
+    const response = await this._httpClient.get<ApiResponse<PaginatedResponse<Pool>>>(
       `/pools?${params}`
     );
 
@@ -71,7 +70,7 @@ export class HttpPoolService implements PoolService {
       throw new ValidationError('Pool ID is required');
     }
 
-    const response = await this.httpClient.get<ApiResponse<Pool>>(
+    const response = await this._httpClient.get<ApiResponse<Pool>>(
       `/pools/${id}`
     );
 
@@ -90,7 +89,7 @@ export class HttpPoolService implements PoolService {
       throw new ValidationError('User public key is required');
     }
 
-    const response = await this.httpClient.get<ApiResponse<PoolPosition[]>>(
+    const response = await this._httpClient.get<ApiResponse<PoolPosition[]>>(
       `/pools/positions/${userPublicKey}`
     );
 
@@ -107,7 +106,7 @@ export class HttpPoolService implements PoolService {
   async createPool(data: CreatePoolRequest): Promise<Pool> {
     const validatedData = CreatePoolSchema.parse(data);
 
-    const response = await this.httpClient.post<ApiResponse<Pool>>(
+    const response = await this._httpClient.post<ApiResponse<Pool>>(
       '/pools',
       validatedData
     );
@@ -125,7 +124,7 @@ export class HttpPoolService implements PoolService {
   async addLiquidity(data: AddLiquidityRequest): Promise<PoolPosition> {
     const validatedData = AddLiquiditySchema.parse(data);
 
-    const response = await this.httpClient.post<ApiResponse<PoolPosition>>(
+    const response = await this._httpClient.post<ApiResponse<PoolPosition>>(
       '/pools/add-liquidity',
       validatedData
     );
@@ -145,7 +144,7 @@ export class HttpPoolService implements PoolService {
       throw new ValidationError('Pool address is required');
     }
 
-    const response = await this.httpClient.post<ApiResponse<void>>(
+    const response = await this._httpClient.post<ApiResponse<void>>(
       '/pools/remove-liquidity',
       data
     );

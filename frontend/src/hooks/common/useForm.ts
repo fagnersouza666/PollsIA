@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { z } from 'zod';
 
 interface UseFormOptions<T> {
   initialValues: T;
   validationSchema?: z.ZodSchema<T>;
-  onSubmit: (values: T) => Promise<void> | void;
+  onSubmit: (_values: T) => Promise<void> | void;
 }
 
 interface FormState<T> {
@@ -71,7 +71,7 @@ export const useForm = <T extends Record<string, any>>({
   }, []);
 
   const handleChange = useCallback((field: keyof T) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: { target: { value: any } }
   ) => {
     const value = event.target.value;
     setValue(field, value);
@@ -81,7 +81,7 @@ export const useForm = <T extends Record<string, any>>({
     setTouched(field, true);
   }, [setTouched]);
 
-  const handleSubmit = useCallback(async (event?: React.FormEvent) => {
+  const handleSubmit = useCallback(async (event?: { preventDefault: () => void }) => {
     if (event) {
       event.preventDefault();
     }

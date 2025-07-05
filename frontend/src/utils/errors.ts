@@ -2,7 +2,7 @@ export abstract class BaseError extends Error {
   abstract readonly code: string;
   abstract readonly statusCode: number;
 
-  constructor(message: string, public readonly context?: Record<string, any>) {
+  constructor(message: string, public readonly _context?: Record<string, any>) {
     super(message);
     this.name = this.constructor.name;
   }
@@ -17,13 +17,17 @@ export class ApiError extends BaseError {
   readonly statusCode: number;
 
   constructor(
-    public readonly code: string,
+    public readonly _code: string,
     message: string,
     statusCode: number = 500,
     context?: Record<string, any>
   ) {
     super(message, context);
     this.statusCode = statusCode;
+  }
+
+  get code(): string {
+    return this._code;
   }
 }
 

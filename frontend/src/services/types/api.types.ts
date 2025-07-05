@@ -24,10 +24,10 @@ export interface PaginatedResponse<T> {
 }
 
 export interface HttpClient {
-  get<T>(url: string, config?: RequestConfig): Promise<T>;
-  post<T>(url: string, data?: any, config?: RequestConfig): Promise<T>;
-  put<T>(url: string, data?: any, config?: RequestConfig): Promise<T>;
-  delete<T>(url: string, config?: RequestConfig): Promise<T>;
+  get<T>(_url: string, _config?: RequestConfig): Promise<T>;
+  post<T>(_url: string, _data?: any, _config?: RequestConfig): Promise<T>;
+  put<T>(_url: string, _data?: any, _config?: RequestConfig): Promise<T>;
+  delete<T>(_url: string, _config?: RequestConfig): Promise<T>;
 }
 
 export interface RequestConfig {

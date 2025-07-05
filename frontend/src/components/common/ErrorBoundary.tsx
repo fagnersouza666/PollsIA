@@ -24,12 +24,12 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+  componentDidCatch(_error: Error, _errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', _error, _errorInfo);
     
     // Log to external service
     if (this.props.onError) {
-      this.props.onError(error, errorInfo);
+      this.props.onError(_error, _errorInfo);
     }
   }
 
