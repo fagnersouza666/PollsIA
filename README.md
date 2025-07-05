@@ -56,7 +56,9 @@ nano .env
 
 ## 🚀 **COMO INICIAR - 3 OPÇÕES**
 
-### **Opção 1: 🐳 Docker (MAIS FÁCIL - Recomendado)**
+### 🏠 **Desenvolvimento Local**
+
+#### **Opção 1: 🐳 Docker (MAIS FÁCIL - Recomendado)**
 ```bash
 # 1. Subir todos os serviços automaticamente
 docker-compose up -d
@@ -70,7 +72,7 @@ docker-compose logs -f
 # ✅ Pronto! Acesse: http://localhost:3000
 ```
 
-### **Opção 2: 💻 Manual (Desenvolvimento)**
+#### **Opção 2: 💻 Manual (Desenvolvimento)**
 ```bash
 # Terminal 1 - Backend (porta 3001) - IMPORTANTE: Use debug-server.js
 cd backend
@@ -86,13 +88,51 @@ npm run dev
 # ✅ TODAS AS ROTAS FUNCIONAIS: /api/pools/discover, /api/pools/rankings, /api/wallet/.../pools
 ```
 
-### **Opção 3: 🌐 Testes Rápidos (Protótipos)**
+#### **Opção 3: 🌐 Testes Rápidos (Protótipos)**
 ```bash
 # Abrir diretamente no browser
 open test-wallet.html        # Teste Phantom Wallet
 open simple-frontend.html    # Interface simples  
 open index.html             # Interface completa
 ```
+
+### 🏭 **Produção**
+
+#### **Deploy Completo (Recomendado)**
+```bash
+# 1. Configurar ambiente de produção
+cp .env.production.example .env.production
+nano .env.production  # Configure suas variáveis
+
+# 2. Deploy com script automático
+sudo ./scripts/deploy.sh
+
+# 3. Verificar saúde do sistema
+curl -f https://seu-dominio.com/health
+```
+
+#### **Deploy Manual**
+```bash
+# 1. Build e deploy com Docker Compose
+docker-compose -f docker-compose.prod.yml up -d
+
+# 2. Executar migrações
+./scripts/migrate.sh
+
+# 3. Verificar logs
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+#### **🔧 Configurações de Produção Incluídas**
+- ✅ **Multi-stage Docker builds** para imagens otimizadas
+- ✅ **Nginx proxy** com load balancing e SSL
+- ✅ **Security headers** e rate limiting
+- ✅ **Health checks** e monitoring
+- ✅ **Backup automático** do banco de dados
+- ✅ **CI/CD pipeline** com GitHub Actions
+- ✅ **Zero downtime deployments**
+
+📖 **Guia completo:** [PRODUCTION.md](./PRODUCTION.md)
 
 ## 🔗 **URLs de Acesso**
 - **🌐 Frontend:** http://localhost:3000
