@@ -1,4 +1,6 @@
 import { Pool } from '../entities/pool.entity';
+import { Result } from '../../shared/result';
+import { DomainError } from '../../shared/errors/domain.errors';
 
 export interface PoolFilters {
   search?: string;
@@ -27,18 +29,21 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-export interface PoolRepository {
-  findById(id: string): Promise<Pool | null>;
-  findByAddress(address: string): Promise<Pool | null>;
+export interface IPoolRepository {
+  findById(id: string): Promise<Result<Pool | null, DomainError>>;
+  findByAddress(address: string): Promise<Result<Pool | null, DomainError>>;
   findAll(
     filters?: PoolFilters,
     sort?: PoolSortOptions,
     pagination?: PaginationOptions
-  ): Promise<PaginatedResult<Pool>>;
-  save(pool: Pool): Promise<Pool>;
-  update(pool: Pool): Promise<Pool>;
-  delete(id: string): Promise<void>;
-  count(filters?: PoolFilters): Promise<number>;
-  findHighPerformingPools(limit?: number): Promise<Pool[]>;
-  findByTokenPair(tokenA: string, tokenB: string): Promise<Pool[]>;
+  ): Promise<Result<PaginatedResult<Pool>, DomainError>>;
+  save(pool: Pool): Promise<Result<Pool, DomainError>>;
+  update(pool: Pool): Promise<Result<Pool, DomainError>>;
+  delete(id: string): Promise<Result<void, DomainError>>;
+  count(filters?: PoolFilters): Promise<Result<number, DomainError>>;
+  findHighPerformingPools(limit?: number): Promise<Result<Pool[], DomainError>>;
+  findByTokenPair(tokenA: string, tokenB: string): Promise<Result<Pool[], DomainError>>;
 }
+
+// Legacy interface for backward compatibility
+export interface PoolRepository extends IPoolRepository { }

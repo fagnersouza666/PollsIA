@@ -1,5 +1,75 @@
 import { BaseError } from './base.error';
 
+export class DomainError extends BaseError {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly details?: any
+  ) {
+    super(message);
+    this.name = 'DomainError';
+  }
+
+  get statusCode(): number {
+    return 400;
+  }
+}
+
+export class ValidationError extends DomainError {
+  constructor(message: string, public readonly violations: string[]) {
+    super('VALIDATION_ERROR', message, violations);
+    this.name = 'ValidationError';
+  }
+
+  get statusCode(): number {
+    return 400;
+  }
+}
+
+export class NotFoundError extends DomainError {
+  constructor(resource: string, identifier: string) {
+    super('NOT_FOUND', `${resource} with identifier ${identifier} not found`);
+    this.name = 'NotFoundError';
+  }
+
+  get statusCode(): number {
+    return 404;
+  }
+}
+
+export class ConflictError extends DomainError {
+  constructor(resource: string, reason: string) {
+    super('CONFLICT', `${resource} conflict: ${reason}`);
+    this.name = 'ConflictError';
+  }
+
+  get statusCode(): number {
+    return 409;
+  }
+}
+
+export class BusinessRuleError extends DomainError {
+  constructor(rule: string, message: string) {
+    super('BUSINESS_RULE_VIOLATION', message, { rule });
+    this.name = 'BusinessRuleError';
+  }
+
+  get statusCode(): number {
+    return 422;
+  }
+}
+
+export class InvariantError extends DomainError {
+  constructor(invariant: string, message: string) {
+    super('INVARIANT_VIOLATION', message, { invariant });
+    this.name = 'InvariantError';
+  }
+
+  get statusCode(): number {
+    return 500;
+  }
+}
+
 export class PoolNotFoundError extends BaseError {
   readonly code = 'POOL_NOT_FOUND';
   readonly statusCode = 404;
@@ -82,14 +152,5 @@ export class PositionNotFoundError extends BaseError {
 
   constructor(positionId: string) {
     super(`Position not found: ${positionId}`, { positionId });
-  }
-}
-
-export class ValidationError extends BaseError {
-  readonly code = 'VALIDATION_ERROR';
-  readonly statusCode = 400;
-
-  constructor(message: string, errors?: string[]) {
-    super(message, { errors });
   }
 }

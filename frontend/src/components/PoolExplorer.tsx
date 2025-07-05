@@ -9,9 +9,9 @@ async function fetchPools() {
   const url = 'http://localhost:3001/api/pools/discover'
   // eslint-disable-next-line no-console
   console.log(`🔗 API Call: [GET] ${url}`)
-  
+
   const response = await fetch(url)
-  
+
   if (!response.ok) {
     // eslint-disable-next-line no-console
     console.error(`❌ API Error: [GET] ${url} - ${response.status} ${response.statusText}`)
@@ -19,7 +19,7 @@ async function fetchPools() {
     // eslint-disable-next-line no-console
     console.log(`✅ API Success: [GET] ${url} - ${response.status}`)
   }
-  
+
   const data = await response.json()
   return data.data || []
 }
@@ -28,9 +28,9 @@ async function fetchRankings() {
   const url = 'http://localhost:3001/api/pools/rankings'
   // eslint-disable-next-line no-console
   console.log(`🔗 API Call: [GET] ${url}`)
-  
+
   const response = await fetch(url)
-  
+
   if (!response.ok) {
     // eslint-disable-next-line no-console
     console.error(`❌ API Error: [GET] ${url} - ${response.status} ${response.statusText}`)
@@ -38,12 +38,16 @@ async function fetchRankings() {
     // eslint-disable-next-line no-console
     console.log(`✅ API Success: [GET] ${url} - ${response.status}`)
   }
-  
+
   const data = await response.json()
   return data.data || []
 }
 
-export function PoolExplorer() {
+interface PoolExplorerProps {
+  initialPools?: any[];
+}
+
+export function PoolExplorer({ initialPools = [] }: PoolExplorerProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterBy, setFilterBy] = useState('all')
   const [showInvestModal, setShowInvestModal] = useState(false)
@@ -52,6 +56,7 @@ export function PoolExplorer() {
   const { data: pools, isLoading } = useQuery({
     queryKey: ['pools'],
     queryFn: fetchPools,
+    initialData: initialPools,
   })
 
   const { data: rankings } = useQuery({
@@ -61,9 +66,9 @@ export function PoolExplorer() {
 
   const filteredPools = (pools || []).filter((pool: any) => {
     const matchesSearch = pool.tokenA?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pool.tokenB?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pool.protocol?.toLowerCase().includes(searchTerm.toLowerCase())
-    
+      pool.tokenB?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pool.protocol?.toLowerCase().includes(searchTerm.toLowerCase())
+
     if (filterBy === 'high-apy') return matchesSearch && pool.apy > 15
     if (filterBy === 'high-tvl') return matchesSearch && pool.tvl > 1000000
     return matchesSearch
@@ -206,11 +211,10 @@ function PoolCard({ pool, ranking, rank, onInvest }: {
             </div>
           </div>
           <p className="font-medium">
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
-              ranking?.riskScore !== undefined && ranking.riskScore <= 5 ? 'bg-green-100 text-green-800' :
-              ranking?.riskScore !== undefined && ranking.riskScore <= 7 ? 'bg-yellow-100 text-yellow-800' :
-              ranking?.riskScore !== undefined ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-            }`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${ranking?.riskScore !== undefined && ranking.riskScore <= 5 ? 'bg-green-100 text-green-800' :
+                ranking?.riskScore !== undefined && ranking.riskScore <= 7 ? 'bg-yellow-100 text-yellow-800' :
+                  ranking?.riskScore !== undefined ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+              }`}>
               {ranking?.riskScore !== undefined && ranking.riskScore <= 5 ? (
                 <Shield className="h-3 w-3" />
               ) : ranking?.riskScore !== undefined && ranking.riskScore <= 7 ? (
@@ -222,7 +226,7 @@ function PoolCard({ pool, ranking, rank, onInvest }: {
               <span className="ml-1 text-xs font-normal">
                 {ranking?.riskScore !== undefined ? (
                   ranking.riskScore <= 5 ? 'Baixo' :
-                  ranking.riskScore <= 7 ? 'Médio' : 'Alto'
+                    ranking.riskScore <= 7 ? 'Médio' : 'Alto'
                 ) : 'N/A'}
               </span>
             </span>
@@ -247,7 +251,7 @@ function PoolCard({ pool, ranking, rank, onInvest }: {
         onClick={() => onInvest?.(pool)}
         className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
       >
-💰 Investir com Phantom
+        💰 Investir com Phantom
       </button>
     </div>
   )
@@ -268,12 +272,12 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
   const calculateTokenAmounts = () => {
     const solValue = parseFloat(solAmount) || 0
     const usdValue = solValue * solPrice
-    
+
     // Assumindo split 50/50 na pool
     const halfValue = usdValue / 2
     const tokenAAmount = halfValue / tokenAPrice
     const tokenBAmount = halfValue / tokenBPrice
-    
+
     return { tokenAAmount, tokenBAmount, usdValue }
   }
 
@@ -317,7 +321,7 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
       const investUrl = 'http://localhost:3001/api/investment/invest'
       // eslint-disable-next-line no-console
       console.log(`🔗 API Call: [POST] ${investUrl}`)
-      
+
       const response = await fetch(investUrl, {
         method: 'POST',
         headers: {
@@ -348,7 +352,7 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
 
       // 2. Solicitar assinatura via Phantom
       setStatus('Aguardando assinatura no Phantom...')
-      
+
       if (!result.data.transactionData) {
         throw new Error('Dados da transação não encontrados')
       }
@@ -365,14 +369,14 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
         if (!result.data.transactionData) {
           throw new Error('Dados da transação não fornecidos pelo backend')
         }
-        
+
         // Usar a API estável do @solana/web3.js v1.x
         const { Transaction } = await import('@solana/web3.js')
         const transactionBuffer = Buffer.from(result.data.transactionData, 'base64')
-        
+
         // Deserializar usando a API v1.x
         transaction = Transaction.from(transactionBuffer)
-        
+
         // eslint-disable-next-line no-console
         console.log('✅ Transação deserializada com sucesso:', {
           recentBlockhash: transaction.recentBlockhash,
@@ -416,7 +420,7 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
       const processUrl = 'http://localhost:3001/api/investment/process-signed'
       // eslint-disable-next-line no-console
       console.log(`🔗 API Call: [POST] ${processUrl}`)
-      
+
       const processResponse = await fetch(processUrl, {
         method: 'POST',
         headers: {
@@ -443,11 +447,11 @@ function InvestmentModal({ pool, onClose }: { pool: any; onClose: () => void }) 
       }
 
       setStatus('Investimento executado com sucesso!')
-      
+
       // Sucesso! Mostrar detalhes da transação
       const isRealTransaction = processResult.data.confirmationStatus === 'confirmed'
       const isRealPool = result.data.isRealPool || pool.isReal
-      
+
       let message = `🎉 Investimento executado com sucesso!
 
 ${isRealPool ? '🏊 POOL REAL DO RAYDIUM' : '⚠️ DEMONSTRAÇÃO'} 
@@ -479,21 +483,21 @@ ${isRealPool ? '🏊 POOL REAL DO RAYDIUM' : '⚠️ DEMONSTRAÇÃO'}
       }
 
       alert(message)
-      
+
       // Se for transação real, abrir explorer
       if (isRealTransaction && processResult.data.explorerUrl) {
         if (confirm('Deseja abrir o Solscan para ver a transação?')) {
           window.open(processResult.data.explorerUrl, '_blank')
         }
       }
-      
+
       onClose()
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
       setError(`Erro ao processar investimento: ${errorMessage}`)
       setStatus('')
-      
+
       // Log detalhado para debug
       if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
@@ -636,11 +640,10 @@ ${isRealPool ? '🏊 POOL REAL DO RAYDIUM' : '⚠️ DEMONSTRAÇÃO'}
           <button
             onClick={handleInvest}
             disabled={!isValidAmount || isLoading || !pool.isReal}
-            className={`flex-1 px-4 py-2 rounded-lg transition-colors text-white ${
-              !pool.isReal 
-                ? 'bg-gray-400 cursor-not-allowed' 
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors text-white ${!pool.isReal
+                ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300'
-            }`}
+              }`}
           >
             {!pool.isReal ? 'Pool Indisponível' : isLoading ? 'Preparando para Phantom...' : '💰 Investir com Phantom'}
           </button>

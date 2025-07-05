@@ -1,47 +1,34 @@
 export class CreatePoolCommand {
   constructor(
-    public readonly address: string,
-    public readonly name: string,
-    public readonly tokenAAddress: string,
-    public readonly tokenBAddress: string,
-    public readonly initialLiquidityA: number,
-    public readonly initialLiquidityB: number,
-    public readonly fee: number
-  ) {}
+    public readonly tokenA: string,
+    public readonly tokenB: string,
+    public readonly fee: number,
+    public readonly initialPrice: number,
+    public readonly name?: string,
+    public readonly address?: string
+  ) { }
 
   validate(): string[] {
     const errors: string[] = [];
 
-    if (!this.address || this.address.trim().length === 0) {
-      errors.push('Pool address is required');
+    if (!this.tokenA || this.tokenA.trim().length === 0) {
+      errors.push('Token A is required');
     }
 
-    if (!this.name || this.name.trim().length === 0) {
-      errors.push('Pool name is required');
+    if (!this.tokenB || this.tokenB.trim().length === 0) {
+      errors.push('Token B is required');
     }
 
-    if (!this.tokenAAddress || this.tokenAAddress.trim().length === 0) {
-      errors.push('Token A address is required');
-    }
-
-    if (!this.tokenBAddress || this.tokenBAddress.trim().length === 0) {
-      errors.push('Token B address is required');
-    }
-
-    if (this.tokenAAddress === this.tokenBAddress) {
+    if (this.tokenA === this.tokenB) {
       errors.push('Token A and Token B must be different');
-    }
-
-    if (this.initialLiquidityA <= 0) {
-      errors.push('Initial liquidity for Token A must be positive');
-    }
-
-    if (this.initialLiquidityB <= 0) {
-      errors.push('Initial liquidity for Token B must be positive');
     }
 
     if (this.fee < 0 || this.fee > 1) {
       errors.push('Fee must be between 0 and 1');
+    }
+
+    if (this.initialPrice <= 0) {
+      errors.push('Initial price must be positive');
     }
 
     return errors;
