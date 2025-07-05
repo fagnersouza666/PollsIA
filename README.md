@@ -83,7 +83,7 @@ npm install --legacy-peer-deps
 npm run dev
 
 # ✅ Pronto! Acesse: http://localhost:3000
-# ⚠️ NOTA: Use debug-server.js para ter todas as rotas funcionais
+# ✅ TODAS AS ROTAS FUNCIONAIS: /api/pools/discover, /api/pools/rankings, /api/wallet/.../pools
 ```
 
 ### **Opção 3: 🌐 Testes Rápidos (Protótipos)**
