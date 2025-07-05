@@ -8,6 +8,7 @@ import { PoolRepository } from '../domain/repositories/pool.repository';
 
 // Implementations
 import { WinstonLogger } from '../infrastructure/config/logger';
+import { MockPoolRepository } from '../infrastructure/repositories/mock-pool.repository';
 
 // Use cases
 import { CreatePoolUseCase } from '../application/use-cases/create-pool.use-case';
@@ -20,6 +21,7 @@ const container = new Container();
 
 // Infrastructure
 container.bind<Logger>(TYPES.Logger).to(WinstonLogger).inSingletonScope();
+container.bind<PoolRepository>(TYPES.PoolRepository).to(MockPoolRepository).inSingletonScope();
 
 // Use Cases
 container.bind<CreatePoolUseCase>(TYPES.CreatePoolUseCase).to(CreatePoolUseCase);
@@ -27,8 +29,5 @@ container.bind<GetPoolsUseCase>(TYPES.GetPoolsUseCase).to(GetPoolsUseCase);
 
 // Controllers
 container.bind<PoolController>(TYPES.PoolController).to(PoolController);
-
-// TODO: Add PoolRepository implementation when ready
-// container.bind<PoolRepository>(TYPES.PoolRepository).to(MongoPoolRepository);
 
 export { container };

@@ -1,15 +1,19 @@
+import 'reflect-metadata';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config/env';
 import { swaggerConfig } from './config/swagger-simple';
-import { poolRoutes } from './routes/pools';
+import { poolRoutes } from './presentation/routes/pool.routes';
 import { walletRoutes } from './routes/wallet';
 import { analyticsRoutes } from './routes/analytics';
 import { investmentRoutes } from './routes/investment';
 import { errorHandler } from './middleware/errorHandler';
 import { redisCache } from './utils/RedisCache';
+import { container } from './shared/container';
+import { TYPES } from './shared/types';
+import { Logger } from './shared/interfaces/logger.interface';
 
 const fastify = Fastify({
   logger: true
@@ -17,13 +21,17 @@ const fastify = Fastify({
 
 async function start() {
   try {
+    // Initialize logger from DI container
+    const logger = container.get<Logger>(TYPES.Logger);
+    logger.info('🚀 Starting PollsIA Backend Server...');
+    
     // Inicializar Redis Cache (não bloquear se falhar)
-    console.log('🔄 Inicializando Redis cache...');
+    logger.info('🔄 Inicializando Redis cache...');
     try {
       await redisCache.connect();
-      console.log('✅ Redis cache conectado');
+      logger.info('✅ Redis cache conectado');
     } catch (error) {
-      console.warn('⚠️ Continuando sem Redis cache:', error instanceof Error ? error.message : 'Erro desconhecido');
+      logger.warn('⚠️ Continuando sem Redis cache', error as Error);
     }
     
     // Register error handler
@@ -42,6 +50,7 @@ async function start() {
       credentials: true
     });
 
+    // Register routes
     await fastify.register(poolRoutes, { prefix: '/api/pools' });
     await fastify.register(walletRoutes, { prefix: '/api/wallet' });
     await fastify.register(analyticsRoutes, { prefix: '/api/analytics' });
@@ -100,11 +109,12 @@ async function start() {
       host: '0.0.0.0'
     });
 
-    console.log(`🚀 Server running on port ${config.PORT}`);
-    console.log(`📚 API Documentation: http://localhost:${config.PORT}/docs`);
-    console.log(`🔍 OpenAPI Spec: http://localhost:${config.PORT}/documentation/json`);
+    logger.info(`🚀 Server running on port ${config.PORT}`);
+    logger.info(`📚 API Documentation: http://localhost:${config.PORT}/docs`);
+    logger.info(`🔍 OpenAPI Spec: http://localhost:${config.PORT}/documentation/json`);
   } catch (err) {
-    fastify.log.error(err);
+    const logger = container.get<Logger>(TYPES.Logger);
+    logger.error('Failed to start server', err as Error);
     process.exit(1);
   }
 }
