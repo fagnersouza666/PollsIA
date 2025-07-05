@@ -1,6 +1,5 @@
 ---
-description: Use com inteligencia
-alwaysApply: false
+alwaysApply: true
 ---
 Não inclua chaves ou tokens no código ou em commits.
 Mantenha os commits objetivos, descrevendo a mudança principal.

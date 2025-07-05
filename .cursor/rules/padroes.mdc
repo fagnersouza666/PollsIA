@@ -1,5 +1,4 @@
 ---
-description: Padrões
-alwaysApply: false
+alwaysApply: true
 ---
 Sempre siga os padrões e tecnologias do projeto especificado no arquivo CLAUDE.md
