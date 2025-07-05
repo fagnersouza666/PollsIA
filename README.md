@@ -72,10 +72,10 @@ docker-compose logs -f
 
 ### **Opção 2: 💻 Manual (Desenvolvimento)**
 ```bash
-# Terminal 1 - Backend (porta 3001)
+# Terminal 1 - Backend (porta 3001) - IMPORTANTE: Use debug-server.js
 cd backend
 npm install --legacy-peer-deps
-npm run dev
+node debug-server.js
 
 # Terminal 2 - Frontend (porta 3000) 
 cd frontend  
@@ -83,6 +83,7 @@ npm install --legacy-peer-deps
 npm run dev
 
 # ✅ Pronto! Acesse: http://localhost:3000
+# ⚠️ NOTA: Use debug-server.js para ter todas as rotas funcionais
 ```
 
 ### **Opção 3: 🌐 Testes Rápidos (Protótipos)**
@@ -106,6 +107,11 @@ curl http://localhost:3001/api/pools/discover
 
 # Testar frontend
 curl http://localhost:3000
+
+# Testar rotas de API do frontend (proxy para backend)
+curl http://localhost:3000/api/pools/discover
+curl http://localhost:3000/api/pools/rankings
+curl "http://localhost:3000/api/wallet/DuASG5ubHN6qsBCGJVfLa5G5TjDQ48TJ3XcZ8U6eDee/pools?status=active"
 ```
 
 ## 🎯 **COMANDOS RÁPIDOS**
@@ -165,6 +171,34 @@ npm run pre-commit       # Alias para check:all
 - ✅ **Logs funcionais**: `🚀 Server running on port 3001` + documentação em `/docs`
 
 **Status:** ✅ **Sistema 100% funcional** - servidor backend iniciado com sucesso em 27/01/2025
+
+#### **✅ CORREÇÃO CRÍTICA: Rotas API Frontend** (v1.0.12 - 05/07/2025)
+**Problema crítico resolvido:** Rotas `/api/pools/discover`, `/api/pools/rankings` e `/api/wallet/{publicKey}/pools` retornando 404 ou 501.
+
+**Diagnóstico realizado:**
+- **Servidor incorreto**: Sistema estava usando `server-simple.js` em vez do `debug-server.js`
+- **Rotas não implementadas**: Frontend Next.js não tinha rotas de API para proxy
+- **Conflito de servidores**: Múltiplos servidores backend com implementações diferentes
+- **Erro de conexão**: Frontend tentando conectar em `localhost` em vez de `127.0.0.1`
+
+**Soluções implementadas:**
+- **Backend correto**: Migração para `debug-server.js` com todas as rotas implementadas
+- **Rotas de proxy**: Criadas rotas Next.js API para proxy ao backend:
+  - `frontend/src/app/api/pools/discover/route.ts`
+  - `frontend/src/app/api/pools/rankings/route.ts`
+  - `frontend/src/app/api/wallet/[publicKey]/pools/route.ts`
+- **Configuração de rede**: Mudança de `localhost` para `127.0.0.1` para compatibilidade
+- **Variáveis de ambiente**: Configuração de `BACKEND_URL=http://127.0.0.1:3001`
+- **Tratamento de erros**: Implementação de error handling e logging nas rotas proxy
+
+**Resultados:**
+- ✅ **Todas as rotas funcionais**: `/api/pools/discover`, `/api/pools/rankings`, `/api/wallet/.../pools`
+- ✅ **Dados reais**: Integração com pools reais do Raydium funcionando
+- ✅ **Frontend integrado**: Next.js fazendo proxy correto para backend
+- ✅ **Logs funcionais**: Respostas JSON válidas com dados estruturados
+- ✅ **Zero erros 404/501**: Todas as rotas retornando status 200
+
+**Status:** ✅ **Sistema 100% integrado** - frontend e backend comunicando perfeitamente em 05/07/2025
 
 #### **✅ CORREÇÃO ANTERIOR: Rate Limiting e Performance** (v1.0.10 - 27/01/2025)
 **Problema crítico resolvido:** Sistema estava consumindo 99.3% de CPU devido a loops infinitos de chamadas RPC e múltiplos erros 429.
