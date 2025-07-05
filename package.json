@@ -10,10 +10,24 @@
     "restart": "docker-compose restart",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" --names \"Backend,Frontend\" --prefix-colors \"blue,green\"",
     "install:all": "cd backend && npm install --legacy-peer-deps && cd ../frontend && npm install --legacy-peer-deps",
+    "lint": "cd backend && npm run lint && cd ../frontend && npm run lint",
+    "typecheck": "cd backend && npm run typecheck && cd ../frontend && npm run typecheck",
     "test:all": "cd backend && npm test && cd ../frontend && npm test",
+    "test:backend:unit": "cd backend && npm run test:unit",
+    "test:backend:integration": "cd backend && npm run test:integration",
+    "test:backend:e2e": "cd backend && npm run test:e2e",
+    "test:frontend:unit": "cd frontend && npm run test:unit",
+    "test:frontend:integration": "cd frontend && npm run test:integration",
+    "test:frontend:e2e": "cd frontend && npm run test:e2e",
+    "test:frontend:watch": "cd frontend && npm run test:watch",
+    "test:coverage": "cd backend && npm run test:coverage && cd ../frontend && npm run test:coverage",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
     "build:all": "cd backend && npm run build && cd ../frontend && npm run build",
-    "check:all": "echo '🧪 Executando todos os testes...' && npm run test:all && echo '🔍 Verificando lint...' && cd backend && npm run lint && cd ../frontend && npm run lint && echo '📝 Verificando tipos...' && cd ../backend && npm run typecheck && cd ../frontend && npm run typecheck && echo '✅ TUDO OK! Pronto para commit.'",
+    "deploy": "npm run build:all && docker-compose -f docker-compose.prod.yml up -d",
+    "check:all": "echo '🧪 Executando todos os testes...' && npm run test:all && echo '🔍 Verificando lint...' && npm run lint && echo '📝 Verificando tipos...' && npm run typecheck && echo '✅ TUDO OK! Pronto para commit.'",
     "pre-commit": "npm run check:all"
   },
   "keywords": ["solana", "defi", "pools", "liquidez", "raydium", "blockchain"],
@@ -21,5 +35,8 @@
   "dependencies": {
     "@fastify/swagger": "^9.5.1",
     "@fastify/swagger-ui": "^5.2.3"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

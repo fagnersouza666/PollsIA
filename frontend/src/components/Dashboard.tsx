@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { TrendingUp, Wallet, Activity, Target } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Activity, Target, TrendingUp, Wallet } from 'lucide-react'
 import { PoolExplorer } from './PoolExplorer'
 import { WalletPools } from './WalletPools'
 import { api } from '../utils/api'

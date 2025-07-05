@@ -1,0 +1,5 @@
+export { LoginForm } from './login-form'
+export { RegisterForm } from './register-form'
+export { ContactForm } from './contact-form'
+export { InvestmentForm } from './investment-form'
+export { ProfileForm } from './profile-form'

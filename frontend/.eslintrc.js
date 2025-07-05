@@ -1,36 +1,50 @@
 module.exports = {
-  parser: '@typescript-eslint/parser',
-  parserOptions: {
-    ecmaVersion: 2020,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    },
-    project: './tsconfig.json',
-  },
-  plugins: ['react', 'react-hooks'],
   extends: [
-    'eslint:recommended',
     'next/core-web-vitals',
   ],
-  root: true,
+  rules: {
+    // General rules
+    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'no-debugger': 'error',
+    'no-alert': 'warn',
+    'no-var': 'error',
+    'prefer-const': 'error',
+    'no-duplicate-imports': 'error',
+    'no-unused-expressions': 'error',
+    'no-useless-return': 'error',
+    
+    // Next.js specific
+    '@next/next/no-html-link-for-pages': 'error',
+    '@next/next/no-img-element': 'error',
+  },
   env: {
     browser: true,
-    es6: true,
+    es2021: true,
     node: true,
-  },
-  ignorePatterns: ['.eslintrc.js', '.next/', 'node_modules/', 'out/'],
-  rules: {
-    'react/react-in-jsx-scope': 'off',
-    'react/prop-types': 'off',
-    'react-hooks/rules-of-hooks': 'error',
-    'react-hooks/exhaustive-deps': 'warn',
-    'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
-    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
   },
   settings: {
     react: {
       version: 'detect',
     },
   },
-};
+  overrides: [
+    {
+      files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+      env: {
+        jest: true,
+      },
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        'no-console': 'off',
+      },
+    },
+  ],
+  ignorePatterns: [
+    'node_modules/',
+    '.next/',
+    'out/',
+    'dist/',
+    '*.config.js',
+    '*.config.ts',
+  ],
+}

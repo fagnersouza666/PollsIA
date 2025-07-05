@@ -75,3 +75,37 @@ export interface GetPoolsQuery {
   minApr?: number;
   maxApr?: number;
 }
+
+export interface PoolStats {
+  totalVolume: number;
+  volume24h: number;
+  volume7d: number;
+  totalFees: number;
+  fees24h: number;
+  fees7d: number;
+  totalTransactions: number;
+  transactions24h: number;
+  activeUsers: number;
+  highestTvl: number;
+  lowestTvl: number;
+  avgApr: number;
+  lastUpdate: string;
+}
+
+export interface PoolHistory {
+  timestamp: string;
+  tvl: number;
+  volume: number;
+  fees: number;
+  apr: number;
+  price: number;
+  transactions: number;
+}
+
+export interface PoolFilters {
+  tokenSymbol?: string;
+  minTvl?: number;
+  maxTvl?: number;
+  minApy?: number;
+  maxApy?: number;
+}

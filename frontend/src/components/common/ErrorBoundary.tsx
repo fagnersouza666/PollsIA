@@ -49,18 +49,18 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex items-center mb-4">
               <AlertTriangle className="h-8 w-8 text-red-500 mr-3" />
               <h1 className="text-xl font-semibold text-gray-900">
-                Something went wrong
+                Algo deu errado
               </h1>
             </div>
             
             <p className="text-gray-600 mb-6">
-              An unexpected error occurred. Please try refreshing the page.
+              Ocorreu um erro inesperado. Nossa equipe foi notificada. Tente recarregar a página.
             </p>
             
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mb-4 p-3 bg-red-50 rounded border">
                 <summary className="font-medium text-red-800 cursor-pointer">
-                  Error Details
+                  Detalhes do Erro
                 </summary>
                 <pre className="mt-2 text-sm text-red-700 overflow-auto">
                   {this.state.error.stack}
@@ -73,7 +73,7 @@ export class ErrorBoundary extends Component<Props, State> {
               className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
+              Tentar Novamente
             </button>
           </div>
         </div>

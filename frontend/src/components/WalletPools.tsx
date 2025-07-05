@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { DollarSign, TrendingDown, TrendingUp } from 'lucide-react'
 import { api } from '../utils/api'
 
 interface WalletPool {

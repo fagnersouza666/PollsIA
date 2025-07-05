@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useServices } from '../../services/service-provider';
 import { 
-  GetPoolsQuery, 
-  CreatePoolRequest, 
   AddLiquidityRequest, 
+  CreatePoolRequest, 
+  GetPoolsQuery, 
   RemoveLiquidityRequest 
 } from '../../services/types/pool.types';
 import { ApiError, getErrorMessage } from '../../utils/errors';
@@ -26,7 +26,7 @@ export const usePools = (query?: GetPoolsQuery) => {
   });
 };
 
-export const usePool = (id: string, enabled: boolean = true) => {
+export const usePool = (id: string, enabled = true) => {
   const { poolService } = useServices();
 
   return useQuery({
@@ -43,7 +43,7 @@ export const usePool = (id: string, enabled: boolean = true) => {
   });
 };
 
-export const useUserPositions = (userPublicKey: string, enabled: boolean = true) => {
+export const useUserPositions = (userPublicKey: string, enabled = true) => {
   const { poolService } = useServices();
 
   return useQuery({

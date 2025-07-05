@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Search, TrendingUp, X, DollarSign, ArrowRight, AlertCircle, Shield, ShieldAlert, ShieldX, Info } from 'lucide-react'
+import { AlertCircle, ArrowRight, DollarSign, Info, Search, Shield, ShieldAlert, ShieldX, TrendingUp, X } from 'lucide-react'
 import { useState } from 'react'
 import { phantomWallet } from '../utils/phantom-wallet'
 

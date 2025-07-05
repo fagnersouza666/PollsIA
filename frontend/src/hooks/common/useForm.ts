@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { z } from 'zod';
 
 interface UseFormOptions<T> {
@@ -63,7 +63,7 @@ export const useForm = <T extends Record<string, any>>({
     });
   }, [validate]);
 
-  const setTouched = useCallback((field: keyof T, touched: boolean = true) => {
+  const setTouched = useCallback((field: keyof T, touched = true) => {
     setState((prev) => ({
       ...prev,
       touched: { ...prev.touched, [field]: touched },

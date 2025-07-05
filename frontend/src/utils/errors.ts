@@ -19,7 +19,7 @@ export class ApiError extends BaseError {
   constructor(
     public readonly _code: string,
     message: string,
-    statusCode: number = 500,
+    statusCode = 500,
     context?: Record<string, any>
   ) {
     super(message, context);

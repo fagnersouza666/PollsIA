@@ -1,8 +1,8 @@
 import { HttpClient, RequestConfig } from '../types/api.types';
-import { NetworkError, ApiError } from '../../utils/errors';
+import { ApiError, NetworkError } from '../../utils/errors';
 
 export class FetchHttpClient implements HttpClient {
-  constructor(private _baseUrl: string = '') {}
+  constructor(private _baseUrl = '') {}
 
   private async request<T>(
     url: string,
