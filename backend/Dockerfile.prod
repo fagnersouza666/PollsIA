@@ -1,0 +1,74 @@
+# =============================================================================
+# PollsIA Backend - Production Dockerfile
+# Multi-stage build for optimized production image
+# =============================================================================
+
+# =============================================================================
+# Stage 1: Build Dependencies
+# =============================================================================
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# Install dependencies needed for building
+RUN apk add --no-cache libc6-compat
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production --legacy-peer-deps && npm cache clean --force
+
+# =============================================================================
+# Stage 2: Build Application
+# =============================================================================
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci --legacy-peer-deps
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# =============================================================================
+# Stage 3: Production Runtime
+# =============================================================================
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+
+# Copy production dependencies from deps stage
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=2048 --expose-gc"
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3001/health || exit 1
+
+# Start the application
+CMD ["node", "dist/index.js"]

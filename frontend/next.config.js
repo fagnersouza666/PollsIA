@@ -7,6 +7,11 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Production optimizations
+  output: 'standalone',
+  compress: true,
+  poweredByHeader: false,
+  generateEtags: false,
   transpilePackages: ['@solana/wallet-adapter-base', '@solana/wallet-adapter-react', '@solana/wallet-adapter-react-ui'],
   images: {
     formats: ['image/webp', 'image/avif'],
