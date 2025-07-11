@@ -4,7 +4,7 @@
   "description": "Backend API for PollsIA - Automated liquidity pool management on Solana",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch --clear-screen=false --ignore=dist --ignore=node_modules src/index.ts",
+    "dev": "node express-proxy-server.js",
     "dev-simple": "tsx watch src/index-simple.ts",
     "dev-debug": "node debug-server.js",
     "dev-full": "tsx watch src/index.ts",
