@@ -99,7 +99,7 @@ const initialState: WalletState = {
   connection: new Connection(
     process.env.NODE_ENV === 'production' 
       ? `${process.env.NEXT_PUBLIC_API_URL}/api/solana/rpc`
-      : 'http://localhost:3001/api/solana/rpc',
+      : 'https://solana-rpc.publicnode.com',
     'confirmed'
   ),
   tokens: [],
@@ -589,11 +589,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
       // Check for Raydium AMM LP tokens
       try {
-        const raydiumPairsResponse = await fetch(
-          process.env.NODE_ENV === 'production' 
-            ? `${process.env.NEXT_PUBLIC_API_URL}/api/solana/raydium-pairs`
-            : 'http://localhost:3001/api/solana/raydium-pairs'
-        )
+        const raydiumPairsResponse = await fetch('https://api.raydium.io/v2/main/pairs')
         
         if (raydiumPairsResponse.ok) {
           const pairs = await raydiumPairsResponse.json()
