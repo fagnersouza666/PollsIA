@@ -25,6 +25,7 @@ export const TYPES = {
 
   // Controllers
   PoolController: Symbol.for('PoolController'),
+  WalletController: Symbol.for('WalletController'),
 
   // Services
   WalletService: Symbol.for('WalletService'),
