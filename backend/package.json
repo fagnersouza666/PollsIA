@@ -4,7 +4,9 @@
   "description": "Backend API for PollsIA - Automated liquidity pool management on Solana",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "node debug-server.js",
+    "dev": "tsx watch src/index.ts",
+    "dev-simple": "tsx watch src/index-simple.ts",
+    "dev-debug": "node debug-server.js",
     "dev-full": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/server-simple.js",
@@ -17,6 +19,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^8.5.0",
+    "@fastify/http-proxy": "^11.3.0",
     "@fastify/swagger": "^8.15.0",
     "@fastify/swagger-ui": "^4.1.0",
     "@hookform/resolvers": "^5.1.1",
