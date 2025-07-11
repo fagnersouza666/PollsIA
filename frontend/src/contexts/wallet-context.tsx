@@ -23,6 +23,23 @@ interface ConnectedWallet {
   signMessage?: (message: Uint8Array) => Promise<Uint8Array>
 }
 
+interface TokenInfo {
+  mint: string
+  symbol: string
+  balance: number
+  usdValue: number
+  decimals: number
+}
+
+interface DeFiPosition {
+  type: 'raydium-clmm' | 'raydium-amm'
+  mint: string
+  balance: number
+  usdValue: number
+  poolName?: string
+  positionAddress?: string
+}
+
 interface WalletState {
   wallet: ConnectedWallet | null
   wallets: WalletAdapter[]
@@ -32,6 +49,11 @@ interface WalletState {
   error: string | null
   balance: number | null
   connection: Connection
+  tokens: TokenInfo[]
+  defiPositions: DeFiPosition[]
+  totalUsdValue: number
+  loadingTokens: boolean
+  loadingDefi: boolean
 }
 
 type WalletAction =
@@ -43,6 +65,11 @@ type WalletAction =
   | { type: 'DISCONNECT_SUCCESS' }
   | { type: 'DISCONNECT_FAILURE'; payload: string }
   | { type: 'SET_BALANCE'; payload: number | null }
+  | { type: 'SET_TOKENS'; payload: TokenInfo[] }
+  | { type: 'SET_DEFI_POSITIONS'; payload: DeFiPosition[] }
+  | { type: 'SET_TOTAL_USD_VALUE'; payload: number }
+  | { type: 'SET_LOADING_TOKENS'; payload: boolean }
+  | { type: 'SET_LOADING_DEFI'; payload: boolean }
   | { type: 'CLEAR_ERROR' }
 
 interface WalletContextType {
@@ -54,6 +81,9 @@ interface WalletContextType {
   signMessage: (message: string) => Promise<Uint8Array>
   sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>
   getBalance: () => Promise<number | null>
+  getTokens: () => Promise<void>
+  getDeFiPositions: () => Promise<void>
+  refreshWalletData: () => Promise<void>
   clearError: () => void
 }
 
@@ -66,7 +96,17 @@ const initialState: WalletState = {
   disconnecting: false,
   error: null,
   balance: null,
-  connection: new Connection(SOLANA_RPC_URL, 'confirmed'),
+  connection: new Connection(
+    process.env.NODE_ENV === 'production' 
+      ? `${process.env.NEXT_PUBLIC_API_URL}/api/solana/rpc`
+      : 'http://localhost:3001/api/solana/rpc',
+    'confirmed'
+  ),
+  tokens: [],
+  defiPositions: [],
+  totalUsdValue: 0,
+  loadingTokens: false,
+  loadingDefi: false,
 }
 
 // Reducer
@@ -113,6 +153,11 @@ function walletReducer(state: WalletState, action: WalletAction): WalletState {
         connected: false,
         disconnecting: false,
         balance: null,
+        tokens: [],
+        defiPositions: [],
+        totalUsdValue: 0,
+        loadingTokens: false,
+        loadingDefi: false,
         error: null,
       }
     case 'DISCONNECT_FAILURE':
@@ -125,6 +170,31 @@ function walletReducer(state: WalletState, action: WalletAction): WalletState {
       return {
         ...state,
         balance: action.payload,
+      }
+    case 'SET_TOKENS':
+      return {
+        ...state,
+        tokens: action.payload,
+      }
+    case 'SET_DEFI_POSITIONS':
+      return {
+        ...state,
+        defiPositions: action.payload,
+      }
+    case 'SET_TOTAL_USD_VALUE':
+      return {
+        ...state,
+        totalUsdValue: action.payload,
+      }
+    case 'SET_LOADING_TOKENS':
+      return {
+        ...state,
+        loadingTokens: action.payload,
+      }
+    case 'SET_LOADING_DEFI':
+      return {
+        ...state,
+        loadingDefi: action.payload,
       }
     case 'CLEAR_ERROR':
       return {
@@ -362,16 +432,243 @@ export function WalletProvider({ children }: WalletProviderProps) {
     dispatch({ type: 'CLEAR_ERROR' })
   }, [])
 
-  // Auto-refresh balance
+  // Known tokens (similar to teste.html)
+  const knownTokens = {
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
+    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
+    'So11111111111111111111111111111111111111112': 'SOL',
+    'HRX9BoeaTM9keXiqSAm6HuTzuHRUqTfwixXXBXW4pump': 'HRX',
+    'GwkEDwePTa6aFosh9xzAniGK1zvLrQ5yPJfLnqwmuyhG': '$HYPERSKIDS',
+    'wqfjEgJrrWWZdFEDHLDKvZGfohdCyKFj4VcKWwYFnCm': 'hiKEJey9zJ9SUtW3yQu',
+    '2szngsw1SWyNwpcc17xgn6TYmpJ4gVJBrG5e4eupeV9z': 'Pandana',
+    '7FYCw13TdZnaKD6zAU3TDuaQ8XFmStZs4rgTCE8tpump': '7FYC',
+  }
+
+  // Program IDs
+  const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+  const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb')
+  const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
+  const RAYDIUM_CLMM_PROGRAM_ID = new PublicKey('CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK')
+
+  // Get token price from Jupiter API
+  const getTokenPrice = useCallback(async (mint: string): Promise<number> => {
+    try {
+      const response = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mint}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+      return data[mint]?.usdPrice || 0
+    } catch (error) {
+      console.error('Erro ao obter preço:', error)
+      return 0
+    }
+  }, [])
+
+  // Get token symbol from metadata
+  const getTokenSymbol = useCallback(async (mint: PublicKey): Promise<string> => {
+    try {
+      const [metadataPDA] = PublicKey.findProgramAddressSync(
+        [new TextEncoder().encode('metadata'), METADATA_PROGRAM_ID.toBytes(), mint.toBytes()],
+        METADATA_PROGRAM_ID
+      )
+      const metadataAccount = await state.connection.getAccountInfo(metadataPDA)
+      if (metadataAccount) {
+        const data = metadataAccount.data
+        let offset = 1 + 32 + 32 // key + update_authority + mint
+        const nameLen = new Uint32Array(data.slice(offset, offset + 4))[0]
+        offset += 4
+        const name = new TextDecoder().decode(data.slice(offset, offset + nameLen)).trim()
+        offset += nameLen
+        const symbolLen = new Uint32Array(data.slice(offset, offset + 4))[0]
+        offset += 4
+        const symbol = new TextDecoder().decode(data.slice(offset, offset + symbolLen)).trim()
+        return symbol || name || 'Unknown'
+      }
+      return 'Unknown'
+    } catch (error) {
+      console.error('Erro ao obter símbolo:', error)
+      return 'Unknown'
+    }
+  }, [state.connection])
+
+  // Get wallet tokens
+  const getTokens = useCallback(async () => {
+    if (!state.wallet?.publicKey) return
+
+    try {
+      dispatch({ type: 'SET_LOADING_TOKENS', payload: true })
+
+      // Get token accounts (standard and Token-2022)
+      const tokenAccountsStandard = await state.connection.getParsedTokenAccountsByOwner(
+        state.wallet.publicKey,
+        { programId: TOKEN_PROGRAM_ID }
+      )
+      const tokenAccounts2022 = await state.connection.getParsedTokenAccountsByOwner(
+        state.wallet.publicKey,
+        { programId: TOKEN_2022_PROGRAM_ID }
+      )
+      
+      const allTokenAccounts = [...tokenAccountsStandard.value, ...tokenAccounts2022.value]
+      const tokens: TokenInfo[] = []
+
+      for (const acc of allTokenAccounts) {
+        const info = acc.account.data.parsed.info
+        const balance = info.tokenAmount.uiAmount
+        
+        if (balance > 0) {
+          const mint = info.mint
+          let symbol = knownTokens[mint as keyof typeof knownTokens] || 
+                      await getTokenSymbol(new PublicKey(mint))
+          
+          const price = await getTokenPrice(mint)
+          const usdValue = price * balance
+
+          tokens.push({
+            mint,
+            symbol,
+            balance,
+            usdValue,
+            decimals: info.tokenAmount.decimals,
+          })
+        }
+      }
+
+      dispatch({ type: 'SET_TOKENS', payload: tokens })
+    } catch (error) {
+      console.error('Erro ao buscar tokens:', error)
+    } finally {
+      dispatch({ type: 'SET_LOADING_TOKENS', payload: false })
+    }
+  }, [state.wallet?.publicKey, state.connection, getTokenPrice, getTokenSymbol, knownTokens])
+
+  // Get DeFi positions
+  const getDeFiPositions = useCallback(async () => {
+    if (!state.wallet?.publicKey) return
+
+    try {
+      dispatch({ type: 'SET_LOADING_DEFI', payload: true })
+
+      // Get token accounts for potential positions
+      const tokenAccountsStandard = await state.connection.getParsedTokenAccountsByOwner(
+        state.wallet.publicKey,
+        { programId: TOKEN_PROGRAM_ID }
+      )
+      const tokenAccounts2022 = await state.connection.getParsedTokenAccountsByOwner(
+        state.wallet.publicKey,
+        { programId: TOKEN_2022_PROGRAM_ID }
+      )
+      
+      const allTokenAccounts = [...tokenAccountsStandard.value, ...tokenAccounts2022.value]
+      const defiPositions: DeFiPosition[] = []
+
+      // Check for Raydium CLMM positions (NFT tokens with amount 1)
+      const potentialPositionTokens = allTokenAccounts.filter(acc => {
+        const info = acc.account.data.parsed.info
+        return info.tokenAmount.amount === '1' && info.tokenAmount.decimals === 0
+      })
+
+      for (const acc of potentialPositionTokens) {
+        const mint = new PublicKey(acc.account.data.parsed.info.mint)
+        const [positionPubkey] = PublicKey.findProgramAddressSync(
+          [new TextEncoder().encode('position'), mint.toBytes()],
+          RAYDIUM_CLMM_PROGRAM_ID
+        )
+        
+        const positionAccount = await state.connection.getAccountInfo(positionPubkey)
+        if (positionAccount && positionAccount.owner.equals(RAYDIUM_CLMM_PROGRAM_ID)) {
+          defiPositions.push({
+            type: 'raydium-clmm',
+            mint: mint.toString(),
+            balance: 1,
+            usdValue: 0, // Would need more complex calculation
+            positionAddress: positionPubkey.toString(),
+          })
+        }
+      }
+
+      // Check for Raydium AMM LP tokens
+      try {
+        const raydiumPairsResponse = await fetch(
+          process.env.NODE_ENV === 'production' 
+            ? `${process.env.NEXT_PUBLIC_API_URL}/api/solana/raydium-pairs`
+            : 'http://localhost:3001/api/solana/raydium-pairs'
+        )
+        
+        if (raydiumPairsResponse.ok) {
+          const pairs = await raydiumPairsResponse.json()
+          const potentialLpTokens = allTokenAccounts.filter(acc => {
+            const info = acc.account.data.parsed.info
+            return info.tokenAmount.uiAmount > 0 && info.tokenAmount.decimals > 0
+          })
+          
+          for (const acc of potentialLpTokens) {
+            const mint = acc.account.data.parsed.info.mint
+            const matchingPair = pairs.find((p: any) => p.lpMint === mint)
+            
+            if (matchingPair) {
+              const balance = acc.account.data.parsed.info.tokenAmount.uiAmount
+              const price = await getTokenPrice(mint)
+              const usdValue = price * balance
+              
+              defiPositions.push({
+                type: 'raydium-amm',
+                mint,
+                balance,
+                usdValue,
+                poolName: matchingPair.name,
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching Raydium pairs:', error)
+      }
+      
+      dispatch({ type: 'SET_DEFI_POSITIONS', payload: defiPositions })
+    } catch (error) {
+      console.error('Erro ao buscar posições DeFi:', error)
+    } finally {
+      dispatch({ type: 'SET_LOADING_DEFI', payload: false })
+    }
+  }, [state.wallet?.publicKey, state.connection])
+
+  // Refresh all wallet data
+  const refreshWalletData = useCallback(async () => {
+    if (!state.wallet?.publicKey) return
+
+    await Promise.all([
+      getBalance(),
+      getTokens(),
+      getDeFiPositions(),
+    ])
+
+    // Calculate total USD value
+    const solBalance = state.balance || 0
+    const solPrice = await getTokenPrice('So11111111111111111111111111111111111111112')
+    const solUsdValue = solBalance * solPrice
+    
+    const tokensUsdValue = state.tokens.reduce((sum, token) => sum + token.usdValue, 0)
+    const defiUsdValue = state.defiPositions.reduce((sum, position) => sum + position.usdValue, 0)
+    
+    const totalUsdValue = solUsdValue + tokensUsdValue + defiUsdValue
+    dispatch({ type: 'SET_TOTAL_USD_VALUE', payload: totalUsdValue })
+  }, [state.wallet?.publicKey, state.balance, state.tokens, state.defiPositions, getBalance, getTokens, getDeFiPositions, getTokenPrice])
+
+  // Auto-refresh wallet data
   useEffect(() => {
     if (state.connected && state.wallet?.publicKey) {
+      // Initial load
+      refreshWalletData()
+
+      // Set up interval for updates
       const interval = setInterval(() => {
-        getBalance()
+        refreshWalletData()
       }, 30000) // Update every 30 seconds
 
       return () => clearInterval(interval)
     }
-  }, [state.connected, state.wallet?.publicKey, getBalance])
+  }, [state.connected, state.wallet?.publicKey, refreshWalletData])
 
   const value: WalletContextType = {
     state,
@@ -382,6 +679,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
     signMessage,
     sendTransaction,
     getBalance,
+    getTokens,
+    getDeFiPositions,
+    refreshWalletData,
     clearError,
   }
 
@@ -408,3 +708,8 @@ export const useWalletBalance = () => useWallet().state.balance
 export const useWalletPublicKey = () => useWallet().state.wallet?.publicKey
 export const useWalletError = () => useWallet().state.error
 export const useWalletConnecting = () => useWallet().state.connecting
+export const useWalletTokens = () => useWallet().state.tokens
+export const useWalletDeFiPositions = () => useWallet().state.defiPositions
+export const useWalletTotalUsdValue = () => useWallet().state.totalUsdValue
+export const useWalletLoadingTokens = () => useWallet().state.loadingTokens
+export const useWalletLoadingDefi = () => useWallet().state.loadingDefi

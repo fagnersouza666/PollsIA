@@ -2,6 +2,71 @@ const fastify = require('fastify')({
   logger: false // Desabilitar logs JSON do Fastify para usar nossos logs customizados
 });
 
+// Configurar CORS
+fastify.register(require('@fastify/cors'), {
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true
+});
+
+// Proxy para Solana RPC
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+// Middleware para proxy Solana RPC
+const solanaRpcProxy = createProxyMiddleware({
+  target: 'https://solana-rpc.publicnode.com',
+  changeOrigin: true,
+  pathRewrite: { '^/api/solana/rpc': '' },
+  onProxyReq: (proxyReq, req, res) => {
+    proxyReq.removeHeader('origin');
+    proxyReq.removeHeader('referer');
+    proxyReq.setHeader('user-agent', 'PollsIA-Backend-Proxy');
+  }
+});
+
+// Registrar proxy como middleware
+fastify.register(require('@fastify/http-proxy'), {
+  upstream: 'https://solana-rpc.publicnode.com',
+  prefix: '/api/solana/rpc',
+  http2: false,
+  rewritePrefix: '',
+  replyOptions: {
+    onRequest: (request, reply) => {
+      request.headers['user-agent'] = 'PollsIA-Backend-Proxy';
+      delete request.headers['origin'];
+      delete request.headers['referer'];
+    }
+  }
+});
+
+// Endpoint para Raydium pairs
+fastify.get('/api/solana/raydium-pairs', async (request, reply) => {
+  try {
+    console.log('📡 Fetching Raydium pairs...');
+    const response = await fetch('https://api.raydium.io/v2/main/pairs');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log(`✅ Fetched ${data.length || 0} Raydium pairs`);
+    
+    return {
+      success: true,
+      data: data,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('❌ Error fetching Raydium pairs:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Failed to fetch Raydium pairs',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Serviço de investimento 100% REAL com Raydium Safe SDK (anti-segfault)
 console.log('🔄 Carregando Raydium Safe SDK...');
 

@@ -6,6 +6,7 @@ import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config/env';
 import { swaggerConfig } from './config/swagger-simple';
 import { poolRoutes } from './presentation/routes/pool.routes';
+import solanaRoutes from './presentation/routes/solana.routes';
 import { walletRoutes } from './routes/wallet';
 import { analyticsRoutes } from './routes/analytics';
 import { investmentRoutes } from './routes/investment';
@@ -52,6 +53,7 @@ async function start() {
 
     // Register routes
     await fastify.register(poolRoutes, { prefix: '/api/pools' });
+    await fastify.register(solanaRoutes, { prefix: '/api/solana' });
     await fastify.register(walletRoutes, { prefix: '/api/wallet' });
     await fastify.register(analyticsRoutes, { prefix: '/api/analytics' });
     await fastify.register(investmentRoutes, { prefix: '/api/investment' });

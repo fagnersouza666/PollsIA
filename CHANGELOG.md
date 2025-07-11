@@ -1,3 +1,16 @@
+## [1.0.23] - 2025-07-05 **CORREÇÃO: Script de Desenvolvimento**
+
+- Corrigido o script `dev` no `backend/package.json` para usar `tsx watch src/index.ts` em vez de apontar para um arquivo deletado.
+- Adicionado novo script `dev-simple` para o servidor simplificado.
+- Resolvido o erro `MODULE_NOT_FOUND` que impedia o servidor de desenvolvimento de iniciar.
+
+## [1.0.22] - 2025-07-05 **CORREÇÃO: Rotas 404 no Servidor Simples**
+
+- Atualizado index-simple.ts para registrar rotas completas de wallet, pools e analytics com prefixes corretos.
+- Removidos endpoints mock para evitar duplicatas.
+- Resolvidos erros 404 para endpoints de wallet portfolio, pools e pools rankings.
+- Alteração commitada conforme regras do projeto.
+
 ## [1.0.21] - 2025-07-05 **Interação: Opinião sobre o Projeto**
 
 - Respondida query do usuário sobre opinião geral do projeto.

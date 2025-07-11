@@ -572,3 +572,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 - **Next.js**: Pelo framework frontend
 
 ---
+
+## Versão Atual
+
+1.0.23 - Correção do script de desenvolvimento e estabilização do ambiente.
