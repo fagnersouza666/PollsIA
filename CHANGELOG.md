@@ -1,3 +1,11 @@
+## [1.0.25] - 2025-07-05 **FEATURE: Endpoint de Portfólio e Refatoração**
+
+- **Endpoint de Portfólio**: Implementado o endpoint `GET /api/wallet/:address/portfolio` para retornar dados detalhados da carteira.
+- **Wallet Controller**: Criado o `WalletController` para centralizar a lógica de manipulação de requisições da carteira.
+- **Injeção de Dependência**: Refatorado o `container` de DI para registrar `WalletService` e `WalletController`, garantindo o desacoplamento.
+- **Rotas da Carteira**: Atualizadas as rotas em `wallet.routes.ts` para usar o novo `WalletController`, simplificando o código e corrigindo erros.
+- **Resolução de 404**: Corrigido o erro 404 que ocorria ao tentar acessar o portfólio da carteira.
+
 ## [1.0.24] - 2025-07-05 **CORREÇÃO COMPLETA: Container DI e APIs**
 
 - Corrigido sistema de injeção de dependências (InversifyJS) para resolver erro "NULL argument".
