@@ -1,3 +1,23 @@
+## [1.0.29] - 2025-01-11 19:15 **OTIMIZADO: Sistema de APIs Completamente Otimizado**
+
+- **Cache Inteligente**: Implementado cache de 5 minutos para preços e 1 hora para pairs
+- **Sistema de Fila**: Criado processamento sequencial com delay de 2s entre requisições
+- **Múltiplos Endpoints**: Adicionado fallback para APIs do Raydium com redundância
+- **Processamento em Lotes**: Tokens da carteira processados em grupos de 5 para evitar sobrecarga
+- **Rate Limiting Inteligente**: Reduzido para 1 requisição simultânea máxima
+- **Timeouts Apropriados**: 10s para preços, 15s para pairs do Raydium
+- **Fallback Robusto**: Preços conhecidos para tokens principais (SOL, USDC, USDT)
+
+- **Corrigido**: Eliminado Rate Limit 429: Substituído Jupiter API por CoinGecko
+- **Resolvido Timeouts**: Múltiplos endpoints com fallback automático
+- **Otimizado Performance**: Filtros inteligentes para LP tokens
+- **Melhorado Logs**: Rastreamento detalhado de cache hits/misses
+
+- **Técnico**: Migração para CoinGecko API com headers apropriados
+- **Sistema de cache Map()**: Para performance otimizada
+- **Processamento assíncrono**: Com controle de concorrência
+- **Detecção inteligente**: De tokens LP com pré-filtros
+
 ## [1.0.28] - 2025-01-11 19:00 **FIX: Aprimoramento do Graceful Shutdown**
 
 - **Connection Pool**: Adicionado um método `shutdown` à classe `ConnectionPool` para encerrar todas as conexões `axios` ativas.

@@ -1,6 +1,6 @@
 # PollsIA - Automated Liquidity Pool Management on Solana
 
-**Versão Atual: 1.0.28** | **Status: ✅ SISTEMA COMPLETAMENTE FUNCIONAL**
+**Versão Atual: 1.0.29** | **Status: ✅ SISTEMA COMPLETAMENTE FUNCIONAL**
 
 ## 🎯 Descrição do Projeto
 
@@ -15,20 +15,27 @@ PollsIA é uma plataforma avançada de gerenciamento automatizado de pools de li
 - **Sistema de Monitoramento**: Analytics em tempo real e métricas de performance
 - **Arquitetura Escalável**: Implementação com Clean Architecture e DDD
 
-## 📋 Últimas Atualizações (v1.0.28)
+## 📋 Últimas Atualizações (v1.0.29)
 
-### ✅ Graceful Shutdown Aprimorado
-- **Eliminado Force Kills**: Resolvido problema de "Process didn't exit in 5s. Force killing..."
-- **Timeout Inteligente**: Implementado timeout de 3 segundos para garantir encerramento
-- **Logs Detalhados**: Rastreamento completo do processo de shutdown
-- **Handlers de Erro**: Captura de `uncaughtException` e `unhandledRejection`
-- **Script Otimizado**: tsx com opções melhoradas para desenvolvimento
+### ✅ Sistema de APIs Completamente Otimizado
+- **Cache Inteligente**: 5 minutos para preços, 1 hora para pairs do Raydium
+- **Sistema de Fila**: Processamento sequencial com delay de 2s entre requisições
+- **Múltiplos Endpoints**: Fallback automático para APIs do Raydium
+- **Processamento em Lotes**: Tokens processados em grupos de 5 para evitar sobrecarga
+- **Rate Limiting Inteligente**: Máximo 1 requisição simultânea
+- **Timeouts Apropriados**: 10s para preços, 15s para pairs
 
-### 🔧 Melhorias Técnicas
-- Flag `isShuttingDown` para evitar múltiplos shutdowns
-- Force exit garantido para evitar processos órfãos
-- Desenvolvimento mais estável e confiável
-- Shutdown mais rápido durante reinicializações
+### 🔧 Melhorias de Performance
+- **Eliminado Rate Limit 429**: Migração para CoinGecko API
+- **Resolvido Timeouts**: Sistema de fallback robusto
+- **Otimizado LP Detection**: Filtros inteligentes para tokens LP
+- **Cache Map()**: Performance otimizada para lookups O(1)
+
+### 🛠️ Melhorias Técnicas
+- Fallback com preços conhecidos para tokens principais
+- Headers apropriados para evitar bloqueios de API
+- Detecção inteligente de posições DeFi
+- Logs detalhados de cache hits/misses
 
 # 🚀 PollsIA - Sistema de Gestão de Pools Solana
 
