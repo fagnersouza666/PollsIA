@@ -572,7 +572,3 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 - **Next.js**: Pelo framework frontend
 
 ---
-
-**Versão**: 1.0.0  
-**Última Atualização**: Dezembro 2024  
-**Status**: Documentação Swagger Completa ✅

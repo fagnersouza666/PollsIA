@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana Wallet Viewer</title>
+</head>
+
+<body>
+    <h1>Solana Wallet Viewer</h1>
+    <button id="connectButton">Conectar à Phantom Wallet</button>
+    <div id="walletInfo"></div>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+    <script>
+        const { Connection, PublicKey, LAMPORTS_PER_SOL } = solanaWeb3;
+
+        const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+
+        const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+        const connectButton = document.getElementById('connectButton');
+        const walletInfo = document.getElementById('walletInfo');
+
+        let walletPublicKey = null;
+
+        connectButton.addEventListener('click', async () => {
+            try {
+                const solana = window.solana;
+                if (solana && solana.isPhantom) {
+                    const response = await solana.connect();
+                    walletPublicKey = response.publicKey;
+                    walletInfo.innerHTML = `<p>Wallet conectada: ${walletPublicKey.toString()}</p>`;
+                    await fetchAndDisplayData();
+                } else {
+                    alert('Phantom Wallet não detectada. Instale a extensão.');
+                }
+            } catch (error) {
+                console.error('Erro ao conectar:', error);
+                alert('Erro ao conectar à wallet.');
+            }
+        });
+
+        async function fetchAndDisplayData() {
+            if (!walletPublicKey) return;
+
+            // Obter saldo de SOL
+            const solBalance = await connection.getBalance(walletPublicKey) / LAMPORTS_PER_SOL;
+            walletInfo.innerHTML += `<p>Saldo de SOL: ${solBalance.toFixed(4)} SOL</p>`;
+
+            // Obter tokens SPL
+            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, { programId: TOKEN_PROGRAM_ID });
+            let totalUSD = await getPrice('So11111111111111111111111111111111111111112') * solBalance; // SOL mint for price
+            let tokenList = '<h2>Tokens:</h2><ul>';
+            for (const acc of tokenAccounts.value) {
+                const info = acc.account.data.parsed.info;
+                const balance = info.tokenAmount.uiAmount;
+                if (balance > 0) {
+                    const mint = info.mint;
+                    const price = await getPrice(mint);
+                    totalUSD += price * balance;
+                    tokenList += `<li>${mint}: ${balance.toFixed(4)} (USD: ${(price * balance).toFixed(2)})</li>`;
+                }
+            }
+            tokenList += '</ul>';
+            walletInfo.innerHTML += tokenList;
+
+            // Saldo total aproximado em USD
+            walletInfo.innerHTML += `<p>Saldo Total Aproximado em USD: $${totalUSD.toFixed(2)}</p>`;
+
+            // Posições em Raydium CLMM
+            const raydiumClmmProgramId = new PublicKey('CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK');
+            let defiList = '<h2>Posições DeFi (Raydium CLMM):</h2><ul>';
+            const potentialPositionTokenAccounts = tokenAccounts.value.filter(acc => {
+                const info = acc.account.data.parsed.info;
+                return info.tokenAmount.amount === '1' && info.tokenAmount.decimals === 0;
+            });
+            if (potentialPositionTokenAccounts.length > 0) {
+                for (const acc of potentialPositionTokenAccounts) {
+                    const mint = new PublicKey(acc.account.data.parsed.info.mint);
+                    const [positionPubkey] = PublicKey.findProgramAddressSync(
+                        [Buffer.from('position'), mint.toBuffer()],
+                        raydiumClmmProgramId
+                    );
+                    const positionAccount = await connection.getAccountInfo(positionPubkey);
+                    if (positionAccount && positionAccount.owner.equals(raydiumClmmProgramId)) {
+                        // Dados básicos da posição
+                        defiList += `<li>Posição: ${positionPubkey.toString()} (NFT Mint: ${mint.toString()}) - Tamanho da conta: ${positionAccount.data.length} bytes</li>`;
+                        // Para mais dados, como liquidity ou ticks, decodifique aqui se desejar
+                    }
+                }
+            } else {
+                defiList += '<li>Nenhuma posição encontrada no Raydium CLMM.</li>';
+            }
+            defiList += '</ul>';
+            walletInfo.innerHTML += defiList;
+        }
+
+        // Função para obter preço de token via Birdeye API (free public, mas limite)
+        async function getPrice(mint) {
+            try {
+                const response = await fetch(`https://public-api.birdeye.so/public/price?address=${mint}`);
+                const data = await response.json();
+                return data.data.value || 0;
+            } catch (error) {
+                console.error('Erro ao obter preço:', error);
+                return 0;
+            }
+        }
+    </script>
+</body>
+
+</html>
