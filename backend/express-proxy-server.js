@@ -671,7 +671,7 @@ app.get('/api/wallet/:publicKey/pools', async (req, res) => {
     const positions = await getRealDeFiPositions(publicKey, walletData.tokenAccounts);
 
     // Convert DeFi positions to pool format
-    const pools = positions.map(position => {
+    let pools = positions.map(position => {
       if (position.type === 'AMM') {
         return {
           id: position.lpMint,
@@ -694,6 +694,32 @@ app.get('/api/wallet/:publicKey/pools', async (req, res) => {
         };
       }
     }).filter(Boolean);
+
+    // Modo desenvolvimento: pools mock se não houver pools reais
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    if (isDevelopment && pools.length === 0) {
+      pools = [
+        {
+          id: 'mock-lp-1',
+          name: 'SOL/USDC',
+          lpTokens: 10.5,
+          value: 2100,
+          apy: 12.5,
+          status: 'active',
+          protocol: 'Raydium'
+        },
+        {
+          id: 'mock-lp-2',
+          name: 'RAY/SOL',
+          lpTokens: 5.2,
+          value: 950,
+          apy: 18.3,
+          status: 'active',
+          protocol: 'Raydium'
+        }
+      ];
+      console.log('🔧 Development mode: Returning mock pools');
+    }
 
     // Apply filters
     let filteredPools = pools;
