@@ -1,3 +1,9 @@
+## [1.0.26] - 2025-07-05 **CHORE: Graceful Shutdown no Backend**
+
+- **Graceful Shutdown**: Implementada a lógica de desligamento elegante no servidor backend (`index.ts`).
+- **Gerenciamento de Recursos**: O servidor agora fecha a conexão com o Fastify e o Redis corretamente ao receber sinais de término (`SIGINT`, `SIGTERM`).
+- **Estabilidade de Desenvolvimento**: Corrigido o problema que fazia o `tsx` forçar o encerramento do processo, melhorando a estabilidade do ambiente de desenvolvimento.
+
 ## [1.0.25] - 2025-07-05 **FEATURE: Endpoint de Portfólio e Refatoração**
 
 - **Endpoint de Portfólio**: Implementado o endpoint `GET /api/wallet/:address/portfolio` para retornar dados detalhados da carteira.
