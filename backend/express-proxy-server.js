@@ -75,7 +75,28 @@ async function getRealTokenPrice(mint) {
     'So11111111111111111111111111111111111111112': 200, // SOL approximate
     'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 1, // USDC
     'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 1, // USDT
+    'HRX9BoeaTM9keXiqSAm6HuTzuHRUqTfwixXXBXW4pump': 0.5, // HRX
+    'GwkEDwePTa6aFosh9xzAniGK1zvLrQ5yPJfLnqwmuyhG': 0.1, // $HYPERSKIDS
+    'wqfjEgJrrWWZdFEDHLDKvZGfohdCyKFj4VcKWwYFnCm': 0.01, // hiKEJey9zJ9SUtW3yQu
+    '2szngsw1SWyNwpcc17xgn6TYmpJ4gVJBrG5e4eupeV9z': 0.05, // Pandana
+    '7FYCw13TdZnaKD6zAU3TDuaQ8XFmStZs4rgTCE8tpump': 0.02, // 7FYC
+    'BZnyYouYaDTDmvi1tdAAdejLziPXeEBPGeJo1TFmeKBc': 0.001, // Generic token
   };
+
+  // For development, use mock prices to avoid rate limiting
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  if (isDevelopment && knownPrices[mint]) {
+    console.log(`🔧 Development mode: Using mock price for ${mint}`);
+    const mockPrice = knownPrices[mint];
+
+    // Cache the mock result
+    priceCache.set(mint, {
+      price: mockPrice,
+      timestamp: Date.now()
+    });
+
+    return mockPrice;
+  }
 
   return new Promise((resolve) => {
     const request = async () => {
@@ -165,11 +186,49 @@ async function getCachedRaydiumPairs() {
     try {
       console.log('🔄 Fetching fresh Raydium pairs from API...');
 
-      // Try multiple endpoints
+      // Try multiple endpoints with different approaches
       const endpoints = [
         'https://api.raydium.io/v2/main/pairs',
         'https://api-v3.raydium.io/pools/info/list'
       ];
+
+      // For development, use a smaller subset or mock data if APIs are too slow
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      if (isDevelopment) {
+        console.log('🔧 Development mode: Using limited dataset for faster loading');
+        try {
+          const response = await fetch('https://api.raydium.io/v2/main/pairs?limit=100', {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'PollsIA/1.0'
+            },
+            signal: AbortSignal.timeout(30000) // 30 second timeout for dev
+          });
+
+          if (response.ok) {
+            const pairs = await response.json();
+            const pairsArray = Array.isArray(pairs) ? pairs : (pairs.data || []);
+
+            // Update cache
+            raydiumPairsCache = pairsArray;
+            lastCacheUpdate = Date.now();
+
+            console.log(`✅ Cached ${pairsArray.length} Raydium pairs (development mode)`);
+            return pairsArray;
+          }
+        } catch (error) {
+          console.warn('⚠️ Development API failed, falling back to mock data');
+          // Return mock data for development
+          const mockPairs = [
+            { lpMint: 'mock1', name: 'SOL/USDC', tokenA: 'So11111111111111111111111111111111111111112', tokenB: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' },
+            { lpMint: 'mock2', name: 'SOL/USDT', tokenA: 'So11111111111111111111111111111111111111112', tokenB: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB' }
+          ];
+          raydiumPairsCache = mockPairs;
+          lastCacheUpdate = Date.now();
+          console.log(`✅ Using mock data (${mockPairs.length} pairs)`);
+          return mockPairs;
+        }
+      }
 
       let pairs = null;
       for (const endpoint of endpoints) {
@@ -179,7 +238,7 @@ async function getCachedRaydiumPairs() {
               'Accept': 'application/json',
               'User-Agent': 'PollsIA/1.0'
             },
-            signal: AbortSignal.timeout(15000) // 15 second timeout
+            signal: AbortSignal.timeout(60000) // 60 second timeout for large datasets
           });
 
           if (response.ok) {
