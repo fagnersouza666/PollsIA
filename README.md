@@ -1,3 +1,35 @@
+# PollsIA - Automated Liquidity Pool Management on Solana
+
+**Versão Atual: 1.0.28** | **Status: ✅ SISTEMA COMPLETAMENTE FUNCIONAL**
+
+## 🎯 Descrição do Projeto
+
+PollsIA é uma plataforma avançada de gerenciamento automatizado de pools de liquidez na blockchain Solana. O sistema oferece análise inteligente, otimização de portfólio e execução automatizada de estratégias de investimento em DeFi.
+
+### 🚀 Principais Funcionalidades
+
+- **Gerenciamento Inteligente de Pools**: Análise automatizada e otimização de pools de liquidez
+- **Integração Phantom Wallet**: Conectividade completa com carteiras Solana
+- **API RESTful Completa**: Backend robusto com documentação Swagger
+- **Interface Moderna**: Frontend Next.js com design responsivo
+- **Sistema de Monitoramento**: Analytics em tempo real e métricas de performance
+- **Arquitetura Escalável**: Implementação com Clean Architecture e DDD
+
+## 📋 Últimas Atualizações (v1.0.28)
+
+### ✅ Graceful Shutdown Aprimorado
+- **Eliminado Force Kills**: Resolvido problema de "Process didn't exit in 5s. Force killing..."
+- **Timeout Inteligente**: Implementado timeout de 3 segundos para garantir encerramento
+- **Logs Detalhados**: Rastreamento completo do processo de shutdown
+- **Handlers de Erro**: Captura de `uncaughtException` e `unhandledRejection`
+- **Script Otimizado**: tsx com opções melhoradas para desenvolvimento
+
+### 🔧 Melhorias Técnicas
+- Flag `isShuttingDown` para evitar múltiplos shutdowns
+- Force exit garantido para evitar processos órfãos
+- Desenvolvimento mais estável e confiável
+- Shutdown mais rápido durante reinicializações
+
 # 🚀 PollsIA - Sistema de Gestão de Pools Solana
 
 Sistema automatizado de gestão e otimização de pools de liquidez na blockchain Solana com integração em tempo real ao Raydium DEX.

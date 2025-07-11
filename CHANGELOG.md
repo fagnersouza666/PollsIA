@@ -1,16 +1,22 @@
-## [1.0.27] - 2025-07-05 **FIX: Aprimoramento do Graceful Shutdown**
+## [1.0.28] - 2025-01-11 19:00 **FIX: Aprimoramento do Graceful Shutdown**
 
 - **Connection Pool**: Adicionado um método `shutdown` à classe `ConnectionPool` para encerrar todas as conexões `axios` ativas.
 - **Graceful Shutdown**: A rotina de desligamento agora invoca o `connectionPool.shutdown()`, garantindo que as conexões HTTP persistentes sejam fechadas.
 - **Resolução de Bug**: Corrigido definitivamente o problema que impedia o processo do backend de ser encerrado corretamente, eliminando a necessidade de "force kill" pelo `tsx`.
+- **Técnico**: Melhorada estabilidade do ambiente de desenvolvimento
+- **Eliminado warnings**: "Process didn't exit in 5s. Force killing..."
+- **Shutdown mais rápido e confiável**: Desenvolvimento
+- **Implementado handlers**: `uncaughtException` e `unhandledRejection`
+- **Atualizado script `dev` do tsx**: Com opções otimizadas (`--clear-screen=false`, `--ignore`)
+- **Force exit garantido**: No final do graceful shutdown para evitar processos órfãos
 
-## [1.0.26] - 2025-07-05 **CHORE: Graceful Shutdown no Backend**
+## [1.0.27] - 2025-01-11 18:55 **CHORE: Graceful Shutdown no Backend**
 
 - **Graceful Shutdown**: Implementada a lógica de desligamento elegante no servidor backend (`index.ts`).
 - **Gerenciamento de Recursos**: O servidor agora fecha a conexão com o Fastify e o Redis corretamente ao receber sinais de término (`SIGINT`, `SIGTERM`).
 - **Estabilidade de Desenvolvimento**: Corrigido o problema que fazia o `tsx` forçar o encerramento do processo, melhorando a estabilidade do ambiente de desenvolvimento.
 
-## [1.0.25] - 2025-07-05 **FEATURE: Endpoint de Portfólio e Refatoração**
+## [1.0.26] - 2025-07-05 **FEATURE: Endpoint de Portfólio e Refatoração**
 
 - **Endpoint de Portfólio**: Implementado o endpoint `GET /api/wallet/:address/portfolio` para retornar dados detalhados da carteira.
 - **Wallet Controller**: Criado o `WalletController` para centralizar a lógica de manipulação de requisições da carteira.
@@ -18,7 +24,7 @@
 - **Rotas da Carteira**: Atualizadas as rotas em `wallet.routes.ts` para usar o novo `WalletController`, simplificando o código e corrigindo erros.
 - **Resolução de 404**: Corrigido o erro 404 que ocorria ao tentar acessar o portfólio da carteira.
 
-## [1.0.24] - 2025-07-05 **CORREÇÃO COMPLETA: Container DI e APIs**
+## [1.0.25] - 2025-07-05 **CORREÇÃO COMPLETA: Container DI e APIs**
 
 - Corrigido sistema de injeção de dependências (InversifyJS) para resolver erro "NULL argument".
 - Atualizado MockPoolRepository para usar Result wrapper em todos os métodos.
@@ -29,25 +35,25 @@
 - Resolvidos erros 404 nas APIs de wallet e pools.
 - Sistema backend agora inicia corretamente sem erros de DI.
 
-## [1.0.23] - 2025-07-05 **CORREÇÃO: Script de Desenvolvimento**
+## [1.0.24] - 2025-07-05 **CORREÇÃO: Script de Desenvolvimento**
 
 - Corrigido o script `dev` no `backend/package.json` para usar `tsx watch src/index.ts` em vez de apontar para um arquivo deletado.
 - Adicionado novo script `dev-simple` para o servidor simplificado.
 - Resolvido o erro `MODULE_NOT_FOUND` que impedia o servidor de desenvolvimento de iniciar.
 
-## [1.0.22] - 2025-07-05 **CORREÇÃO: Rotas 404 no Servidor Simples**
+## [1.0.23] - 2025-07-05 **CORREÇÃO: Rotas 404 no Servidor Simples**
 
 - Atualizado index-simple.ts para registrar rotas completas de wallet, pools e analytics com prefixes corretos.
 - Removidos endpoints mock para evitar duplicatas.
 - Resolvidos erros 404 para endpoints de wallet portfolio, pools e pools rankings.
 - Alteração commitada conforme regras do projeto.
 
-## [1.0.21] - 2025-07-05 **Interação: Opinião sobre o Projeto**
+## [1.0.22] - 2025-07-05 **Interação: Opinião sobre o Projeto**
 
 - Respondida query do usuário sobre opinião geral do projeto.
 - Atualizado README.md conforme regras.
 
-## [1.0.20] - 2025-07-05 🎉 **RESOLUÇÃO FINAL: Sistema Completamente Funcional**
+## [1.0.21] - 2025-07-05 🎉 **RESOLUÇÃO FINAL: Sistema Completamente Funcional**
 
 ### 🎉 **PROBLEMA COMPLETAMENTE RESOLVIDO**
 **Causa raiz identificada e resolvida**: O sistema estava executando `server-simple.js` na porta 3001 ao invés do `debug-server.js` que contém todas as rotas implementadas.
