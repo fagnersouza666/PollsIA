@@ -11,7 +11,8 @@ import { walletRoutes } from './routes/wallet';
 import { analyticsRoutes } from './routes/analytics';
 import { investmentRoutes } from './routes/investment';
 import { errorHandler } from './middleware/errorHandler';
-import { redisCache } from './utils/RedisCache';
+import { RedisCache } from './utils/RedisCache';
+import { connectionPool } from './utils/ConnectionPool';
 import { container } from './shared/container';
 import { TYPES } from './shared/types';
 import { Logger } from './shared/interfaces/logger.interface';
@@ -30,7 +31,7 @@ async function start() {
     // Inicializar Redis Cache (não bloquear se falhar)
     logger.info('🔄 Inicializando Redis cache...');
     try {
-      await redisCache.connect();
+      await RedisCache.getInstance().connect();
       logger.info('✅ Redis cache conectado');
     } catch (error) {
       logger.warn('⚠️ Continuando sem Redis cache', error as Error);
@@ -121,7 +122,7 @@ async function start() {
   }
 }
 
-const redisInstance = redisCache.getInstance();
+const redisInstance = RedisCache.getInstance();
 
 async function closeGracefully(signal: NodeJS.Signals) {
   logger.info(`*️⃣ Received signal: ${signal}. Shutting down gracefully...`);
@@ -134,6 +135,10 @@ async function closeGracefully(signal: NodeJS.Signals) {
     // Disconnect Redis
     await redisInstance.disconnect();
     logger.info('✅ Redis connection closed.');
+
+    // Shutdown connection pools
+    connectionPool.shutdown();
+    logger.info('✅ Connection pools shut down.');
 
     process.exit(0);
   } catch (err) {

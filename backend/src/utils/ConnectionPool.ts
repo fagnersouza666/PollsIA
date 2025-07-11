@@ -98,12 +98,12 @@ export class ConnectionPool {
     if (axiosInstance.interceptors) {
       // Interceptor para logs e métricas
       axiosInstance.interceptors.request.use(
-      (req) => {
-        console.log(`🌐 ${name.toUpperCase()}: ${req.method?.toUpperCase()} ${req.url}`);
-        return req;
-      },
-      (error) => Promise.reject(error)
-    );
+        (req) => {
+          console.log(`🌐 ${name.toUpperCase()}: ${req.method?.toUpperCase()} ${req.url}`);
+          return req;
+        },
+        (error) => Promise.reject(error)
+      );
 
       axiosInstance.interceptors.response.use(
         (response) => {
@@ -162,15 +162,15 @@ export class ConnectionPool {
       const response = await pool.request(request.config);
       request.resolve(response.data);
     } catch (error: any) {
-      const shouldRetry = request.retries < poolConfig.retryAttempts && 
-                         (error.code === 'ECONNRESET' || 
-                          error.code === 'ETIMEDOUT' ||
-                          (error.response?.status >= 500));
+      const shouldRetry = request.retries < poolConfig.retryAttempts &&
+        (error.code === 'ECONNRESET' ||
+          error.code === 'ETIMEDOUT' ||
+          (error.response?.status >= 500));
 
       if (shouldRetry) {
         request.retries++;
         console.log(`🔄 ${poolName.toUpperCase()}: Retry ${request.retries}/${poolConfig.retryAttempts}`);
-        
+
         setTimeout(() => {
           queue.unshift(request);
           this.processQueue(poolName);
@@ -192,20 +192,20 @@ export class ConnectionPool {
 
   async helius(endpoint: string, data?: any, apiKey?: string) {
     const headers = apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {};
-    return this.request('helius', { 
-      url: endpoint, 
+    return this.request('helius', {
+      url: endpoint,
       method: data ? 'POST' : 'GET',
       data,
-      headers 
+      headers
     });
   }
 
   async birdeye(endpoint: string, params?: any, apiKey?: string) {
     const headers = apiKey ? { 'X-API-KEY': apiKey } : {};
-    return this.request('birdeye', { 
-      url: endpoint, 
+    return this.request('birdeye', {
+      url: endpoint,
       params,
-      headers 
+      headers
     });
   }
 
@@ -219,10 +219,10 @@ export class ConnectionPool {
 
   async solscan(endpoint: string, params?: any, apiKey?: string) {
     const headers = apiKey ? { 'token': apiKey } : {};
-    return this.request('solscan', { 
-      url: endpoint, 
+    return this.request('solscan', {
+      url: endpoint,
       params,
-      headers 
+      headers
     });
   }
 
@@ -233,7 +233,7 @@ export class ConnectionPool {
   // Métricas e monitoramento
   getPoolStats() {
     const stats: Record<string, any> = {};
-    
+
     for (const [name, queue] of this.queues) {
       stats[name] = {
         queueSize: queue.length,
@@ -241,8 +241,25 @@ export class ConnectionPool {
         maxConcurrent: this.configs.get(name)?.maxConcurrent || 0
       };
     }
-    
+
     return stats;
+  }
+
+  // Cleanup para testes ou desligamento
+  shutdown() {
+    console.log('🔌 Shutting down all connection pools...');
+    for (const [name, pool] of this.pools) {
+      if (pool.defaults.httpAgent) {
+        (pool.defaults.httpAgent as any).destroy();
+      }
+      if (pool.defaults.httpsAgent) {
+        (pool.defaults.httpsAgent as any).destroy();
+      }
+      console.log(`  - Pool ${name} connections terminated.`);
+    }
+    this.pools.clear();
+    this.queues.clear();
+    this.activeRequests.clear();
   }
 
   // Cleanup para testes
