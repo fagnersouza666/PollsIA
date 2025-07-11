@@ -575,4 +575,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## Versão Atual
 
-1.0.26 - Implementado graceful shutdown no backend para maior estabilidade.
+1.0.27 - Aprimorado o graceful shutdown para garantir o encerramento de todas as conexões.

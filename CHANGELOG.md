@@ -1,3 +1,9 @@
+## [1.0.27] - 2025-07-05 **FIX: Aprimoramento do Graceful Shutdown**
+
+- **Connection Pool**: Adicionado um método `shutdown` à classe `ConnectionPool` para encerrar todas as conexões `axios` ativas.
+- **Graceful Shutdown**: A rotina de desligamento agora invoca o `connectionPool.shutdown()`, garantindo que as conexões HTTP persistentes sejam fechadas.
+- **Resolução de Bug**: Corrigido definitivamente o problema que impedia o processo do backend de ser encerrado corretamente, eliminando a necessidade de "force kill" pelo `tsx`.
+
 ## [1.0.26] - 2025-07-05 **CHORE: Graceful Shutdown no Backend**
 
 - **Graceful Shutdown**: Implementada a lógica de desligamento elegante no servidor backend (`index.ts`).
