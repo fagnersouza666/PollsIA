@@ -8,7 +8,6 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    appDir: true,
     serverComponentsExternalPackages: ['@solana/web3.js'],
   },
   output: 'standalone',

@@ -457,7 +457,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
   const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb')
   const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s')
-  const RAYDIUM_CLMM_PROGRAM_ID = new PublicKey('CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK')
 
   // Get token price from Jupiter API
   const getTokenPrice = useCallback(async (mint: string): Promise<number> => {
@@ -551,92 +550,49 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }, [state.wallet?.publicKey, state.connection, getTokenPrice, getTokenSymbol, knownTokens])
 
-  // Get DeFi positions
+  // Get DeFi positions using backend proxy to avoid repeated API calls
   const getDeFiPositions = useCallback(async () => {
     if (!state.wallet?.publicKey) return
 
     try {
       dispatch({ type: 'SET_LOADING_DEFI', payload: true })
 
-      // Get token accounts for potential positions
-      const tokenAccountsStandard = await state.connection.getParsedTokenAccountsByOwner(
-        state.wallet.publicKey,
-        { programId: TOKEN_PROGRAM_ID }
-      )
-      const tokenAccounts2022 = await state.connection.getParsedTokenAccountsByOwner(
-        state.wallet.publicKey,
-        { programId: TOKEN_2022_PROGRAM_ID }
-      )
+      // Use backend proxy to get positions data efficiently
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/wallet/${state.wallet.publicKey.toString()}/positions`
+        : `http://localhost:3001/api/wallet/${state.wallet.publicKey.toString()}/positions`
+
+      const response = await fetch(apiUrl)
       
-      const allTokenAccounts = [...tokenAccountsStandard.value, ...tokenAccounts2022.value]
-      const defiPositions: DeFiPosition[] = []
-
-      // Check for Raydium CLMM positions (NFT tokens with amount 1)
-      const potentialPositionTokens = allTokenAccounts.filter(acc => {
-        const info = acc.account.data.parsed.info
-        return info.tokenAmount.amount === '1' && info.tokenAmount.decimals === 0
-      })
-
-      for (const acc of potentialPositionTokens) {
-        const mint = new PublicKey(acc.account.data.parsed.info.mint)
-        const [positionPubkey] = PublicKey.findProgramAddressSync(
-          [new TextEncoder().encode('position'), mint.toBytes()],
-          RAYDIUM_CLMM_PROGRAM_ID
-        )
+      if (response.ok) {
+        const result = await response.json()
         
-        const positionAccount = await state.connection.getAccountInfo(positionPubkey)
-        if (positionAccount && positionAccount.owner.equals(RAYDIUM_CLMM_PROGRAM_ID)) {
-          defiPositions.push({
-            type: 'raydium-clmm',
-            mint: mint.toString(),
-            balance: 1,
-            usdValue: 0, // Would need more complex calculation
-            positionAddress: positionPubkey.toString(),
-          })
-        }
-      }
-
-      // Check for Raydium AMM LP tokens
-      try {
-        const raydiumPairsResponse = await fetch('https://api.raydium.io/v2/main/pairs')
-        
-        if (raydiumPairsResponse.ok) {
-          const pairs = await raydiumPairsResponse.json()
-          const potentialLpTokens = allTokenAccounts.filter(acc => {
-            const info = acc.account.data.parsed.info
-            return info.tokenAmount.uiAmount > 0 && info.tokenAmount.decimals > 0
-          })
+        if (result.success && result.data) {
+          const defiPositions: DeFiPosition[] = result.data.map((position: any) => ({
+            type: position.type === 'AMM' ? 'raydium-amm' : 'raydium-clmm',
+            mint: position.lpMint || position.nftMint || position.positionPubkey,
+            balance: position.balance || 1,
+            usdValue: position.usdValue || 0,
+            poolName: position.poolName,
+            positionAddress: position.positionPubkey
+          }))
           
-          for (const acc of potentialLpTokens) {
-            const mint = acc.account.data.parsed.info.mint
-            const matchingPair = pairs.find((p: any) => p.lpMint === mint)
-            
-            if (matchingPair) {
-              const balance = acc.account.data.parsed.info.tokenAmount.uiAmount
-              const price = await getTokenPrice(mint)
-              const usdValue = price * balance
-              
-              defiPositions.push({
-                type: 'raydium-amm',
-                mint,
-                balance,
-                usdValue,
-                poolName: matchingPair.name,
-              })
-            }
-          }
+          dispatch({ type: 'SET_DEFI_POSITIONS', payload: defiPositions })
+        } else {
+          console.warn('Backend returned no DeFi positions')
+          dispatch({ type: 'SET_DEFI_POSITIONS', payload: [] })
         }
-      } catch (error) {
-        console.error('Error fetching Raydium pairs:', error)
+      } else {
+        console.error('Failed to fetch DeFi positions from backend:', response.status)
+        dispatch({ type: 'SET_DEFI_POSITIONS', payload: [] })
       }
-      
-      dispatch({ type: 'SET_DEFI_POSITIONS', payload: defiPositions })
     } catch (error) {
-      console.error('Erro ao buscar posições DeFi:', error)
+      console.error('Error fetching DeFi positions:', error)
+      dispatch({ type: 'SET_DEFI_POSITIONS', payload: [] })
     } finally {
       dispatch({ type: 'SET_LOADING_DEFI', payload: false })
     }
-  }, [state.wallet?.publicKey, state.connection])
+  }, [state.wallet?.publicKey])
 
   // Refresh all wallet data
   const refreshWalletData = useCallback(async () => {
