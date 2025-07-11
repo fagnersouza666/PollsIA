@@ -222,35 +222,38 @@ export function WalletProvider({ children }: WalletProviderProps) {
     const detectWallets = () => {
       const wallets: WalletAdapter[] = []
 
-      // Check for Phantom
-      if ((window as any).phantom?.solana?.isPhantom) {
+      // Check for Phantom (evitando conflitos com MetaMask)
+      // Verificamos especificamente o provedor Solana do Phantom
+      const phantomProvider = (window as any).phantom?.solana
+      if (phantomProvider && phantomProvider.isPhantom) {
         wallets.push({
           name: 'Phantom',
-          icon: '/icons/phantom.png',
+          icon: '/icons/phantom.svg',
           url: 'https://phantom.app',
           readyState: 'Installed',
         })
       } else {
         wallets.push({
           name: 'Phantom',
-          icon: '/icons/phantom.png',
+          icon: '/icons/phantom.svg',
           url: 'https://phantom.app',
           readyState: 'NotDetected',
         })
       }
 
       // Check for Solflare
-      if ((window as any).solflare?.isSolflare) {
+      const solflareProvider = (window as any).solflare
+      if (solflareProvider && solflareProvider.isSolflare) {
         wallets.push({
           name: 'Solflare',
-          icon: '/icons/solflare.png',
+          icon: '/icons/solflare.svg',
           url: 'https://solflare.com',
           readyState: 'Installed',
         })
       } else {
         wallets.push({
           name: 'Solflare',
-          icon: '/icons/solflare.png',
+          icon: '/icons/solflare.svg',
           url: 'https://solflare.com',
           readyState: 'NotDetected',
         })
@@ -259,11 +262,16 @@ export function WalletProvider({ children }: WalletProviderProps) {
       dispatch({ type: 'SET_WALLETS', payload: wallets })
     }
 
-    detectWallets()
+    // Aguardar um pouco para as extensões injetarem os provedores
+    const timer = setTimeout(detectWallets, 100)
 
     // Re-detect wallets when window loads
     window.addEventListener('load', detectWallets)
-    return () => window.removeEventListener('load', detectWallets)
+    
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('load', detectWallets)
+    }
   }, [])
 
   const connect = useCallback(async (walletName: string) => {
@@ -273,19 +281,20 @@ export function WalletProvider({ children }: WalletProviderProps) {
       let walletAdapter: any = null
       let adapter: WalletAdapter | null = null
 
-      // Get wallet adapter
+      // Get wallet adapter (evitando conflitos com MetaMask)
       if (walletName === 'Phantom') {
+        // Específicamente usar o provedor Solana do Phantom
         walletAdapter = (window as any).phantom?.solana
         adapter = state.wallets.find(w => w.name === 'Phantom') || null
         
-        if (!walletAdapter) {
+        if (!walletAdapter || !walletAdapter.isPhantom) {
           throw new Error('Phantom wallet não encontrada. Instale a extensão.')
         }
       } else if (walletName === 'Solflare') {
         walletAdapter = (window as any).solflare
         adapter = state.wallets.find(w => w.name === 'Solflare') || null
         
-        if (!walletAdapter) {
+        if (!walletAdapter || !walletAdapter.isSolflare) {
           throw new Error('Solflare wallet não encontrada. Instale a extensão.')
         }
       } else {

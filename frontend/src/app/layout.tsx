@@ -19,6 +19,15 @@ export const metadata: Metadata = {
   authors: [{ name: 'PollsIA Team' }],
   creator: 'PollsIA',
   publisher: 'PollsIA',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/favicon.svg', sizes: '180x180', type: 'image/svg+xml' },
+    ],
+  },
   formatDetection: {
     email: false,
     address: false,

@@ -74,6 +74,61 @@ app.post('/api/solana/rpc', async (req, res) => {
   }
 });
 
+// Mock endpoints para evitar 404s
+app.get('/api/wallet/:publicKey/portfolio', (req, res) => {
+  console.log(`📋 Mock wallet portfolio request for: ${req.params.publicKey}`);
+  res.json({
+    success: true,
+    data: {
+      totalValue: 0,
+      solBalance: 0,
+      tokens: [],
+      defiPositions: [],
+      performance: {
+        daily: 0,
+        weekly: 0,
+        monthly: 0
+      }
+    },
+    message: 'Portfolio mock data - use /wallet page for real data'
+  });
+});
+
+app.get('/api/wallet/:publicKey/pools', (req, res) => {
+  console.log(`🏊 Mock wallet pools request for: ${req.params.publicKey}`);
+  res.json({
+    success: true,
+    data: [],
+    message: 'Pools mock data - use /wallet page for real data'
+  });
+});
+
+app.get('/api/pools/rankings', (req, res) => {
+  console.log('🏆 Mock pools rankings request');
+  res.json({
+    success: true,
+    data: [
+      {
+        id: 'sol-usdc',
+        name: 'SOL/USDC',
+        apy: 12.5,
+        tvl: 1500000,
+        volume24h: 2500000,
+        protocol: 'Raydium'
+      },
+      {
+        id: 'ray-sol',
+        name: 'RAY/SOL', 
+        apy: 18.3,
+        tvl: 850000,
+        volume24h: 1200000,
+        protocol: 'Raydium'
+      }
+    ],
+    message: 'Rankings mock data'
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 

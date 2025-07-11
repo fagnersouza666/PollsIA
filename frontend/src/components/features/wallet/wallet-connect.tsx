@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   useWallet, 
   useWalletConnected, 
@@ -23,6 +23,17 @@ export function WalletConnect() {
   const error = useWalletError()
   
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  // Debug: verificar provedores disponíveis
+  useEffect(() => {
+    console.log('🔍 Provedores de wallet detectados:', {
+      phantom: (window as any).phantom?.solana?.isPhantom,
+      solflare: (window as any).solflare?.isSolflare,
+      ethereum: (window as any).ethereum,
+      metamask: (window as any).ethereum?.isMetaMask,
+      hasConflict: (window as any).ethereum?.isMetaMask && (window as any).phantom?.solana?.isPhantom
+    })
+  }, [])
 
   const handleConnect = async (walletName: string) => {
     try {
