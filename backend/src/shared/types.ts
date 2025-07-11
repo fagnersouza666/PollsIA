@@ -23,6 +23,9 @@ export const TYPES = {
   UpdatePoolUseCase: Symbol.for('UpdatePoolUseCase'),
   DeletePoolUseCase: Symbol.for('DeletePoolUseCase'),
 
+  // Controllers
+  PoolController: Symbol.for('PoolController'),
+
   // Services
   WalletService: Symbol.for('WalletService'),
   BlockchainService: Symbol.for('BlockchainService'),

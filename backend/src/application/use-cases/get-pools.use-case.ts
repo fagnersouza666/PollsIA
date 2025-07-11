@@ -2,12 +2,12 @@ import { injectable, inject } from 'inversify';
 import { TYPES } from '../../shared/types';
 import { Result } from '../../shared/result';
 import { Logger } from '../../shared/interfaces/logger.interface';
-import { 
-  PoolRepository, 
-  PoolFilters, 
-  PoolSortOptions, 
+import {
+  IPoolRepository,
+  PoolFilters,
+  PoolSortOptions,
   PaginationOptions,
-  PaginatedResult 
+  PaginatedResult
 } from '../../domain/repositories/pool.repository';
 import { Pool } from '../../domain/entities/pool.entity';
 import { InternalServerError } from '../../shared/errors';
@@ -25,12 +25,16 @@ export interface GetPoolsQuery {
   activeOnly?: boolean;
 }
 
+export interface IGetPoolsUseCase {
+  execute(query: GetPoolsQuery): Promise<Result<PaginatedResult<Pool>, Error>>;
+}
+
 @injectable()
-export class GetPoolsUseCase {
+export class GetPoolsUseCase implements IGetPoolsUseCase {
   constructor(
-    @inject(TYPES.PoolRepository) private poolRepository: PoolRepository,
+    @inject(TYPES.PoolRepository) private poolRepository: IPoolRepository,
     @inject(TYPES.Logger) private logger: Logger
-  ) {}
+  ) { }
 
   async execute(query: GetPoolsQuery = {}): Promise<Result<PaginatedResult<Pool>, Error>> {
     this.logger.info('Fetching pools', { query });
@@ -61,20 +65,27 @@ export class GetPoolsUseCase {
       // Fetch pools
       const result = await this.poolRepository.findAll(filters, sort, pagination);
 
+      if (result.isFailure) {
+        this.logger.error('Failed to fetch pools from repository', result.getError());
+        return Result.fail(new InternalServerError('Failed to fetch pools'));
+      }
+
+      const paginatedData = result.getValue();
+
       this.logger.info('Pools fetched successfully', {
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        totalPages: result.totalPages,
+        total: paginatedData.total,
+        page: paginatedData.page,
+        limit: paginatedData.limit,
+        totalPages: paginatedData.totalPages,
         filters,
         sort,
       });
 
-      return Result.success(result);
+      return Result.ok(paginatedData);
 
     } catch (error) {
       this.logger.error('Failed to fetch pools', error as Error);
-      return Result.failure(new InternalServerError('Failed to fetch pools'));
+      return Result.fail(new InternalServerError('Failed to fetch pools'));
     }
   }
 }

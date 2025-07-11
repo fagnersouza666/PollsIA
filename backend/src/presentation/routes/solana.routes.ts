@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import { solanaController } from '../controllers/solana.controller'
-import { solanaRpcProxy } from '../../infrastructure/external/solana-proxy'
+import { getSolanaRpc } from '../../infrastructure/external/solana-proxy'
 
 const router = Router()
 
 // Proxy RPC para Solana
-router.use('/rpc', solanaRpcProxy)
+router.post('/rpc', getSolanaRpc)
 
 // Endpoint para obter pares do Raydium
 router.get('/raydium-pairs', solanaController.getRaydiumPairs)
