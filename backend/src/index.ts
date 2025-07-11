@@ -23,6 +23,9 @@ const fastify = Fastify({
 
 const logger = container.get<Logger>(TYPES.Logger);
 
+// Flag para controlar se o shutdown já foi iniciado
+let isShuttingDown = false;
+
 async function start() {
   try {
     // Initialize logger from DI container
@@ -125,24 +128,46 @@ async function start() {
 const redisInstance = RedisCache.getInstance();
 
 async function closeGracefully(signal: NodeJS.Signals) {
+  if (isShuttingDown) {
+    logger.info('⚠️ Shutdown already in progress, ignoring signal');
+    return;
+  }
+
+  isShuttingDown = true;
   logger.info(`*️⃣ Received signal: ${signal}. Shutting down gracefully...`);
+
+  // Timeout para forçar saída se demorar muito
+  const shutdownTimeout = setTimeout(() => {
+    logger.error('❌ Graceful shutdown timeout. Forcing exit...');
+    process.exit(1);
+  }, 3000); // 3 segundos
 
   try {
     // Close Fastify server
+    logger.info('🔄 Closing Fastify server...');
     await fastify.close();
     logger.info('✅ Fastify server closed.');
 
     // Disconnect Redis
+    logger.info('🔄 Closing Redis connection...');
     await redisInstance.disconnect();
     logger.info('✅ Redis connection closed.');
 
     // Shutdown connection pools
+    logger.info('🔄 Shutting down connection pools...');
     connectionPool.shutdown();
     logger.info('✅ Connection pools shut down.');
 
+    // Clear timeout
+    clearTimeout(shutdownTimeout);
+
+    logger.info('✅ Graceful shutdown completed successfully');
+
+    // Force exit to ensure process terminates
     process.exit(0);
   } catch (err) {
-    logger.error('Error during graceful shutdown', err as Error);
+    logger.error('❌ Error during graceful shutdown', err as Error);
+    clearTimeout(shutdownTimeout);
     process.exit(1);
   }
 }
@@ -150,5 +175,17 @@ async function closeGracefully(signal: NodeJS.Signals) {
 // Graceful shutdown listeners
 process.on('SIGINT', closeGracefully);
 process.on('SIGTERM', closeGracefully);
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  closeGracefully('SIGTERM');
+});
+
+// Handle unhandled rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  closeGracefully('SIGTERM');
+});
 
 start();

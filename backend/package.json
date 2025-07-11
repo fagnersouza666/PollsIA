@@ -4,7 +4,7 @@
   "description": "Backend API for PollsIA - Automated liquidity pool management on Solana",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --clear-screen=false --ignore=dist --ignore=node_modules src/index.ts",
     "dev-simple": "tsx watch src/index-simple.ts",
     "dev-debug": "node debug-server.js",
     "dev-full": "tsx watch src/index.ts",
@@ -39,7 +39,7 @@
     "@solana/spl-token": "^0.4.13",
     "@solana/transaction-messages": "^2.0.0-preview.4",
     "@solana/transactions": "^2.0.0-preview.4",
-    "@solana/web3.js": "^1.95.2",
+    "@solana/web3.js": "^1.98.2",
     "@supabase/supabase-js": "^2.50.0",
     "@types/bn.js": "^5.2.0",
     "@types/reflect-metadata": "^0.1.0",
