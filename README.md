@@ -1,6 +1,6 @@
 # PollsIA - Automated Liquidity Pool Management on Solana
 
-**Versão Atual: 1.0.29** | **Status: ✅ SISTEMA COMPLETAMENTE FUNCIONAL**
+**Versão Atual: 1.0.30** | **Status: ✅ SISTEMA COMPLETAMENTE FUNCIONAL**
 
 ## 🎯 Descrição do Projeto
 
@@ -13,29 +13,42 @@ PollsIA é uma plataforma avançada de gerenciamento automatizado de pools de li
 - **API RESTful Completa**: Backend robusto com documentação Swagger
 - **Interface Moderna**: Frontend Next.js com design responsivo
 - **Sistema de Monitoramento**: Analytics em tempo real e métricas de performance
-- **Arquitetura Escalável**: Implementação com Clean Architecture e DDD
+- **Arquitetura Escalável**: Implementação with Clean Architecture e DDD
 
-## 📋 Últimas Atualizações (v1.0.29)
+## 📋 Últimas Atualizações (v1.0.30)
 
-### ✅ Sistema de APIs Completamente Otimizado
-- **Cache Inteligente**: 5 minutos para preços, 1 hora para pairs do Raydium
-- **Sistema de Fila**: Processamento sequencial com delay de 2s entre requisições
-- **Múltiplos Endpoints**: Fallback automático para APIs do Raydium
-- **Processamento em Lotes**: Tokens processados em grupos de 5 para evitar sobrecarga
-- **Rate Limiting Inteligente**: Máximo 1 requisição simultânea
-- **Timeouts Apropriados**: 10s para preços, 15s para pairs
+### ✅ Modo Desenvolvimento Inteligente
+- **NODE_ENV=development**: Modo específico para desenvolvimento com dados mock
+- **Preços Mock**: Implementado preços simulados para tokens conhecidos
+- **Raydium Pairs Mock**: Dados simulados para desenvolvimento rápido
+- **Timeouts Ajustados**: 60s produção, 30s desenvolvimento
+- **Fallback Robusto**: Sistema de fallback completo para APIs lentas
 
-### 🔧 Melhorias de Performance
-- **Eliminado Rate Limit 429**: Migração para CoinGecko API
-- **Resolvido Timeouts**: Sistema de fallback robusto
-- **Otimizado LP Detection**: Filtros inteligentes para tokens LP
-- **Cache Map()**: Performance otimizada para lookups O(1)
+### 🔧 Problemas Resolvidos
+- **Eliminado Rate Limiting**: Completamente resolvido para desenvolvimento
+- **Timeout Errors**: Ajustado timeouts para APIs lentas do Raydium
+- **API Instabilidade**: Implementado sistema de fallback robusto
+- **Desenvolvimento Lento**: Modo desenvolvimento com resposta instantânea
 
-### 🛠️ Melhorias Técnicas
-- Fallback com preços conhecidos para tokens principais
-- Headers apropriados para evitar bloqueios de API
-- Detecção inteligente de posições DeFi
-- Logs detalhados de cache hits/misses
+### 🛠️ Melhorias de Performance
+- **Performance**: Desenvolvimento agora é instantâneo
+- **Estabilidade**: Fallback para dados mock quando APIs falham
+- **Logs**: Indicadores claros de modo desenvolvimento
+- **Experiência**: Desenvolvimento sem interrupções por rate limits
+
+### 🔧 Como Usar
+
+**Modo Desenvolvimento (Recomendado para desenvolvimento):**
+```bash
+cd backend
+NODE_ENV=development npm run dev
+```
+
+**Modo Produção:**
+```bash
+cd backend
+NODE_ENV=production npm run dev
+```
 
 # 🚀 PollsIA - Sistema de Gestão de Pools Solana
 
