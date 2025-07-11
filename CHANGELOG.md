@@ -1,3 +1,14 @@
+## [1.0.24] - 2025-07-05 **CORREÇÃO COMPLETA: Container DI e APIs**
+
+- Corrigido sistema de injeção de dependências (InversifyJS) para resolver erro "NULL argument".
+- Atualizado MockPoolRepository para usar Result wrapper em todos os métodos.
+- Corrigido GetPoolsUseCase para usar interfaces corretas (Logger, IPoolRepository).
+- Adicionado PoolController ao TYPES para resolver binding do container.
+- Simplificado solana-proxy.ts removendo middleware complexo.
+- Corrigido rotas Solana para usar funções em vez de middleware.
+- Resolvidos erros 404 nas APIs de wallet e pools.
+- Sistema backend agora inicia corretamente sem erros de DI.
+
 ## [1.0.23] - 2025-07-05 **CORREÇÃO: Script de Desenvolvimento**
 
 - Corrigido o script `dev` no `backend/package.json` para usar `tsx watch src/index.ts` em vez de apontar para um arquivo deletado.

@@ -575,4 +575,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## Versão Atual
 
-1.0.23 - Correção do script de desenvolvimento e estabilização do ambiente.
+1.0.24 - Sistema de injeção de dependências e APIs corrigidos. Backend estável e funcional.
